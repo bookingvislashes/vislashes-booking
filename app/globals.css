@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Core palette from Figma */
+  --color-cream: #F7F3EE;
+  --color-warm-beige: #D4B896;
+  --color-deep-brown: #8B6F47;
+  --color-dark-brown: #3D2B1F;
+  --color-charcoal: #2C2C2C;
+  --color-light-tan: #E8DDD0;
+  --color-success: #4A7C59;
+  --color-danger: #C44536;
+  --color-muted: #9A9A9A;
+
+  /* Figma-specific browns */
+  --color-brand-brown: #A4846A;
+  --color-brand-tan: #B4957C;
+  --color-text-brown: #805F45;
+  --color-nav-brown: #6D5B4D;
+  --color-card-beige: #E7D7CB;
+  --color-instagram: #C6AB95;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-charcoal);
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', Georgia, serif;
+    color: var(--color-dark-brown);
+  }
+}
+
+/* Signature canvas */
+.sig-canvas {
+  border: 1.5px solid var(--color-light-tan);
+  border-radius: 4px;
+  touch-action: none;
+}
