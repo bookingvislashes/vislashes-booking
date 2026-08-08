@@ -152,6 +152,10 @@ connected to her repository, and nothing breaks if Jerry's accounts go away.
 6. Open `supabase/migrations/001_initial_schema.sql` from the repo, copy the
    entire contents, paste it in, and click **Run**. This builds all the tables
    and adds the six default services.
+
+   The script is **safe to run more than once** — every statement checks for its
+   own existence first, and re-running repairs a partially applied database
+   instead of failing with "policy ... already exists".
 7. Go to **Authentication → Users → Add user**. Create her admin login with an
    email and password. This is what she will use at `/admin/login`.
 8. Go to **Project Settings → API keys** and copy these three values into a
