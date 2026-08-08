@@ -26,6 +26,22 @@ export async function createClient() {
   );
 }
 
+/**
+ * Cookie-free client for reading public tables (services, availability), which
+ * carry a "Public read" RLS policy and need no session.
+ *
+ * The cookie-based client above calls next/headers `cookies()`, which forces a
+ * route to render dynamically — and only when Supabase happens to be
+ * configured, so a page would silently switch between static and dynamic
+ * depending on the environment. This keeps that decision explicit.
+ */
+export async function createPublicClient() {
+  const { createClient: createSupabaseClient } = await import(
+    "@supabase/supabase-js"
+  );
+  return createSupabaseClient(supabaseUrl, supabasePublicKey);
+}
+
 export async function createServiceClient() {
   const { createClient: createSupabaseClient } = await import(
     "@supabase/supabase-js"

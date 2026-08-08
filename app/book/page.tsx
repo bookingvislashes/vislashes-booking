@@ -1,8 +1,21 @@
 import { Header } from "@/components/layout/Header";
 import { BookingFlow } from "@/components/booking/BookingFlow";
+import { createPublicClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 
-// For now, use static services data. In production, this will fetch from Supabase.
-const services = [
+// Re-read the menu at most once a minute, so edits made in the admin dashboard
+// appear without waiting for a redeploy.
+export const revalidate = 60;
+
+// Demo menu, used only while Supabase is unconfigured so the page still renders
+// something during local development and preview deploys.
+//
+// These IDs are deliberately NOT valid UUIDs. bookings.service_id is
+// `uuid references services(id)`, so a booking submitted against this list
+// cannot be saved — which is correct: without a database there is nowhere to
+// save it. Once Supabase is configured, getServices() returns real rows with
+// real UUIDs and bookings persist.
+const fallbackServices = [
   {
     id: "svc-natural-glam",
     name: "Natural Glam",
@@ -65,7 +78,37 @@ const services = [
   },
 ];
 
-export default function BookPage() {
+async function getServices() {
+  if (!isSupabaseConfigured()) return fallbackServices;
+
+  try {
+    const supabase = await createPublicClient();
+    const { data, error } = await supabase
+      .from("services")
+      .select(
+        "id, name, description, category, price, deposit_amount, duration_minutes"
+      )
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    if (error || !data?.length) return fallbackServices;
+
+    // Postgres `numeric` arrives as a string over PostgREST; the booking flow
+    // does arithmetic on price and deposit, so coerce before handing it on.
+    return data.map((s) => ({
+      ...s,
+      price: Number(s.price),
+      deposit_amount: Number(s.deposit_amount),
+      image_url: null,
+    }));
+  } catch {
+    return fallbackServices;
+  }
+}
+
+export default async function BookPage() {
+  const services = await getServices();
+
   return (
     <div className="min-h-screen bg-cream">
       <Header />
