@@ -22,7 +22,7 @@ Nothing is saved and no money moves.
 | Taking the deposit | ❌ Square not configured — the payment step errors in the browser console |
 | Confirmation / reminder emails | ❌ Code is written, but no email account connected |
 | Admin dashboard | ⚠️ Loads, but shows no real data; some pages return a 500 |
-| Admin login protection | ❌ **Currently disabled** (see Part 2) |
+| Admin login protection | ✅ Fixed — activates automatically once Supabase is connected |
 | 24-hour reminder emails | ❌ Placeholder — the endpoint returns `{"sent": 0}` and does nothing |
 | Google Calendar sync | ❌ Never built. The library is installed and env vars are documented, but no code exists |
 
@@ -45,23 +45,21 @@ rules, and seeds the 6 default services with prices.
 
 These are the only things that need a developer. Everything else is dashboards.
 
-**1. Re-enable admin login protection — important**
+**1. Re-enable admin login protection — DONE**
 
-The file that protects `/admin` was renamed to `middleware.ts.bak` to work around
-a deploy problem, which means **the admin dashboard is currently unprotected**.
+The file protecting `/admin` had been renamed to `middleware.ts.bak` to work
+around a deploy failure, leaving the admin dashboard unprotected.
 
-Right now real data is still safe, because Supabase's row-level security blocks
-anonymous reads. But the admin pages themselves are publicly reachable, and that
-is the only thing standing between the public and the dashboard.
+Next.js 16 renamed this feature from `middleware` to `proxy`, which is what broke
+the original deploy. Renaming the *file* is not sufficient — the exported
+function has to be renamed too, or the build fails with "Proxy is missing
+expected function export name". Both are now done in `proxy.ts`, and the build
+registers it as `ƒ Proxy (Middleware)`.
 
-The fix is a rename. Next.js 16 renamed this feature from `middleware` to
-`proxy`, which is likely what broke the original deploy:
-
-```bash
-git mv middleware.ts.bak proxy.ts
-```
-
-I verified this compiles cleanly on Next 16.1.6.
+It is safe in the current demo state: the file skips auth entirely while
+`NEXT_PUBLIC_SUPABASE_URL` is missing or contains "placeholder". The moment real
+Supabase credentials are added, unauthenticated `/admin` requests start
+redirecting to `/admin/login`.
 
 **2. Build the reminder emails**
 
@@ -127,12 +125,12 @@ hosting and all the accounts. The repository lives on her GitHub so the site
 never depends on someone else's account continuing to exist.
 
 1. She creates a free GitHub account and a new **empty** repository named
-   `Vislashes-Booking-Site`. No README, no .gitignore — completely empty.
+   `Vislashes-Booking`. No README, no .gitignore — completely empty.
 2. She adds Jerry: **Settings → Collaborators → Add people**.
 3. Jerry points his local copy at her repository and pushes:
 
    ```bash
-   git remote set-url origin https://github.com/HER-USERNAME/Vislashes-Booking-Site.git
+   git remote set-url origin https://github.com/HER-USERNAME/Vislashes-Booking.git
    git push -u origin main
    ```
 
@@ -191,7 +189,7 @@ connected to her repository, and nothing breaks if Jerry's accounts go away.
 1. Sign up at https://vercel.com with **the same GitHub account** that now owns
    the repo. This is what makes the rest automatic.
 2. Click **Add New → Project**.
-3. Find `Vislashes-Booking-Site` in the list and click **Import**.
+3. Find `Vislashes-Booking` in the list and click **Import**.
 4. Do not change the build settings — Next.js is detected automatically.
 5. Expand **Environment Variables** and add each of these:
 
