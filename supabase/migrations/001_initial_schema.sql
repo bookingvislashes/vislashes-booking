@@ -23,14 +23,23 @@ create policy "Admin manage services" on public.services for all using (
   auth.role() = 'authenticated'
 );
 
--- Seed default services
+-- Seed default services.
+--
+-- These names, prices and durations deliberately match the ones the site shows
+-- in demo mode (app/book/page.tsx) and the ones in the site's own meta
+-- description, so connecting the database does not silently rename services out
+-- from under the brand. Earlier this seeded generic 'Classic / Hybrid / Volume'
+-- names, which contradicted every other surface.
+--
+-- Confirm these against the real menu before taking bookings — they are editable
+-- afterwards in the admin dashboard under Services.
 insert into public.services (name, category, price, deposit_amount, duration_minutes, description, sort_order) values
-  ('Classic Full Set',   'full_set', 50.00, 10.00, 110, 'Natural, elegant look with individual lash extensions', 1),
-  ('Hybrid Full Set',    'full_set', 55.00, 10.00, 120, 'Mix of classic and volume for a textured, fuller look', 2),
-  ('Volume Full Set',    'full_set', 55.00, 10.00, 120, 'Dramatic, full-bodied fans for maximum impact', 3),
-  ('Classic Refill',     'refill',   25.00, 10.00,  60, 'Maintain your classic set with fresh extensions', 4),
-  ('Hybrid Refill',      'refill',   30.00, 10.00,  75, 'Touch up your hybrid set for lasting fullness', 5),
-  ('Volume Refill',      'refill',   30.00, 10.00,  75, 'Restore your volume set to its full glory', 6);
+  ('Natural Glam',                  'full_set', 50.00, 10.00, 110, 'A subtle, natural-looking lash set that enhances your everyday beauty.', 1),
+  ('Premium Wispy Glam',            'full_set', 55.00, 10.00, 110, 'Wispy, textured volume for a glamorous yet effortless look.', 2),
+  ('Premium Wispy Glam (Custom)',   'full_set', 55.00, 10.00, 110, 'Fully customized wispy lash design tailored to your eye shape.', 3),
+  ('Natural Glam Refill',           'refill',   25.00, 10.00,  60, 'Maintain your Natural Glam set with a fresh fill.', 4),
+  ('Premium Wispy Glam Refill',     'refill',   30.00, 10.00,  60, 'Keep your wispy volume looking flawless.', 5),
+  ('Premium Wispy Glam Refill (Custom)', 'refill', 30.00, 10.00, 60, 'Custom refill for your personalized wispy set.', 6);
 
 
 -- 2. AVAILABILITY (recurring weekly hours)
