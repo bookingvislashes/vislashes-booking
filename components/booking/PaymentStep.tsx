@@ -88,19 +88,19 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
 
   return (
     <div>
-      <h2 className="font-['Playfair_Display',Georgia,serif] text-[24px] font-bold text-dark-brown mb-1">
+      <h2 className="font-display text-[24px] font-bold text-dark-brown mb-1">
         Payment
       </h2>
-      <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-charcoal mb-6">
+      <p className="font-sans text-[14px] text-charcoal mb-6">
         Review your booking and pay the deposit.
       </p>
 
       {/* Booking summary */}
       <div className="bg-light-tan rounded-lg p-5 mb-6">
-        <h3 className="font-['Playfair_Display',Georgia,serif] text-[16px] font-bold text-dark-brown mb-3">
+        <h3 className="font-display text-[16px] font-bold text-dark-brown mb-3">
           Booking Summary
         </h3>
-        <div className="flex flex-col gap-2 font-['DM_Sans',system-ui,sans-serif] text-[14px]">
+        <div className="flex flex-col gap-2 font-sans text-[14px]">
           <div className="flex justify-between">
             <span className="text-muted">Service</span>
             <span className="text-charcoal font-semibold">{selectedService.name}</span>
@@ -131,10 +131,10 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
 
       {/* Deposit highlight */}
       <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-4">
-        <p className="font-['DM_Sans',system-ui,sans-serif] text-[22px] font-bold text-deep-brown text-center">
+        <p className="font-sans text-[22px] font-bold text-deep-brown text-center">
           ${depositAmount.toFixed(2)} <span className="text-[14px] font-normal text-muted">due today</span>
         </p>
-        <p className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-muted text-center mt-1">
+        <p className="font-sans text-[13px] text-muted text-center mt-1">
           Remaining ${remainingBalance.toFixed(2)} due at appointment
         </p>
       </div>
@@ -147,7 +147,7 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
           checked={isCash}
           onChange={(e) => setIsCash(e.target.checked)}
         />
-        <span className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-charcoal">
+        <span className="font-sans text-[13px] text-charcoal">
           I will bring cash as payment or pay a $3 convenience fee
         </span>
       </label>
@@ -155,7 +155,7 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
       {/* Error message */}
       {error && (
         <div className="bg-danger/10 border border-danger/30 rounded-md p-3 mb-4">
-          <p className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-danger">
+          <p className="font-sans text-[13px] text-danger">
             {error}
           </p>
         </div>
@@ -186,7 +186,7 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
           {/* Divider */}
           <div className="flex items-center gap-3 my-1">
             <div className="flex-1 h-px bg-light-tan" />
-            <span className="font-['DM_Sans',system-ui,sans-serif] text-[12px] text-muted">
+            <span className="font-sans text-[12px] text-muted">
               or pay with card
             </span>
             <div className="flex-1 h-px bg-light-tan" />

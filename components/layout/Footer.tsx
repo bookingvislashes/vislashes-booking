@@ -15,7 +15,7 @@ export function Footer() {
           href="https://instagram.com/vislashesbooking"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-['Inter',sans-serif] font-medium text-[18px] text-instagram tracking-[0.25px] uppercase hover:text-white transition-colors"
+          className="font-sans font-medium text-[18px] text-instagram tracking-[0.25px] uppercase hover:text-white transition-colors"
         >
           @vislashesbooking
         </Link>

@@ -120,23 +120,29 @@ and Resend free at this scale, plus Square's per-transaction fee.
 
 ## Part 4 — Step-by-step handoff
 
-### Phase A — Move the code to her GitHub account
+### Phase A — Put the code on her GitHub account
 
-The cleanest option is a full ownership transfer, so the site lives entirely on
-her accounts.
+The intended arrangement is a **split**: Jerry writes the code, she owns the
+hosting and all the accounts. The repository lives on her GitHub so the site
+never depends on someone else's account continuing to exist.
 
-1. Make sure she has a free GitHub account, and get her username.
-2. Go to https://github.com/Graphicaljerry/Vislashes-Booking-Site
-3. **Settings** → scroll to the bottom → **Transfer ownership**
-4. Enter her username and confirm.
+1. She creates a free GitHub account and a new **empty** repository named
+   `Vislashes-Booking-Site`. No README, no .gitignore — completely empty.
+2. She adds Jerry: **Settings → Collaborators → Add people**.
+3. Jerry points his local copy at her repository and pushes:
 
-She now owns the repository. If you want to keep your own copy, fork it back
-from her account afterward.
+   ```bash
+   git remote set-url origin https://github.com/HER-USERNAME/Vislashes-Booking-Site.git
+   git push -u origin main
+   ```
 
-> **Prefer to keep ownership?** Instead of transferring, go to
-> **Settings → Collaborators → Add people** and add her. She can still deploy it
-> to her own Vercel account from your repo. The downside is that the site stops
-> working if you ever delete the repo or remove her access.
+She now owns the code. Everything from here — Vercel, database, payments — is
+connected to her repository, and nothing breaks if Jerry's accounts go away.
+
+> **Alternative:** the repo can stay on Jerry's account with her added as a
+> collaborator, and her Vercel can still deploy it. It works, but her live site
+> would then depend on his repo continuing to exist and her access continuing to
+> be granted. For a site taking real deposits, that's a single point of failure.
 
 ### Phase B — Create the database (Supabase)
 
@@ -230,6 +236,63 @@ Walk through these in order. Each one confirms a different service is connected.
 - [ ] A confirmation email arrives
 - [ ] `/admin/login` accepts the user created in Phase B
 - [ ] After the Part 2 fix: visiting `/admin` while logged out redirects to the login page
+
+---
+
+## Part 5 — Ongoing changes (Jerry codes, she hosts)
+
+Once Part 4 is done, this is the permanent working arrangement. **She never
+touches code, and he never needs access to her accounts.**
+
+### How a change reaches the live site
+
+Her Vercel watches her GitHub repository. A push *is* the deploy — there is no
+separate handoff step.
+
+Work on a branch rather than `main`:
+
+```bash
+git checkout -b whatever-is-changing
+```
+
+Push the branch, and Vercel automatically builds a **preview deployment** — a
+complete working copy of the site at its own URL, using her real data, that does
+not affect the live site. Send her that link. She looks at it on her phone, and
+only once she approves does it get merged into `main` and go live.
+
+That preview step is the whole point of this setup: she gets veto power over
+every change without needing to understand any of it.
+
+### Her safety net
+
+If something broken does reach the live site: **Vercel → Deployments → Instant
+Rollback.** Two clicks and the site returns to the previous working version, with
+no developer involved. Worth walking through once so she is never stuck waiting.
+
+### Local development credentials
+
+Jerry's machine should **never** hold her production keys. Set up a separate dev
+stack, all free:
+
+- A second Supabase project, with the same `001_initial_schema.sql` applied
+- Square **sandbox** credentials rather than production
+- Any Resend key, or leave `EMAIL_FROM` as `onboarding@resend.dev`
+
+Those go in his local `.env.local`, which is gitignored and never committed.
+
+Beyond the security argument, this is what guarantees that **test bookings can
+never land in her live database and test emails can never reach her real
+clients.** Her production keys exist only in her Vercel dashboard.
+
+### Vercel seats
+
+Jerry does **not** need a Vercel account. Pushing to GitHub is enough to trigger
+her deploys. This matters because Vercel Pro bills per seat, so adding him as a
+team member would roughly double the monthly cost for no benefit.
+
+The tradeoff: he cannot read build logs when a deploy fails. In practice she
+screenshots the error, or adds him to the team temporarily while something is
+actually broken.
 
 ---
 

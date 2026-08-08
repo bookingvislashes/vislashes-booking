@@ -30,7 +30,7 @@ export default function ClientsPage() {
 
   return (
     <div>
-      <h1 className="font-['Playfair_Display',Georgia,serif] text-[28px] font-bold text-dark-brown mb-6">
+      <h1 className="font-display text-[28px] font-bold text-dark-brown mb-6">
         Clients
       </h1>
 
@@ -40,14 +40,14 @@ export default function ClientsPage() {
         placeholder="Search by name or email..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full bg-white border border-light-tan rounded-[4px] px-3 py-2.5 text-[14px] text-charcoal font-['DM_Sans',system-ui,sans-serif] placeholder:text-muted focus:outline-none focus:border-deep-brown transition-colors mb-6"
+        className="w-full bg-white border border-light-tan rounded-control px-3 py-2.5 text-[14px] text-charcoal font-sans placeholder:text-muted focus:outline-none focus:border-deep-brown transition-colors mb-6"
       />
 
       {/* Client list */}
       <div className="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
         {filtered.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-muted">
+            <p className="font-sans text-[14px] text-muted">
               No clients found
             </p>
           </div>
@@ -59,24 +59,24 @@ export default function ClientsPage() {
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-warm-beige/30 flex items-center justify-center">
-                  <span className="font-['DM_Sans',system-ui,sans-serif] text-[14px] font-semibold text-deep-brown">
+                  <span className="font-sans text-[14px] font-semibold text-deep-brown">
                     {client.name.split(" ").map((n) => n[0]).join("")}
                   </span>
                 </div>
                 <div>
-                  <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] font-semibold text-dark-brown">
+                  <p className="font-sans text-[14px] font-semibold text-dark-brown">
                     {client.name}
                   </p>
-                  <p className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-muted">
+                  <p className="font-sans text-[13px] text-muted">
                     {client.email}
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-charcoal font-semibold">
+                <p className="font-sans text-[13px] text-charcoal font-semibold">
                   {client.visitCount} visits
                 </p>
-                <p className="font-['DM_Sans',system-ui,sans-serif] text-[12px] text-muted">
+                <p className="font-sans text-[12px] text-muted">
                   Last: {client.lastVisit}
                 </p>
               </div>

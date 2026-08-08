@@ -109,13 +109,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-[200px] bg-white border-r border-light-tan p-4">
         <div className="flex items-baseline gap-0.5 mb-8 px-2">
-          <span className="font-['Playfair_Display',Georgia,serif] text-[12px] font-bold text-dark-brown tracking-[3px] uppercase">
+          <span className="font-display text-[12px] font-bold text-dark-brown tracking-[3px] uppercase">
             VIS
           </span>
-          <span className="font-['Playfair_Display',Georgia,serif] text-[12px] font-bold text-dark-brown tracking-[3px] uppercase italic">
+          <span className="font-display text-[12px] font-bold text-dark-brown tracking-[3px] uppercase italic">
             LASHES
           </span>
-          <span className="font-['DM_Sans',system-ui,sans-serif] text-[10px] text-muted ml-1">
+          <span className="font-sans text-[10px] text-muted ml-1">
             Admin
           </span>
         </div>
@@ -130,7 +130,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-['DM_Sans',system-ui,sans-serif] transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-sans transition-colors ${
                   isActive
                     ? "bg-deep-brown/10 text-deep-brown font-semibold border-l-[3px] border-deep-brown"
                     : "text-charcoal hover:bg-light-tan"
@@ -145,7 +145,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
         <button
           onClick={handleSignOut}
-          className="mt-auto px-3 py-2 text-[13px] text-muted hover:text-danger font-['DM_Sans',system-ui,sans-serif] text-left cursor-pointer"
+          className="mt-auto px-3 py-2 text-[13px] text-muted hover:text-danger font-sans text-left cursor-pointer"
         >
           Sign Out
         </button>
@@ -154,16 +154,16 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       {/* Mobile header */}
       <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-light-tan">
         <div className="flex items-baseline gap-0.5">
-          <span className="font-['Playfair_Display',Georgia,serif] text-[12px] font-bold text-dark-brown tracking-[3px] uppercase">
+          <span className="font-display text-[12px] font-bold text-dark-brown tracking-[3px] uppercase">
             VIS
           </span>
-          <span className="font-['Playfair_Display',Georgia,serif] text-[12px] font-bold text-dark-brown tracking-[3px] uppercase italic">
+          <span className="font-display text-[12px] font-bold text-dark-brown tracking-[3px] uppercase italic">
             LASHES
           </span>
         </div>
         <button
           onClick={handleSignOut}
-          className="text-[12px] text-muted font-['DM_Sans',system-ui,sans-serif] cursor-pointer"
+          className="text-[12px] text-muted font-sans cursor-pointer"
         >
           Sign Out
         </button>
@@ -185,7 +185,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex-1 flex flex-col items-center py-2 text-[10px] font-['DM_Sans',system-ui,sans-serif] ${
+              className={`flex-1 flex flex-col items-center py-2 text-[10px] font-sans ${
                 isActive ? "text-deep-brown font-semibold" : "text-muted"
               }`}
             >

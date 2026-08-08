@@ -42,7 +42,7 @@ export default function ServicesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-['Playfair_Display',Georgia,serif] text-[28px] font-bold text-dark-brown">
+        <h1 className="font-display text-[28px] font-bold text-dark-brown">
           Services
         </h1>
         <Button size="sm">Add Service</Button>
@@ -56,22 +56,22 @@ export default function ServicesPage() {
           >
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] font-semibold text-dark-brown">
+                <p className="font-sans text-[14px] font-semibold text-dark-brown">
                   {service.name}
                 </p>
                 {!service.isActive && (
-                  <span className="text-[10px] font-semibold font-['DM_Sans',system-ui,sans-serif] text-muted bg-muted/15 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-semibold font-sans text-muted bg-muted/15 px-2 py-0.5 rounded-full">
                     Inactive
                   </span>
                 )}
               </div>
-              <p className="font-['DM_Sans',system-ui,sans-serif] text-[12px] text-muted">
+              <p className="font-sans text-[12px] text-muted">
                 {service.category === "full_set" ? "Full Set" : "Refill"} &middot;{" "}
                 {formatDuration(service.durationMinutes)} &middot; ${service.depositAmount} deposit
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <span className="font-['DM_Sans',system-ui,sans-serif] text-[16px] font-semibold text-deep-brown">
+              <span className="font-sans text-[16px] font-semibold text-deep-brown">
                 ${service.price.toFixed(2)}
               </span>
               <button

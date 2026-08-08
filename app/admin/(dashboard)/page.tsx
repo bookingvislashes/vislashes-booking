@@ -82,33 +82,33 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="font-['Playfair_Display',Georgia,serif] text-[28px] font-bold text-dark-brown mb-6">
+      <h1 className="font-display text-[28px] font-bold text-dark-brown mb-6">
         Dashboard
       </h1>
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <p className="font-['DM_Sans',system-ui,sans-serif] text-[12px] text-muted font-semibold uppercase tracking-wider mb-1">
+          <p className="font-sans text-[12px] text-muted font-semibold uppercase tracking-wider mb-1">
             Today&apos;s Bookings
           </p>
-          <p className="font-['Playfair_Display',Georgia,serif] text-[32px] font-bold text-dark-brown">
+          <p className="font-display text-[32px] font-bold text-dark-brown">
             {loading ? "—" : todaysBookings.length}
           </p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <p className="font-['DM_Sans',system-ui,sans-serif] text-[12px] text-muted font-semibold uppercase tracking-wider mb-1">
+          <p className="font-sans text-[12px] text-muted font-semibold uppercase tracking-wider mb-1">
             This Month
           </p>
-          <p className="font-['Playfair_Display',Georgia,serif] text-[32px] font-bold text-dark-brown">
+          <p className="font-display text-[32px] font-bold text-dark-brown">
             {loading ? "—" : monthCount}
           </p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <p className="font-['DM_Sans',system-ui,sans-serif] text-[12px] text-muted font-semibold uppercase tracking-wider mb-1">
+          <p className="font-sans text-[12px] text-muted font-semibold uppercase tracking-wider mb-1">
             Total Clients
           </p>
-          <p className="font-['Playfair_Display',Georgia,serif] text-[32px] font-bold text-dark-brown">
+          <p className="font-display text-[32px] font-bold text-dark-brown">
             {loading ? "—" : clientCount}
           </p>
         </div>
@@ -117,12 +117,12 @@ export default function AdminDashboard() {
       {/* Today's schedule */}
       <div className="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
         <div className="flex items-center justify-between p-5 border-b border-light-tan">
-          <h2 className="font-['Playfair_Display',Georgia,serif] text-[18px] font-bold text-dark-brown">
+          <h2 className="font-display text-[18px] font-bold text-dark-brown">
             Today&apos;s Schedule
           </h2>
           <Link
             href="/admin/bookings"
-            className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-deep-brown font-semibold hover:underline"
+            className="font-sans text-[13px] text-deep-brown font-semibold hover:underline"
           >
             View All
           </Link>
@@ -130,13 +130,13 @@ export default function AdminDashboard() {
 
         {loading ? (
           <div className="p-5 text-center">
-            <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-muted animate-pulse">
+            <p className="font-sans text-[14px] text-muted animate-pulse">
               Loading...
             </p>
           </div>
         ) : todaysBookings.length === 0 ? (
           <div className="p-5 text-center">
-            <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-muted">
+            <p className="font-sans text-[14px] text-muted">
               No bookings today
             </p>
           </div>
@@ -148,15 +148,15 @@ export default function AdminDashboard() {
                 className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] font-semibold text-dark-brown truncate">
+                  <p className="font-sans text-[14px] font-semibold text-dark-brown truncate">
                     {booking.client?.full_name || "Unknown"}
                   </p>
-                  <p className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-muted truncate">
+                  <p className="font-sans text-[13px] text-muted truncate">
                     {booking.service?.name || "Unknown"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-3">
-                  <span className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-charcoal font-semibold">
+                  <span className="font-sans text-[13px] text-charcoal font-semibold">
                     {booking.time_slot}
                   </span>
                   <Badge status={booking.status} />

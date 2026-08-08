@@ -19,18 +19,37 @@
   --color-nav-brown: #6D5B4D;
   --color-card-beige: #E7D7CB;
   --color-instagram: #C6AB95;
+
+  /* Two families only. `font-sans` is body and every control; `font-display`
+     is headings. Both are injected by next/font in app/layout.tsx. */
+  --font-sans: var(--font-sans-face), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-display-face), Georgia, serif;
+
+  /* Radius scale. Controls (buttons, inputs) share one value so a button and
+     the input it sits beside can never disagree; surfaces are the softer one. */
+  --radius-control: 3px;
+  --radius-surface: 8px;
 }
 
 @layer base {
   body {
     background-color: var(--color-cream);
     color: var(--color-charcoal);
-    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans);
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: var(--font-display);
     color: var(--color-dark-brown);
+  }
+
+  /* The site previously killed focus outlines on inputs and replaced them with
+     a border colour change, which is invisible to anyone tabbing through. This
+     restores a real, brand-tinted focus ring on every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--color-deep-brown);
+    outline-offset: 2px;
+    border-radius: var(--radius-control);
   }
 }
 

@@ -1,5 +1,5 @@
-import Link from "next/link";
 import Image from "next/image";
+import { CtaLink } from "@/components/ui/CtaLink";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCards } from "@/components/home/ProductCards";
@@ -67,7 +67,7 @@ export default function HomePage() {
             className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] mb-8 sm:mb-10 lg:mb-[96px]"
           >
             <div
-              className="relative rounded-[8px] overflow-hidden min-h-[360px] sm:min-h-[460px] lg:h-[641px]"
+              className="relative rounded-surface overflow-hidden min-h-[360px] sm:min-h-[460px] lg:h-[641px]"
               style={{ background: section.gradient }}
             >
               {/* Photo — offset past edge, clipped by overflow:hidden */}
@@ -112,21 +112,21 @@ export default function HomePage() {
                   }
                 `}
               >
-                <p className="font-['Inter',sans-serif] font-light text-[14px] sm:text-[17px] lg:text-[20px] text-white tracking-[5px] sm:tracking-[6px] lg:tracking-[7.5px] -mb-1 lg:-mb-2">
+                <p className="font-sans font-light text-[14px] sm:text-[17px] lg:text-[20px] text-white tracking-[5px] sm:tracking-[6px] lg:tracking-[7.5px] -mb-1 lg:-mb-2">
                   {section.label}
                 </p>
-                <h2 className="font-['Playfair_Display',Georgia,serif] text-[36px] sm:text-[48px] lg:text-[60px] text-white tracking-[3px] sm:tracking-[5px] lg:tracking-[6.5px] leading-none mb-0">
+                <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[60px] text-white tracking-[3px] sm:tracking-[5px] lg:tracking-[6.5px] leading-none mb-0">
                   {section.name}
                 </h2>
-                <p className="font-['Open_Sans',sans-serif] font-light text-[15px] sm:text-[16px] lg:text-[18px] text-white leading-[1.445] max-w-[320px] sm:max-w-[340px] lg:max-w-[360px] mt-2 mb-4 lg:mb-5">
+                <p className="font-sans font-light text-[15px] sm:text-[16px] lg:text-[18px] text-white leading-[1.445] max-w-[320px] sm:max-w-[340px] lg:max-w-[360px] mt-2 mb-4 lg:mb-5">
                   {section.description}
                 </p>
-                <Link
+                <CtaLink
                   href={`#${section.name.toLowerCase()}`}
-                  className="inline-flex items-center border-2 border-[#ebebeb] text-white font-['Montserrat',sans-serif] font-semibold text-[14px] sm:text-[15px] lg:text-[16px] px-6 sm:px-8 lg:px-[39px] py-[10px] rounded-[3px] leading-[32px] hover:bg-white/20 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200"
+                  variant="onImage"
                 >
                   {section.buttonText}
-                </Link>
+                </CtaLink>
               </div>
             </div>
           </section>
@@ -140,13 +140,13 @@ export default function HomePage() {
           {/* Left Content */}
           <div className="w-full lg:w-[380px] shrink-0 pt-0 lg:pt-[20px]">
             {/* Stay Lashed in heading */}
-            <h2 className="font-['Playfair_Display',Georgia,serif] text-[56px] sm:text-[72px] lg:text-[98px] leading-[0.97] text-dark-brown mb-8 sm:mb-10 lg:mb-[50px]">
+            <h2 className="font-display text-[56px] sm:text-[72px] lg:text-[98px] leading-[0.97] text-dark-brown mb-8 sm:mb-10 lg:mb-[50px]">
               Stay<br />Lashed in
             </h2>
 
             {/* Social Media */}
             <div className="flex flex-col gap-[14px] mb-8 sm:mb-10 lg:mb-[40px]">
-              <p className="font-['Open_Sans',sans-serif] text-[14px] text-[#212121] leading-[24px]">
+              <p className="font-sans text-[14px] text-[#212121] leading-[24px]">
                 Follow us on social media for the latest news!
               </p>
               <div className="flex items-center gap-8 sm:gap-10 lg:gap-[40px]">
@@ -184,11 +184,11 @@ export default function HomePage() {
               <input
                 type="email"
                 placeholder="Email Address"
-                className="w-full h-[48px] px-4 pr-[72px] border-[0.8px] border-[#121212] rounded-[3px] font-['Open_Sans',sans-serif] text-[14px] text-[#3f3f3f] leading-[24px] bg-transparent focus:outline-none focus:border-brand-brown"
+                className="w-full h-[48px] px-4 pr-[72px] border-[0.8px] border-[#121212] rounded-control font-sans text-[14px] text-[#3f3f3f] leading-[24px] bg-transparent focus:outline-none focus:border-brand-brown"
               />
               <button
                 aria-label="Submit email"
-                className="absolute right-0 top-[1px] bottom-[1px] w-[63px] bg-brand-brown rounded-tr-[2px] rounded-br-[2px] flex items-center justify-center hover:bg-text-brown transition-colors"
+                className="absolute right-0 inset-y-0 w-[63px] bg-brand-brown rounded-r-control flex items-center justify-center hover:bg-text-brown transition-colors"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rotate-90">
                   <line x1="12" y1="19" x2="12" y2="5" />
@@ -199,7 +199,7 @@ export default function HomePage() {
           </div>
 
           {/* Right: Photo */}
-          <div className="w-full lg:flex-1 relative h-[300px] sm:h-[420px] lg:h-[582px] rounded-[8px] overflow-hidden">
+          <div className="w-full lg:flex-1 relative h-[300px] sm:h-[420px] lg:h-[582px] rounded-surface overflow-hidden">
             <video
               src="/images/stay-lashed-photo.mp4"
               autoPlay
@@ -207,7 +207,7 @@ export default function HomePage() {
               muted
               playsInline
               preload="none"
-              className="absolute inset-0 w-full h-full object-cover rounded-[8px]"
+              className="absolute inset-0 w-full h-full object-cover rounded-surface"
             />
           </div>
         </div>

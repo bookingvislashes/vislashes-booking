@@ -72,10 +72,10 @@ export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
 
   return (
     <div>
-      <h2 className="font-['Playfair_Display',Georgia,serif] text-[24px] font-bold text-dark-brown mb-1">
+      <h2 className="font-display text-[24px] font-bold text-dark-brown mb-1">
         Choose Your Availability
       </h2>
-      <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-charcoal mb-6">
+      <p className="font-sans text-[14px] text-charcoal mb-6">
         Select a date and time for your appointment.
       </p>
 
@@ -88,7 +88,7 @@ export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
         >
           &larr;
         </button>
-        <span className="font-['DM_Sans',system-ui,sans-serif] text-[15px] font-semibold text-dark-brown">
+        <span className="font-sans text-[15px] font-semibold text-dark-brown">
           {format(currentMonth, "MMMM yyyy")}
         </span>
         <button
@@ -105,7 +105,7 @@ export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <div
             key={day}
-            className="text-center font-['DM_Sans',system-ui,sans-serif] text-[11px] font-semibold text-muted"
+            className="text-center font-sans text-[11px] font-semibold text-muted"
           >
             {day}
           </div>
@@ -127,7 +127,7 @@ export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
               type="button"
               disabled={isDisabled}
               onClick={() => handleDateSelect(day)}
-              className={`aspect-square flex items-center justify-center rounded-md text-[13px] font-['DM_Sans',system-ui,sans-serif] transition-colors cursor-pointer ${
+              className={`aspect-square flex items-center justify-center rounded-md text-[13px] font-sans transition-colors cursor-pointer ${
                 isSelected
                   ? "bg-deep-brown text-white"
                   : isDisabled
@@ -146,15 +146,15 @@ export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
       {/* Time slots */}
       {selectedDate && (
         <div>
-          <p className="font-['DM_Sans',system-ui,sans-serif] text-[12px] font-semibold text-muted uppercase tracking-wider mb-3">
+          <p className="font-sans text-[12px] font-semibold text-muted uppercase tracking-wider mb-3">
             Available Times
           </p>
           {loadingSlots ? (
-            <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-muted">
+            <p className="font-sans text-[14px] text-muted">
               Loading available times...
             </p>
           ) : timeSlots.length === 0 ? (
-            <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-muted">
+            <p className="font-sans text-[14px] text-muted">
               No available times for this date. Please select another date.
             </p>
           ) : (
@@ -164,7 +164,7 @@ export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
                   key={slot}
                   type="button"
                   onClick={() => handleTimeSelect(slot)}
-                  className={`py-2.5 px-3 rounded-md text-[13px] font-semibold font-['DM_Sans',system-ui,sans-serif] border transition-colors cursor-pointer ${
+                  className={`py-2.5 px-3 rounded-md text-[13px] font-semibold font-sans border transition-colors cursor-pointer ${
                     selectedTime === slot
                       ? "bg-deep-brown text-white border-deep-brown"
                       : "bg-white text-charcoal border-light-tan hover:border-deep-brown"
@@ -179,12 +179,12 @@ export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
       )}
 
       {form.formState.errors.bookingDate && (
-        <p className="text-danger text-[12px] mt-3 font-['DM_Sans',system-ui,sans-serif]">
+        <p className="text-danger text-[12px] mt-3 font-sans">
           {form.formState.errors.bookingDate.message}
         </p>
       )}
       {form.formState.errors.timeSlot && (
-        <p className="text-danger text-[12px] mt-1 font-['DM_Sans',system-ui,sans-serif]">
+        <p className="text-danger text-[12px] mt-1 font-sans">
           {form.formState.errors.timeSlot.message}
         </p>
       )}

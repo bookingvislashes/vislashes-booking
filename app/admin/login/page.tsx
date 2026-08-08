@@ -39,14 +39,14 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="flex items-baseline justify-center gap-0.5 mb-2">
-            <span className="font-['Playfair_Display',Georgia,serif] text-[14px] font-bold text-dark-brown tracking-[3px] uppercase">
+            <span className="font-display text-[14px] font-bold text-dark-brown tracking-[3px] uppercase">
               VIS
             </span>
-            <span className="font-['Playfair_Display',Georgia,serif] text-[14px] font-bold text-dark-brown tracking-[3px] uppercase italic">
+            <span className="font-display text-[14px] font-bold text-dark-brown tracking-[3px] uppercase italic">
               LASHES
             </span>
           </div>
-          <h1 className="font-['Playfair_Display',Georgia,serif] text-[28px] font-bold text-dark-brown">
+          <h1 className="font-display text-[28px] font-bold text-dark-brown">
             Admin Login
           </h1>
         </div>
@@ -72,7 +72,7 @@ export default function AdminLoginPage() {
               required
             />
             {error && (
-              <p className="text-danger text-[13px] font-['DM_Sans',system-ui,sans-serif]">
+              <p className="text-danger text-[13px] font-sans">
                 {error}
               </p>
             )}

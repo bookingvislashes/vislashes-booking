@@ -19,7 +19,7 @@ const statusLabels: Record<string, string> = {
 export function Badge({ status }: BadgeProps) {
   return (
     <span
-      className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold font-['DM_Sans',system-ui,sans-serif] ${statusStyles[status] || statusStyles.confirmed}`}
+      className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold font-sans ${statusStyles[status] || statusStyles.confirmed}`}
     >
       {statusLabels[status] || status}
     </span>

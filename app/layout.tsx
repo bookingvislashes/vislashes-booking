@@ -1,7 +1,26 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { DM_Sans, Playfair_Display } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
+
+// Self-hosted via next/font: no render-blocking request to Google, and the
+// fallback metrics are matched so swapping in the real face doesn't shift layout.
+const sans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-sans-face",
+  display: "swap",
+});
+
+const display = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-display-face",
+  display: "swap",
+});
 
 const squareSdkUrl =
   process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT === "production"
@@ -26,15 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&family=Inter:wght@300;400;500&family=Montserrat:wght@600&family=Open+Sans:ital,wght@0,300;0,400;1,300&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${sans.variable} ${display.variable}`}>
       <body className="antialiased">
         <Providers>{children}</Providers>
         <Script src={squareSdkUrl} strategy="lazyOnload" />

@@ -13,10 +13,10 @@ export function CustomerForm({ form }: CustomerFormProps) {
 
   return (
     <div>
-      <h2 className="font-['Playfair_Display',Georgia,serif] text-[24px] font-bold text-dark-brown mb-1">
+      <h2 className="font-display text-[24px] font-bold text-dark-brown mb-1">
         Your Information
       </h2>
-      <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-charcoal mb-6">
+      <p className="font-sans text-[14px] text-charcoal mb-6">
         We&apos;ll use this to contact you about your appointment.
       </p>
 

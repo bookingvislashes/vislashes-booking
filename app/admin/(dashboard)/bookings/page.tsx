@@ -101,10 +101,10 @@ export default function BookingsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-['Playfair_Display',Georgia,serif] text-[28px] font-bold text-dark-brown">
+        <h1 className="font-display text-[28px] font-bold text-dark-brown">
           Bookings
         </h1>
-        <span className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-muted">
+        <span className="font-sans text-[13px] text-muted">
           {bookings.length} total
         </span>
       </div>
@@ -115,7 +115,7 @@ export default function BookingsPage() {
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
-            className={`px-4 py-1.5 rounded-full text-[12px] font-semibold font-['DM_Sans',system-ui,sans-serif] whitespace-nowrap transition-colors cursor-pointer ${
+            className={`px-4 py-1.5 rounded-full text-[12px] font-semibold font-sans whitespace-nowrap transition-colors cursor-pointer ${
               statusFilter === status
                 ? "bg-deep-brown text-white"
                 : "bg-white text-charcoal border border-light-tan hover:bg-light-tan"
@@ -134,13 +134,13 @@ export default function BookingsPage() {
       <div className="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
         {loading ? (
           <div className="p-8 text-center">
-            <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-muted animate-pulse">
+            <p className="font-sans text-[14px] text-muted animate-pulse">
               Loading bookings...
             </p>
           </div>
         ) : bookings.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-muted">
+            <p className="font-sans text-[14px] text-muted">
               No bookings found
             </p>
           </div>
@@ -152,19 +152,19 @@ export default function BookingsPage() {
               className="w-full flex items-center justify-between px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0 hover:bg-cream/50 transition-colors text-left cursor-pointer"
             >
               <div className="min-w-0 flex-1">
-                <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] font-semibold text-dark-brown truncate">
+                <p className="font-sans text-[14px] font-semibold text-dark-brown truncate">
                   {booking.client?.full_name || "Unknown"}
                 </p>
-                <p className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-muted truncate">
+                <p className="font-sans text-[13px] text-muted truncate">
                   {booking.service?.name || "Unknown Service"}
                 </p>
               </div>
               <div className="flex items-center gap-2 sm:gap-3 text-right shrink-0 ml-3">
                 <div>
-                  <p className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-charcoal font-semibold">
+                  <p className="font-sans text-[13px] text-charcoal font-semibold">
                     {booking.time_slot}
                   </p>
-                  <p className="font-['DM_Sans',system-ui,sans-serif] text-[12px] text-muted">
+                  <p className="font-sans text-[12px] text-muted">
                     {formatDate(booking.booking_date)}
                   </p>
                 </div>
@@ -190,11 +190,11 @@ export default function BookingsPage() {
               &times;
             </button>
 
-            <h2 className="font-['Playfair_Display',Georgia,serif] text-[22px] font-bold text-dark-brown mb-5">
+            <h2 className="font-display text-[22px] font-bold text-dark-brown mb-5">
               Booking Details
             </h2>
 
-            <div className="flex flex-col gap-5 font-['DM_Sans',system-ui,sans-serif]">
+            <div className="flex flex-col gap-5 font-sans">
               {/* Client info */}
               <Section title="Client">
                 <p className="text-[14px] text-charcoal font-semibold">
@@ -382,7 +382,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] text-muted font-semibold uppercase tracking-wider mb-1.5 font-['DM_Sans',system-ui,sans-serif]">
+    <p className="text-[11px] text-muted font-semibold uppercase tracking-wider mb-1.5 font-sans">
       {children}
     </p>
   );

@@ -21,13 +21,13 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="font-['Playfair_Display',Georgia,serif] text-[28px] font-bold text-dark-brown mb-6">
+      <h1 className="font-display text-[28px] font-bold text-dark-brown mb-6">
         Settings
       </h1>
 
       {/* Scheduling Settings */}
       <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
-        <h2 className="font-['Playfair_Display',Georgia,serif] text-[18px] font-bold text-dark-brown mb-4">
+        <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
           Scheduling
         </h2>
         <div className="flex flex-col gap-4 max-w-sm">
@@ -57,7 +57,7 @@ export default function SettingsPage() {
 
       {/* Business Info */}
       <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
-        <h2 className="font-['Playfair_Display',Georgia,serif] text-[18px] font-bold text-dark-brown mb-4">
+        <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
           Business Information
         </h2>
         <div className="flex flex-col gap-4 max-w-sm">
@@ -88,7 +88,7 @@ export default function SettingsPage() {
 
       {/* Google Calendar */}
       <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
-        <h2 className="font-['Playfair_Display',Georgia,serif] text-[18px] font-bold text-dark-brown mb-4">
+        <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
           Google Calendar
         </h2>
         <div className="flex items-center gap-4">
@@ -97,7 +97,7 @@ export default function SettingsPage() {
               settings.googleCalendarConnected ? "bg-success" : "bg-muted"
             }`}
           />
-          <span className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-charcoal">
+          <span className="font-sans text-[14px] text-charcoal">
             {settings.googleCalendarConnected ? "Connected" : "Not connected"}
           </span>
           <Button

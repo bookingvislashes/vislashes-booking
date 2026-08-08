@@ -31,7 +31,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       />
       <div className="relative bg-white rounded-lg shadow-lg max-w-lg w-full max-h-[85vh] overflow-y-auto p-6">
         {title && (
-          <h3 className="text-[18px] font-bold text-dark-brown mb-4 font-['Playfair_Display',Georgia,serif]">
+          <h3 className="text-[18px] font-bold text-dark-brown mb-4 font-display">
             {title}
           </h3>
         )}

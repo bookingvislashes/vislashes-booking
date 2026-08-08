@@ -44,19 +44,19 @@ export function ServiceSelector({ form, services }: ServiceSelectorProps) {
         }`}
       >
         <div className="w-full h-24 bg-light-tan rounded-md mb-3" />
-        <h4 className="font-['Playfair_Display',Georgia,serif] text-[15px] font-bold text-dark-brown mb-1">
+        <h4 className="font-display text-[15px] font-bold text-dark-brown mb-1">
           {service.name}
         </h4>
         {service.description && (
-          <p className="font-['DM_Sans',system-ui,sans-serif] text-[12px] text-muted mb-3 line-clamp-2">
+          <p className="font-sans text-[12px] text-muted mb-3 line-clamp-2">
             {service.description}
           </p>
         )}
         <div className="flex items-center justify-between">
-          <span className="font-['DM_Sans',system-ui,sans-serif] text-[15px] font-semibold text-deep-brown">
+          <span className="font-sans text-[15px] font-semibold text-deep-brown">
             ${service.price.toFixed(2)}
           </span>
-          <span className="font-['DM_Sans',system-ui,sans-serif] text-[11px] text-muted">
+          <span className="font-sans text-[11px] text-muted">
             {formatDuration(service.duration_minutes)}
           </span>
         </div>
@@ -66,16 +66,16 @@ export function ServiceSelector({ form, services }: ServiceSelectorProps) {
 
   return (
     <div>
-      <h2 className="font-['Playfair_Display',Georgia,serif] text-[24px] font-bold text-dark-brown mb-1">
+      <h2 className="font-display text-[24px] font-bold text-dark-brown mb-1">
         Select Your Lash Set
       </h2>
-      <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-charcoal mb-6">
+      <p className="font-sans text-[14px] text-charcoal mb-6">
         Choose the service you&apos;d like to book.
       </p>
 
       {fullSets.length > 0 && (
         <>
-          <p className="font-['DM_Sans',system-ui,sans-serif] text-[11px] font-semibold text-muted uppercase tracking-wider mb-3">
+          <p className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider mb-3">
             Full Sets
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
@@ -88,7 +88,7 @@ export function ServiceSelector({ form, services }: ServiceSelectorProps) {
 
       {refills.length > 0 && (
         <>
-          <p className="font-['DM_Sans',system-ui,sans-serif] text-[11px] font-semibold text-muted uppercase tracking-wider mb-3">
+          <p className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider mb-3">
             Refills
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -100,7 +100,7 @@ export function ServiceSelector({ form, services }: ServiceSelectorProps) {
       )}
 
       {form.formState.errors.serviceId && (
-        <p className="text-danger text-[12px] mt-3 font-['DM_Sans',system-ui,sans-serif]">
+        <p className="text-danger text-[12px] mt-3 font-sans">
           {form.formState.errors.serviceId.message}
         </p>
       )}

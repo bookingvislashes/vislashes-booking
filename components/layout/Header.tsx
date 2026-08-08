@@ -23,7 +23,7 @@ export function Header() {
   }, [isOpen, setIsOpen]);
 
   return (
-    <header className="w-full px-6 sm:px-12 lg:px-[120px] pt-[27px] pb-[33px] flex items-center justify-between max-w-[1440px] mx-auto">
+    <header className="w-full px-4 sm:px-12 lg:px-[120px] pt-[27px] pb-[33px] flex items-center justify-between gap-3 max-w-[1440px] mx-auto">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-1 shrink-0">
         <Image
@@ -31,29 +31,31 @@ export function Header() {
           alt=""
           width={76}
           height={34}
-          className="h-[34px] w-auto"
+          className="h-[26px] sm:h-[34px] w-auto"
         />
         <Image
           src="/images/logo-text.svg"
           alt="VIS Lashes"
           width={138}
           height={32}
-          className="h-[32px] w-auto"
+          className="h-[24px] sm:h-[32px] w-auto"
         />
       </Link>
 
       {/* Navigation Links */}
+      {/* Booking is the action that makes money, so it is a button rather than
+          another link in the row — present on every page and every scroll
+          position, and never mistaken for navigation. */}
       <nav className="hidden md:flex items-center gap-[26px]">
         {[
           { label: "Home", href: "/" },
           { label: "Lash Products", href: "#products" },
-          { label: "Book Appointment", href: "/book" },
           { label: "Contact", href: "#contact" },
         ].map((link) => (
           <Link
             key={link.label}
             href={link.href}
-            className="font-['Inter',sans-serif] font-medium text-[16px] text-nav-brown leading-[15px] tracking-[0.25px] hover:text-brand-brown transition-colors"
+            className="font-sans font-medium text-[16px] text-nav-brown leading-[15px] tracking-[0.25px] hover:text-brand-brown transition-colors"
           >
             {link.label}
           </Link>
@@ -61,7 +63,16 @@ export function Header() {
       </nav>
 
       {/* Icons */}
-      <div className="flex items-center gap-[28px] shrink-0">
+      <div className="flex items-center gap-4 sm:gap-[28px] shrink-0">
+        {/* Sits outside the nav so it survives the `hidden md:flex` collapse —
+            on mobile the header otherwise offered no way to book at all. */}
+        <Link
+          href="/book"
+          className="inline-flex items-center justify-center box-border h-[40px] px-4 sm:px-5 rounded-control border-2 border-transparent bg-brand-brown text-white font-sans font-semibold text-[14px] sm:text-[15px] whitespace-nowrap hover:bg-text-brown transition-colors"
+        >
+          Book<span className="hidden sm:inline">&nbsp;Appointment</span>
+        </Link>
+
         {/* Search Icon */}
         <button aria-label="Search" className="text-nav-brown hover:text-brand-brown transition-colors">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -91,10 +102,10 @@ export function Header() {
 
           {/* Cart Dropdown */}
           {isOpen && (
-            <div className="absolute right-0 top-[calc(100%+12px)] w-[340px] bg-white rounded-[8px] shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-light-tan z-50 overflow-hidden">
+            <div className="absolute right-0 top-[calc(100%+12px)] w-[340px] bg-white rounded-surface shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-light-tan z-50 overflow-hidden">
               {/* Header */}
               <div className="px-5 py-4 border-b border-light-tan flex items-center justify-between">
-                <h3 className="font-['Playfair_Display',Georgia,serif] text-[18px] text-dark-brown">
+                <h3 className="font-display text-[18px] text-dark-brown">
                   Your Cart
                 </h3>
                 <button
@@ -112,7 +123,7 @@ export function Header() {
               {/* Items */}
               {items.length === 0 ? (
                 <div className="px-5 py-8 text-center">
-                  <p className="font-['DM_Sans',sans-serif] text-[14px] text-muted">
+                  <p className="font-sans text-[14px] text-muted">
                     Your cart is empty
                   </p>
                 </div>
@@ -125,7 +136,7 @@ export function Header() {
                         className="px-5 py-4 flex items-center gap-4 border-b border-light-tan/50 last:border-0"
                       >
                         {/* Thumbnail */}
-                        <div className="w-[56px] h-[56px] bg-card-beige rounded-[4px] relative overflow-hidden shrink-0">
+                        <div className="w-[56px] h-[56px] bg-card-beige rounded-control relative overflow-hidden shrink-0">
                           <Image
                             src={item.image}
                             alt={item.name}
@@ -136,10 +147,10 @@ export function Header() {
                         </div>
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <p className="font-['Playfair_Display',Georgia,serif] text-[15px] text-dark-brown truncate">
+                          <p className="font-display text-[15px] text-dark-brown truncate">
                             {item.name}
                           </p>
-                          <p className="font-['DM_Sans',sans-serif] text-[13px] text-text-brown">
+                          <p className="font-sans text-[13px] text-text-brown">
                             {item.price}
                           </p>
                         </div>
@@ -151,7 +162,7 @@ export function Header() {
                           >
                             −
                           </button>
-                          <span className="font-['DM_Sans',sans-serif] text-[13px] text-charcoal w-[16px] text-center">
+                          <span className="font-sans text-[13px] text-charcoal w-[16px] text-center">
                             {item.quantity}
                           </span>
                           <button
@@ -179,17 +190,17 @@ export function Header() {
                   {/* Total + Checkout */}
                   <div className="px-5 py-4 border-t border-light-tan bg-cream/50">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="font-['DM_Sans',sans-serif] text-[14px] text-charcoal font-semibold">
+                      <span className="font-sans text-[14px] text-charcoal font-semibold">
                         Total
                       </span>
-                      <span className="font-['DM_Sans',sans-serif] text-[16px] text-dark-brown font-semibold">
+                      <span className="font-sans text-[16px] text-dark-brown font-semibold">
                         ${items.reduce((sum, item) => {
                           const price = parseFloat(item.price.replace("$", ""));
                           return sum + price * item.quantity;
                         }, 0).toFixed(2)}
                       </span>
                     </div>
-                    <button className="w-full bg-brand-brown text-white font-['Montserrat',sans-serif] font-semibold text-[14px] py-3 rounded-[3px] hover:bg-text-brown transition-colors">
+                    <button className="w-full bg-brand-brown text-white font-sans font-semibold text-[14px] py-3 rounded-control hover:bg-text-brown transition-colors">
                       Checkout
                     </button>
                   </div>

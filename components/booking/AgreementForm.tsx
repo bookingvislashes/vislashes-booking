@@ -54,10 +54,10 @@ export function AgreementForm({ form }: AgreementFormProps) {
 
   return (
     <div>
-      <h2 className="font-['Playfair_Display',Georgia,serif] text-[24px] font-bold text-dark-brown mb-1">
+      <h2 className="font-display text-[24px] font-bold text-dark-brown mb-1">
         Agreements
       </h2>
-      <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-charcoal mb-6">
+      <p className="font-sans text-[14px] text-charcoal mb-6">
         Please review and accept the following agreements.
       </p>
 
@@ -69,7 +69,7 @@ export function AgreementForm({ form }: AgreementFormProps) {
             className="accent-deep-brown w-4 h-4 mt-0.5"
             {...register("filmingConsent")}
           />
-          <span className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-charcoal">
+          <span className="font-sans text-[13px] text-charcoal">
             Will you allow us to film our work? (Optional)
           </span>
         </label>
@@ -82,7 +82,7 @@ export function AgreementForm({ form }: AgreementFormProps) {
             {...register("liabilityWaiverSigned")}
           />
           <div>
-            <span className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-charcoal">
+            <span className="font-sans text-[13px] text-charcoal">
               Check to Accept our Lash Consents, Release, and Waiver of Liability Agreement
             </span>
             <button
@@ -93,12 +93,12 @@ export function AgreementForm({ form }: AgreementFormProps) {
                   text: WAIVER_TEXT,
                 })
               }
-              className="block text-deep-brown text-[12px] font-semibold mt-1 underline cursor-pointer font-['DM_Sans',system-ui,sans-serif]"
+              className="block text-deep-brown text-[12px] font-semibold mt-1 underline cursor-pointer font-sans"
             >
               Read Terms
             </button>
             {errors.liabilityWaiverSigned && (
-              <p className="text-danger text-[12px] mt-1 font-['DM_Sans',system-ui,sans-serif]">
+              <p className="text-danger text-[12px] mt-1 font-sans">
                 {errors.liabilityWaiverSigned.message}
               </p>
             )}
@@ -113,7 +113,7 @@ export function AgreementForm({ form }: AgreementFormProps) {
             {...register("termsAccepted")}
           />
           <div>
-            <span className="font-['DM_Sans',system-ui,sans-serif] text-[13px] text-charcoal">
+            <span className="font-sans text-[13px] text-charcoal">
               I have read and agree to the terms and conditions
             </span>
             <button
@@ -124,12 +124,12 @@ export function AgreementForm({ form }: AgreementFormProps) {
                   text: TERMS_TEXT,
                 })
               }
-              className="block text-deep-brown text-[12px] font-semibold mt-1 underline cursor-pointer font-['DM_Sans',system-ui,sans-serif]"
+              className="block text-deep-brown text-[12px] font-semibold mt-1 underline cursor-pointer font-sans"
             >
               Read Terms
             </button>
             {errors.termsAccepted && (
-              <p className="text-danger text-[12px] mt-1 font-['DM_Sans',system-ui,sans-serif]">
+              <p className="text-danger text-[12px] mt-1 font-sans">
                 {errors.termsAccepted.message}
               </p>
             )}
@@ -138,7 +138,7 @@ export function AgreementForm({ form }: AgreementFormProps) {
 
         {/* Signature */}
         <div className="mt-4">
-          <p className="text-dark-brown text-[12px] font-semibold font-['DM_Sans',system-ui,sans-serif] mb-2">
+          <p className="text-dark-brown text-[12px] font-semibold font-sans mb-2">
             Digital Signature
           </p>
           <SignatureCanvas
@@ -152,12 +152,12 @@ export function AgreementForm({ form }: AgreementFormProps) {
           <button
             type="button"
             onClick={clearSignature}
-            className="mt-2 text-muted text-[12px] font-semibold underline cursor-pointer font-['DM_Sans',system-ui,sans-serif]"
+            className="mt-2 text-muted text-[12px] font-semibold underline cursor-pointer font-sans"
           >
             Clear signature
           </button>
           {errors.signatureData && (
-            <p className="text-danger text-[12px] mt-1 font-['DM_Sans',system-ui,sans-serif]">
+            <p className="text-danger text-[12px] mt-1 font-sans">
               {errors.signatureData.message}
             </p>
           )}
@@ -170,7 +170,7 @@ export function AgreementForm({ form }: AgreementFormProps) {
         onClose={() => setModalContent(null)}
         title={modalContent?.title}
       >
-        <pre className="whitespace-pre-wrap font-['DM_Sans',system-ui,sans-serif] text-[13px] text-charcoal leading-relaxed">
+        <pre className="whitespace-pre-wrap font-sans text-[13px] text-charcoal leading-relaxed">
           {modalContent?.text}
         </pre>
       </Modal>

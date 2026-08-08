@@ -37,16 +37,16 @@ export function ProductCards() {
             {/* Add to Cart overlay on hover */}
             <button
               onClick={() => handleAdd(product)}
-              className="absolute inset-x-0 bottom-0 bg-brand-brown/95 text-white font-['Montserrat',sans-serif] font-semibold text-[14px] py-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 cursor-pointer"
+              className="absolute inset-x-0 bottom-0 h-[48px] bg-brand-brown/95 text-white font-sans font-semibold text-[14px] translate-y-full group-hover:translate-y-0 transition-transform duration-300 motion-reduce:transition-none cursor-pointer"
             >
               {addedProduct === product.name ? "Added!" : "Add to Cart"}
             </button>
           </div>
           {/* Product Info */}
-          <h3 className="font-['Playfair_Display',Georgia,serif] text-[22px] sm:text-[26px] lg:text-[28px] text-text-brown text-center mt-4 sm:mt-5 leading-[1.45]">
+          <h3 className="font-display text-[22px] sm:text-[26px] lg:text-[28px] text-text-brown text-center mt-4 sm:mt-5 leading-[1.45]">
             {product.name}
           </h3>
-          <p className="font-[system-ui,sans-serif] text-[18px] sm:text-[20px] lg:text-[22px] text-text-brown text-center mt-1">
+          <p className="font-sans text-[18px] sm:text-[20px] lg:text-[22px] text-text-brown text-center mt-1">
             {product.price}
           </p>
         </div>

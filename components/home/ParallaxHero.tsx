@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { useRef, useEffect } from "react";
+import { CtaLink } from "@/components/ui/CtaLink";
 
 export function ParallaxHero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -43,16 +43,16 @@ export function ParallaxHero() {
         {/* Left: Headline + CTA — h1 must NOT be in a stacking context for blend to work */}
         <div className="relative max-w-full lg:max-w-[562px] pt-2 sm:pt-4 lg:pt-[3px]">
           <h1
-            className="relative z-10 font-['Playfair_Display',Georgia,serif] text-[48px] sm:text-[72px] lg:text-[98px] leading-[0.95] text-white mix-blend-difference animate-fade-in-up"
+            className="relative z-10 font-display text-[48px] sm:text-[72px] lg:text-[98px] leading-[0.95] text-white mix-blend-difference animate-fade-in-up"
           >
             Unlock Mesmerizing Beauty
           </h1>
-          <Link
-            href="#products"
-            className="relative z-10 inline-flex items-center mt-4 sm:mt-5 lg:mt-[24px] bg-brand-brown text-white font-['Montserrat',sans-serif] font-semibold text-[15px] sm:text-[17px] px-6 sm:px-[39px] py-[10px] rounded-[3px] leading-[32px] hover:bg-text-brown hover:scale-[1.03] active:scale-[0.98] transition-colors duration-200 animate-fade-in-up animation-delay-200"
+          <CtaLink
+            href="/book"
+            className="relative z-10 mt-4 sm:mt-5 lg:mt-[24px] animate-fade-in-up animation-delay-200"
           >
-            Shop Our Collection
-          </Link>
+            Book an Appointment
+          </CtaLink>
         </div>
 
         {/* Center: Hero Photo — moves slower on scroll (parallax) */}
@@ -77,15 +77,12 @@ export function ParallaxHero() {
         <div
           className="relative z-10 text-left lg:text-right pt-6 sm:pt-10 lg:pt-[268px] animate-fade-in-up animation-delay-300"
         >
-          <p className="font-['Inter',sans-serif] font-light italic text-[14px] sm:text-[16px] text-[#5B2121] mb-3">
-            Need to book an Appointment?
+          <p className="font-sans font-light italic text-[14px] sm:text-[16px] text-[#5B2121] mb-3">
+            Looking for lashes to take home?
           </p>
-          <Link
-            href="/book"
-            className="inline-flex items-center border-2 border-brand-brown text-brand-tan font-['Montserrat',sans-serif] font-semibold text-[15px] sm:text-[17px] px-6 sm:px-[39px] py-[10px] rounded-[3px] leading-[32px] hover:bg-brand-brown hover:text-white hover:scale-[1.03] active:scale-[0.98] transition-colors duration-200"
-          >
-            Book an Appointment
-          </Link>
+          <CtaLink href="#products" variant="outline">
+            Shop Our Collection
+          </CtaLink>
         </div>
       </div>
     </section>

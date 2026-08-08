@@ -14,17 +14,17 @@ export function IntakeQuestions({ form }: IntakeQuestionsProps) {
 
   return (
     <div>
-      <h2 className="font-['Playfair_Display',Georgia,serif] text-[24px] font-bold text-dark-brown mb-1">
+      <h2 className="font-display text-[24px] font-bold text-dark-brown mb-1">
         Pre-Appointment Questions
       </h2>
-      <p className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-charcoal mb-6">
+      <p className="font-sans text-[14px] text-charcoal mb-6">
         Help us prepare for your visit.
       </p>
 
       <div className="flex flex-col gap-6">
         {/* Extensions question */}
         <fieldset>
-          <legend className="text-dark-brown text-[13px] font-semibold font-['DM_Sans',system-ui,sans-serif] mb-3">
+          <legend className="text-dark-brown text-[13px] font-semibold font-sans mb-3">
             Have you ever had eyelash extensions before?
           </legend>
           <div className="flex gap-4">
@@ -37,7 +37,7 @@ export function IntakeQuestions({ form }: IntakeQuestionsProps) {
                 onChange={() => form.setValue("hasHadExtensions", true, { shouldValidate: true })}
                 checked={hasHadExtensions === true}
               />
-              <span className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-charcoal">
+              <span className="font-sans text-[14px] text-charcoal">
                 Yes
               </span>
             </label>
@@ -50,13 +50,13 @@ export function IntakeQuestions({ form }: IntakeQuestionsProps) {
                 onChange={() => form.setValue("hasHadExtensions", false, { shouldValidate: true })}
                 checked={hasHadExtensions === false}
               />
-              <span className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-charcoal">
+              <span className="font-sans text-[14px] text-charcoal">
                 No
               </span>
             </label>
           </div>
           {errors.hasHadExtensions && (
-            <p className="text-danger text-[12px] mt-1 font-['DM_Sans',system-ui,sans-serif]">
+            <p className="text-danger text-[12px] mt-1 font-sans">
               Please answer this question
             </p>
           )}
@@ -64,7 +64,7 @@ export function IntakeQuestions({ form }: IntakeQuestionsProps) {
 
         {/* Special occasion question */}
         <fieldset>
-          <legend className="text-dark-brown text-[13px] font-semibold font-['DM_Sans',system-ui,sans-serif] mb-3">
+          <legend className="text-dark-brown text-[13px] font-semibold font-sans mb-3">
             Is this for a special occasion?
           </legend>
           <div className="flex gap-4">
@@ -76,7 +76,7 @@ export function IntakeQuestions({ form }: IntakeQuestionsProps) {
                 onChange={() => form.setValue("isSpecialOccasion", true)}
                 checked={isSpecialOccasion === true}
               />
-              <span className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-charcoal">
+              <span className="font-sans text-[14px] text-charcoal">
                 Yes
               </span>
             </label>
@@ -88,7 +88,7 @@ export function IntakeQuestions({ form }: IntakeQuestionsProps) {
                 onChange={() => form.setValue("isSpecialOccasion", false)}
                 checked={isSpecialOccasion === false}
               />
-              <span className="font-['DM_Sans',system-ui,sans-serif] text-[14px] text-charcoal">
+              <span className="font-sans text-[14px] text-charcoal">
                 No
               </span>
             </label>
@@ -99,13 +99,13 @@ export function IntakeQuestions({ form }: IntakeQuestionsProps) {
           <div>
             <label
               htmlFor="occasionDetails"
-              className="text-dark-brown text-[12px] font-semibold font-['DM_Sans',system-ui,sans-serif] block mb-1"
+              className="text-dark-brown text-[12px] font-semibold font-sans block mb-1"
             >
               What occasion?
             </label>
             <input
               id="occasionDetails"
-              className="w-full bg-white border border-light-tan rounded-[4px] px-3 py-2.5 text-[14px] text-charcoal font-['DM_Sans',system-ui,sans-serif] placeholder:text-muted focus:outline-none focus:border-deep-brown transition-colors"
+              className="w-full bg-white border border-light-tan rounded-control px-3 py-2.5 text-[14px] text-charcoal font-sans placeholder:text-muted focus:outline-none focus:border-deep-brown transition-colors"
               placeholder="e.g., Wedding, Birthday, Prom"
               {...register("occasionDetails")}
             />

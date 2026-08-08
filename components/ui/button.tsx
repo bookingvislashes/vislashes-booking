@@ -9,21 +9,27 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = "primary", size = "md", className = "", children, disabled, ...props }, ref) => {
+    // Every variant carries a 2px border — transparent on the filled ones — so
+    // a solid and an outlined button of the same size are always the same
+    // height. Heights are explicit rather than derived from padding for the
+    // same reason: a button can never disagree with the input beside it.
     const base =
-      "inline-flex items-center justify-center font-['DM_Sans',system-ui,sans-serif] font-semibold rounded-[6px] transition-colors duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
+      "inline-flex items-center justify-center box-border font-sans font-semibold " +
+      "rounded-control border-2 transition-colors duration-150 cursor-pointer " +
+      "disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
-      primary: "bg-deep-brown text-white hover:bg-dark-brown",
+      primary: "bg-brand-brown text-white border-transparent hover:bg-text-brown",
       secondary:
-        "bg-transparent border-[1.5px] border-deep-brown text-deep-brown hover:bg-light-tan",
-      danger: "bg-danger text-white hover:bg-red-700",
-      ghost: "bg-transparent text-deep-brown hover:bg-light-tan",
+        "bg-transparent border-brand-brown text-text-brown hover:bg-brand-brown hover:text-white",
+      danger: "bg-danger text-white border-transparent hover:bg-[#A63528]",
+      ghost: "bg-transparent border-transparent text-text-brown hover:bg-light-tan",
     };
 
     const sizes = {
-      sm: "text-[12px] px-4 py-2",
-      md: "text-[14px] px-7 py-3",
-      lg: "text-[14px] px-8 py-3.5",
+      sm: "h-[36px] text-[12px] px-4",
+      md: "h-[48px] text-[14px] px-7",
+      lg: "h-[52px] text-[15px] px-8",
     };
 
     return (
