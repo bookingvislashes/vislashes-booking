@@ -70,21 +70,33 @@ export default function HomePage() {
               className="relative rounded-surface overflow-hidden min-h-[360px] sm:min-h-[460px] lg:h-[641px]"
               style={{ background: section.gradient }}
             >
-              {/* Photo — offset past edge, clipped by overflow:hidden */}
+              {/* Photo — on desktop it sits absolutely and bleeds past the
+                  edge, clipped by overflow:hidden. Below lg it is a normal
+                  full-width block stacked above the text.
+
+                  The per-section width and edge offset are passed as CSS
+                  variables and only consumed by `lg:` utilities. They used to
+                  be plain inline styles, which beat Tailwind at every
+                  breakpoint — so on tablet the photos rendered at 50% width
+                  and were shoved sideways by a `right: -8%` meant only for the
+                  desktop absolute layout. */}
               <div
                 className={`
                   relative lg:absolute lg:top-0 lg:bottom-0
-                  w-full lg:w-[40%] h-[240px] sm:h-[300px] lg:h-auto
-                  ${section.imagePosition === "left" ? "lg:left-0" : "lg:right-0"}
+                  w-full h-[240px] sm:h-[300px] lg:h-auto
+                  lg:w-[var(--img-w,40%)]
+                  ${
+                    section.imagePosition === "left"
+                      ? "lg:left-[var(--img-offset,0px)]"
+                      : "lg:right-[var(--img-offset,0px)]"
+                  }
                 `}
-                style={{
-                  ...(section.imageWidth ? { width: section.imageWidth } : {}),
-                  ...(section.imageEdgeOffset
-                    ? section.imagePosition === "right"
-                      ? { right: section.imageEdgeOffset }
-                      : { left: section.imageEdgeOffset }
-                    : {}),
-                }}
+                style={
+                  {
+                    "--img-w": section.imageWidth,
+                    "--img-offset": section.imageEdgeOffset,
+                  } as React.CSSProperties
+                }
               >
                 <Image
                   src={section.imageSrc}

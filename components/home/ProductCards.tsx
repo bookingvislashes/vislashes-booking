@@ -21,7 +21,9 @@ export function ProductCards() {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 lg:gap-[40px]">
+    // Three products, so a 2-column tablet grid always orphans one card on its
+    // own row. Going to 3 columns at md keeps the set on a single row.
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-[40px]">
       {products.map((product) => (
         <div key={product.name} className="group flex flex-col items-center">
           {/* Product Image */}

@@ -9,6 +9,13 @@ const nextConfig: NextConfig = {
     // Next 16 only serves qualities that are allow-listed here; the default
     // list is [75]. 90 is used for the photographic images.
     qualities: [75, 90],
+    // Optimized images were being sent with `max-age=0, must-revalidate`, so
+    // returning visitors re-fetched every photo on every page view. 30 days.
+    //
+    // NOTE: the cache key is the URL, so replacing a file in /public under the
+    // SAME name can serve the old version to repeat visitors for up to 30 days.
+    // When swapping in a new photo, give it a new filename.
+    minimumCacheTTL: 60 * 60 * 24 * 30,
   },
 };
 

@@ -23,7 +23,10 @@ export function Header() {
   }, [isOpen, setIsOpen]);
 
   return (
-    <header className="w-full px-4 sm:px-12 lg:px-[120px] pt-[27px] pb-[33px] flex items-center justify-between gap-3 max-w-[1440px] mx-auto">
+    // Tight horizontal padding until lg. At exactly 768px the nav, the Book
+    // CTA and the icons all become visible at once, and px-12 pushed the row
+    // past the viewport.
+    <header className="w-full px-4 sm:px-6 lg:px-[120px] pt-[27px] pb-[33px] flex items-center justify-between gap-3 max-w-[1440px] mx-auto">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-1 shrink-0">
         <Image
@@ -31,14 +34,14 @@ export function Header() {
           alt=""
           width={76}
           height={34}
-          className="h-[26px] sm:h-[34px] w-auto"
+          className="h-[26px] lg:h-[34px] w-auto"
         />
         <Image
           src="/images/logo-text.svg"
           alt="VIS Lashes"
           width={138}
           height={32}
-          className="h-[24px] sm:h-[32px] w-auto"
+          className="h-[24px] lg:h-[32px] w-auto"
         />
       </Link>
 
@@ -46,7 +49,7 @@ export function Header() {
       {/* Booking is the action that makes money, so it is a button rather than
           another link in the row — present on every page and every scroll
           position, and never mistaken for navigation. */}
-      <nav className="hidden md:flex items-center gap-[26px]">
+      <nav className="hidden md:flex items-center gap-4 lg:gap-[26px]">
         {[
           { label: "Home", href: "/" },
           { label: "Lash Products", href: "#products" },
@@ -55,7 +58,7 @@ export function Header() {
           <Link
             key={link.label}
             href={link.href}
-            className="font-sans font-medium text-[16px] text-nav-brown leading-[15px] tracking-[0.25px] hover:text-brand-brown transition-colors"
+            className="font-sans font-medium text-[15px] lg:text-[16px] text-nav-brown leading-[15px] tracking-[0.25px] whitespace-nowrap hover:text-brand-brown transition-colors"
           >
             {link.label}
           </Link>
