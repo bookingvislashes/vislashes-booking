@@ -25,7 +25,23 @@ export default function AdminLoginPage() {
     });
 
     if (authError) {
-      setError("Invalid email or password");
+      // Collapsing every failure into "invalid password" makes setup problems
+      // impossible to diagnose — an unconfirmed account and a wrong password
+      // looked identical. Surface the causes that have a different fix.
+      const reason = authError.message?.toLowerCase() ?? "";
+
+      if (reason.includes("not confirmed")) {
+        setError(
+          "This account exists but its email is not confirmed. In Supabase, open Authentication → Users and confirm it."
+        );
+      } else if (reason.includes("rate") || authError.status === 429) {
+        setError("Too many attempts. Wait a minute and try again.");
+      } else if (reason.includes("invalid login credentials")) {
+        setError("Invalid email or password.");
+      } else {
+        setError(authError.message || "Could not sign in.");
+      }
+
       setLoading(false);
       return;
     }
