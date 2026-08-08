@@ -131,6 +131,7 @@ export function Header() {
                             alt={item.name}
                             fill
                             className="object-cover"
+                            sizes="56px"
                           />
                         </div>
                         {/* Info */}

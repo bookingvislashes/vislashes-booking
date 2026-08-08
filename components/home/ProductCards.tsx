@@ -31,6 +31,8 @@ export function ProductCards() {
               alt={product.name}
               fill
               className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 373px"
+              quality={90}
             />
             {/* Add to Cart overlay on hover */}
             <button

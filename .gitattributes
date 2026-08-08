@@ -1,2 +1,21 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Never run line-ending normalization on binary assets. `text=auto` relies on
+# content sniffing to skip binaries; marking them explicitly guarantees images
+# and video are stored and checked out byte-for-byte on every platform.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.mp4 binary
+*.mov binary
+*.webm binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary

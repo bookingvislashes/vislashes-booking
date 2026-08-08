@@ -93,6 +93,7 @@ export default function HomePage() {
                   className="object-cover"
                   loading="lazy"
                   sizes="(max-width: 1024px) 100vw, 50vw"
+                  quality={90}
                   style={{
                     ...(section.flipImage ? { transform: "scaleX(-1)" } : {}),
                   }}

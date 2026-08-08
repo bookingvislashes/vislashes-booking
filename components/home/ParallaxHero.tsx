@@ -68,6 +68,7 @@ export function ParallaxHero() {
               className="object-cover"
               priority
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 360px, 509px"
+              quality={90}
             />
           </div>
         </div>
