@@ -1,5 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  supabaseUrl,
+  supabasePublicKey,
+  isSupabaseConfigured,
+} from "@/lib/supabase/env";
 
 export async function proxy(request: NextRequest) {
   // Only protect /admin routes
@@ -13,8 +18,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Skip auth if Supabase is not configured (local preview mode)
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+  if (!isSupabaseConfigured()) {
     return NextResponse.next();
   }
 
@@ -24,7 +28,7 @@ export async function proxy(request: NextRequest) {
 
   const supabase = createServerClient(
     supabaseUrl,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabasePublicKey,
     {
       cookies: {
         getAll() {

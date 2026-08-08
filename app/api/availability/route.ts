@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateTimeSlots } from "@/lib/availability";
 import { createServiceClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 /** Convert "10:00 AM" or "1:30 PM" to "10:00" or "13:30" */
 function to24Hour(time12: string): string {
@@ -24,8 +25,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Fallback when Supabase is not configured (local preview mode)
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+  if (!isSupabaseConfigured()) {
     const serviceDurations: Record<string, number> = {
       "svc-natural-glam": 110,
       "svc-premium-wispy": 110,
