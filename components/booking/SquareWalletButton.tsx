@@ -128,7 +128,10 @@ export function SquareWalletButton({
           type="button"
           onClick={handleApplePay}
           disabled={processing}
-          className="w-full h-[48px] bg-black text-white rounded-md font-semibold text-[15px] flex items-center justify-center gap-2 disabled:opacity-50"
+          // Black is an Apple Pay brand requirement, but the height and radius
+          // come from the control scale so it stacks flush with the card
+          // Button underneath it instead of being 6px-rounded next to 3px.
+          className="w-full h-control box-border bg-black text-white rounded-control font-sans font-semibold text-[15px] flex items-center justify-center gap-2 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg width="20" height="24" viewBox="0 0 20 24" fill="currentColor">
             <path d="M15.07 11.61c-.02-2.32 1.9-3.44 1.99-3.5-1.09-1.59-2.78-1.8-3.38-1.83-1.42-.15-2.81.85-3.54.85-.74 0-1.87-.83-3.08-.81-1.57.02-3.03.93-3.84 2.35-1.65 2.87-.42 7.1 1.17 9.43.79 1.14 1.72 2.42 2.94 2.37 1.19-.05 1.63-.76 3.07-.76 1.43 0 1.84.76 3.08.73 1.27-.02 2.07-1.15 2.84-2.3.91-1.31 1.28-2.6 1.29-2.66-.03-.01-2.49-.95-2.51-3.79l-.03.02z" />

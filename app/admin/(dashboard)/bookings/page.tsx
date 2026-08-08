@@ -56,6 +56,17 @@ export default function BookingsPage() {
     fetchBookings();
   }, [fetchBookings]);
 
+  // The slide-over is dismissable by clicking the scrim, which keyboard users
+  // cannot do. Escape gives them the same exit.
+  useEffect(() => {
+    if (!selectedBooking) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedBooking(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [selectedBooking]);
+
   // Realtime subscription for live updates
   useEffect(() => {
     const channel = supabase
@@ -110,12 +121,15 @@ export default function BookingsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+      {/* `shrink-0` on the chips is what makes `overflow-x-auto` mean anything.
+          Without it flex shrank all five chips to fit a narrow screen and the
+          row never became scrollable. */}
+      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
         {(["all", "confirmed", "completed", "cancelled", "no_show"] as const).map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
-            className={`px-4 py-1.5 rounded-full text-[12px] font-semibold font-sans whitespace-nowrap transition-colors cursor-pointer ${
+            className={`h-[32px] shrink-0 box-border inline-flex items-center justify-center px-4 rounded-full text-[12px] font-semibold font-sans whitespace-nowrap transition-colors ${
               statusFilter === status
                 ? "bg-deep-brown text-white"
                 : "bg-white text-charcoal border border-light-tan hover:bg-light-tan"
@@ -131,7 +145,7 @@ export default function BookingsPage() {
       </div>
 
       {/* Bookings list */}
-      <div className="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+      <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
         {loading ? (
           <div className="p-8 text-center">
             <p className="font-sans text-[14px] text-muted animate-pulse">
@@ -182,10 +196,16 @@ export default function BookingsPage() {
             className="absolute inset-0 bg-black/30"
             onClick={() => setSelectedBooking(null)}
           />
-          <div className="relative bg-white w-full max-w-md h-full overflow-y-auto p-5 sm:p-6 shadow-xl">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Booking details"
+            className="relative bg-white w-full max-w-md h-full overflow-y-auto p-5 sm:p-6 shadow-xl"
+          >
             <button
               onClick={() => setSelectedBooking(null)}
-              className="absolute top-4 right-4 text-muted hover:text-charcoal text-xl cursor-pointer"
+              aria-label="Close booking details"
+              className="absolute top-4 right-4 text-muted hover:text-charcoal text-xl"
             >
               &times;
             </button>
@@ -320,7 +340,7 @@ export default function BookingsPage() {
                   {selectedBooking.agreement.signature_data && (
                     <div>
                       <p className="text-[11px] text-muted mb-1">Signature</p>
-                      <div className="bg-cream rounded-md p-2 inline-block">
+                      <div className="bg-cream rounded-control p-2 inline-block">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={selectedBooking.agreement.signature_data}

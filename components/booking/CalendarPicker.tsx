@@ -127,7 +127,7 @@ export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
               type="button"
               disabled={isDisabled}
               onClick={() => handleDateSelect(day)}
-              className={`aspect-square flex items-center justify-center rounded-md text-[13px] font-sans transition-colors cursor-pointer ${
+              className={`aspect-square flex items-center justify-center rounded-control text-[13px] font-sans transition-colors ${
                 isSelected
                   ? "bg-deep-brown text-white"
                   : isDisabled
@@ -164,7 +164,7 @@ export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
                   key={slot}
                   type="button"
                   onClick={() => handleTimeSelect(slot)}
-                  className={`py-2.5 px-3 rounded-md text-[13px] font-semibold font-sans border transition-colors cursor-pointer ${
+                  className={`h-control box-border inline-flex items-center justify-center px-3 rounded-control text-[13px] font-semibold font-sans border transition-colors ${
                     selectedTime === slot
                       ? "bg-deep-brown text-white border-deep-brown"
                       : "bg-white text-charcoal border-light-tan hover:border-deep-brown"

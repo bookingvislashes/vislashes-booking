@@ -48,7 +48,7 @@ export default function ServicesPage() {
         <Button size="sm">Add Service</Button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+      <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
         {services.map((service) => (
           <div
             key={service.id}

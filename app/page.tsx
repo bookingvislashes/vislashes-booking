@@ -49,7 +49,7 @@ const featureSections = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-[100dvh] bg-cream">
       <Header />
 
       {/* Hero Section — parallax + mix-blend-difference */}
@@ -158,7 +158,7 @@ export default function HomePage() {
 
             {/* Social Media */}
             <div className="flex flex-col gap-[14px] mb-8 sm:mb-10 lg:mb-[40px]">
-              <p className="font-sans text-[14px] text-[#212121] leading-[24px]">
+              <p className="font-sans text-[14px] text-charcoal leading-[24px]">
                 Follow us on social media for the latest news!
               </p>
               <div className="flex items-center gap-8 sm:gap-10 lg:gap-[40px]">
@@ -193,10 +193,14 @@ export default function HomePage() {
 
             {/* Email Signup */}
             <div className="relative max-w-[327px]">
+              <label htmlFor="newsletter-email" className="sr-only">
+                Email Address
+              </label>
               <input
+                id="newsletter-email"
                 type="email"
                 placeholder="Email Address"
-                className="w-full h-[48px] px-4 pr-[72px] border-[0.8px] border-[#121212] rounded-control font-sans text-[14px] text-[#3f3f3f] leading-[24px] bg-transparent focus:outline-none focus:border-brand-brown"
+                className="w-full h-control box-border px-4 pr-[72px] border border-charcoal rounded-control font-sans text-[14px] text-charcoal leading-[24px] bg-transparent focus:outline-none focus:border-brand-brown"
               />
               <button
                 aria-label="Submit email"

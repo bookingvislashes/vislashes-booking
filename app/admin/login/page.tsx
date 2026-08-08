@@ -51,7 +51,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-6">
+    <div className="min-h-[100dvh] bg-cream flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="flex items-baseline justify-center gap-0.5 mb-2">
@@ -67,7 +67,7 @@ export default function AdminLoginPage() {
           </h1>
         </div>
 
-        <form onSubmit={handleLogin} className="bg-white rounded-lg p-6 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+        <form onSubmit={handleLogin} className="bg-white rounded-surface p-6 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
           <div className="flex flex-col gap-4">
             <Input
               id="email"

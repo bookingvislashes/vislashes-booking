@@ -173,7 +173,7 @@ export default function CalendarPage() {
       </h1>
 
       {/* Weekly Hours */}
-      <div className="bg-white rounded-lg p-4 sm:p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-8">
+      <div className="bg-white rounded-surface p-4 sm:p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-8">
         <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
           Weekly Hours
         </h2>
@@ -232,7 +232,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Blocked Dates */}
-      <div className="bg-white rounded-lg p-4 sm:p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+      <div className="bg-white rounded-surface p-4 sm:p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
         <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
           Blocked Dates
         </h2>
@@ -272,7 +272,7 @@ export default function CalendarPage() {
             {blockedDates.map((bd) => (
               <div
                 key={bd.id}
-                className="flex items-center justify-between py-2.5 px-3 bg-cream rounded-md"
+                className="flex items-center justify-between py-2.5 px-3 bg-cream rounded-control"
               >
                 <div className="min-w-0">
                   <span className="font-sans text-[14px] text-charcoal font-semibold">

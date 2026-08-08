@@ -11,7 +11,7 @@ export default async function ConfirmationPage({ params }: ConfirmationPageProps
   // For now, show a generic confirmation
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-6">
+    <div className="min-h-[100dvh] bg-cream flex items-center justify-center px-6">
       <div className="max-w-md w-full text-center">
         {/* Success checkmark */}
         <div className="w-16 h-16 mx-auto mb-6 bg-success/15 rounded-full flex items-center justify-center animate-[scale-in_300ms_ease-out]">
@@ -34,7 +34,7 @@ export default async function ConfirmationPage({ params }: ConfirmationPageProps
         </p>
 
         {/* Booking reference */}
-        <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-8">
+        <div className="bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-8">
           <p className="font-sans text-[12px] text-muted mb-1">
             Booking Reference
           </p>

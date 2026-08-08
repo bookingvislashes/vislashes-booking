@@ -10,7 +10,12 @@
   --color-light-tan: #E8DDD0;
   --color-success: #4A7C59;
   --color-danger: #C44536;
-  --color-muted: #9A9A9A;
+  --color-danger-dark: #A63528;
+  /* Was #9A9A9A, which is 2.5:1 on cream and 2.8:1 on white — below AA for
+     any text size. `text-muted` carries most of the secondary copy on the
+     site (prices, durations, field hints, empty states), so it has to clear
+     4.5:1. This warm grey is 4.9:1 on cream and 5.4:1 on white. */
+  --color-muted: #6E6A63;
 
   /* Figma-specific browns */
   --color-brand-brown: #A4846A;
@@ -29,6 +34,40 @@
      the input it sits beside can never disagree; surfaces are the softer one. */
   --radius-control: 3px;
   --radius-surface: 8px;
+
+  /* Control heights. Buttons, inputs and any hand-rolled control pull from
+     these so a row of mixed controls can never disagree. */
+  --spacing-control-sm: 36px;
+  --spacing-control: 48px;
+  --spacing-control-lg: 52px;
+
+  /* Entrance animations. These were referenced by the hero (`animate-fade-in-up`)
+     but never defined, so the utility compiled to nothing and the hero simply
+     popped in. */
+  --animate-fade-in-up: fade-in-up 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-scale-in: scale-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @layer base {
@@ -43,6 +82,15 @@
     color: var(--color-dark-brown);
   }
 
+  /* Tailwind v4's preflight drops the `cursor: pointer` v3 gave buttons, so
+     the codebase had been re-adding `cursor-pointer` per component — and
+     missed roughly half of them (every header icon, every modal close). One
+     rule instead of thirty class names. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
   /* The site previously killed focus outlines on inputs and replaced them with
      a border colour change, which is invisible to anyone tabbing through. This
      restores a real, brand-tinted focus ring on every interactive element. */
@@ -50,6 +98,22 @@
     outline: 2px solid var(--color-deep-brown);
     outline-offset: 2px;
     border-radius: var(--radius-control);
+  }
+
+  /* Individual components opt out of their own transitions with
+     `motion-reduce:`, but the entrance animations and the scroll-reveal are
+     driven from CSS and JS respectively and need a blanket guard. Elements
+     land in their final state instead of never arriving. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 

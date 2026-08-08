@@ -26,7 +26,7 @@ export default function SettingsPage() {
       </h1>
 
       {/* Scheduling Settings */}
-      <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
+      <div className="bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
         <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
           Scheduling
         </h2>
@@ -56,7 +56,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Business Info */}
-      <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
+      <div className="bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
         <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
           Business Information
         </h2>
@@ -87,7 +87,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Google Calendar */}
-      <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
+      <div className="bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
         <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
           Google Calendar
         </h2>

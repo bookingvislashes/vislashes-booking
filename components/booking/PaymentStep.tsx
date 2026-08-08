@@ -96,7 +96,7 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
       </p>
 
       {/* Booking summary */}
-      <div className="bg-light-tan rounded-lg p-5 mb-6">
+      <div className="bg-light-tan rounded-surface p-5 mb-6">
         <h3 className="font-display text-[16px] font-bold text-dark-brown mb-3">
           Booking Summary
         </h3>
@@ -130,7 +130,7 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
       </div>
 
       {/* Deposit highlight */}
-      <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-4">
+      <div className="bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-4">
         <p className="font-sans text-[22px] font-bold text-deep-brown text-center">
           ${depositAmount.toFixed(2)} <span className="text-[14px] font-normal text-muted">due today</span>
         </p>
@@ -140,7 +140,7 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
       </div>
 
       {/* Cash option */}
-      <label className="flex items-center gap-3 cursor-pointer mb-6 p-3 rounded-md border border-light-tan bg-white">
+      <label className="flex items-center gap-3 cursor-pointer mb-6 p-3 rounded-control border border-light-tan bg-white">
         <input
           type="checkbox"
           className="accent-deep-brown w-4 h-4"
@@ -154,7 +154,7 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
 
       {/* Error message */}
       {error && (
-        <div className="bg-danger/10 border border-danger/30 rounded-md p-3 mb-4">
+        <div className="bg-danger/10 border border-danger/30 rounded-control p-3 mb-4">
           <p className="font-sans text-[13px] text-danger">
             {error}
           </p>

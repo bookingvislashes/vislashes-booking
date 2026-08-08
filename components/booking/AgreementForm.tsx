@@ -145,7 +145,7 @@ export function AgreementForm({ form }: AgreementFormProps) {
             ref={sigRef}
             onEnd={handleSignatureEnd}
             canvasProps={{
-              className: "sig-canvas w-full bg-white rounded-lg border border-light-tan",
+              className: "sig-canvas w-full bg-white rounded-surface border border-light-tan",
               height: 200,
             }}
           />

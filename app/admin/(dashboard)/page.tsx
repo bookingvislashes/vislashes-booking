@@ -88,7 +88,7 @@ export default function AdminDashboard() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+        <div className="bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
           <p className="font-sans text-[12px] text-muted font-semibold uppercase tracking-wider mb-1">
             Today&apos;s Bookings
           </p>
@@ -96,7 +96,7 @@ export default function AdminDashboard() {
             {loading ? "—" : todaysBookings.length}
           </p>
         </div>
-        <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+        <div className="bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
           <p className="font-sans text-[12px] text-muted font-semibold uppercase tracking-wider mb-1">
             This Month
           </p>
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
             {loading ? "—" : monthCount}
           </p>
         </div>
-        <div className="bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+        <div className="bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
           <p className="font-sans text-[12px] text-muted font-semibold uppercase tracking-wider mb-1">
             Total Clients
           </p>
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Today's schedule */}
-      <div className="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+      <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
         <div className="flex items-center justify-between p-5 border-b border-light-tan">
           <h2 className="font-display text-[18px] font-bold text-dark-brown">
             Today&apos;s Schedule

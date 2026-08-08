@@ -49,7 +49,7 @@ export function ParallaxHero() {
           </h1>
           <CtaLink
             href="/book"
-            className="relative z-10 mt-4 sm:mt-5 lg:mt-[24px] animate-fade-in-up animation-delay-200"
+            className="relative z-10 mt-4 sm:mt-5 lg:mt-[24px] animate-fade-in-up [animation-delay:200ms]"
           >
             Book an Appointment
           </CtaLink>
@@ -82,9 +82,9 @@ export function ParallaxHero() {
 
         {/* Right: Book CTA */}
         <div
-          className="relative z-10 text-left lg:text-right pt-6 sm:pt-10 lg:pt-[268px] animate-fade-in-up animation-delay-300"
+          className="relative z-10 text-left lg:text-right pt-6 sm:pt-10 lg:pt-[268px] animate-fade-in-up [animation-delay:300ms]"
         >
-          <p className="font-sans font-light italic text-[14px] sm:text-[16px] text-[#5B2121] mb-3">
+          <p className="font-sans font-light italic text-[14px] sm:text-[16px] text-dark-brown mb-3">
             Looking for lashes to take home?
           </p>
           <CtaLink href="#products" variant="outline">

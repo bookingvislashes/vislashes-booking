@@ -105,7 +105,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-[100dvh] bg-cream">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-[200px] bg-white border-r border-light-tan p-4">
         <div className="flex items-baseline gap-0.5 mb-8 px-2">
@@ -130,7 +130,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-sans transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2 rounded-control text-[13px] font-sans transition-colors ${
                   isActive
                     ? "bg-deep-brown/10 text-deep-brown font-semibold border-l-[3px] border-deep-brown"
                     : "text-charcoal hover:bg-light-tan"

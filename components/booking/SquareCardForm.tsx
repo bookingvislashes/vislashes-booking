@@ -118,7 +118,7 @@ export function SquareCardForm({
     <div>
       <div
         id="square-card-container"
-        className="min-h-[90px] rounded-md border border-light-tan"
+        className="min-h-[90px] rounded-control border border-light-tan"
       />
       <Button
         type="button"

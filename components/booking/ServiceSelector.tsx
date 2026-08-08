@@ -36,14 +36,19 @@ export function ServiceSelector({ form, services }: ServiceSelectorProps) {
     return (
       <button
         type="button"
+        aria-pressed={isSelected}
         onClick={() => form.setValue("serviceId", service.id, { shouldValidate: true })}
-        className={`text-left bg-white rounded-lg p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] border-2 transition-all duration-200 cursor-pointer ${
+        // `flex flex-col` + `mt-auto` on the price row. The grid already
+        // stretched the cards to equal height, but the price and duration
+        // stopped wherever the description ended, so across a row they sat at
+        // three different heights. Now they pin to the bottom edge.
+        className={`flex flex-col h-full text-left bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] border-2 transition-[border-color,box-shadow] duration-200 motion-reduce:transition-none ${
           isSelected
             ? "border-deep-brown shadow-[0_2px_8px_rgba(139,111,71,0.2)]"
             : "border-transparent hover:border-light-tan"
         }`}
       >
-        <div className="w-full h-24 bg-light-tan rounded-md mb-3" />
+        <div className="w-full h-24 bg-light-tan rounded-control mb-3" />
         <h4 className="font-display text-[15px] font-bold text-dark-brown mb-1">
           {service.name}
         </h4>
@@ -52,7 +57,7 @@ export function ServiceSelector({ form, services }: ServiceSelectorProps) {
             {service.description}
           </p>
         )}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-auto pt-1">
           <span className="font-sans text-[15px] font-semibold text-deep-brown">
             ${service.price.toFixed(2)}
           </span>

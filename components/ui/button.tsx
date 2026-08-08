@@ -22,14 +22,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       primary: "bg-brand-brown text-white border-transparent hover:bg-text-brown",
       secondary:
         "bg-transparent border-brand-brown text-text-brown hover:bg-brand-brown hover:text-white",
-      danger: "bg-danger text-white border-transparent hover:bg-[#A63528]",
+      danger: "bg-danger text-white border-transparent hover:bg-danger-dark",
       ghost: "bg-transparent border-transparent text-text-brown hover:bg-light-tan",
     };
 
+    // Heights come from the shared control scale in globals.css, so a button,
+    // an input and a hand-rolled control can never drift apart.
     const sizes = {
-      sm: "h-[36px] text-[12px] px-4",
-      md: "h-[48px] text-[14px] px-7",
-      lg: "h-[52px] text-[15px] px-8",
+      sm: "h-control-sm text-[12px] px-4",
+      md: "h-control text-[14px] px-7",
+      lg: "h-control-lg text-[15px] px-8",
     };
 
     return (

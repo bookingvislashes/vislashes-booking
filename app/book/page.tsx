@@ -110,7 +110,7 @@ export default async function BookPage() {
   const services = await getServices();
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-[100dvh] bg-cream">
       <Header />
       <main className="max-w-[640px] mx-auto px-6 py-8">
         <BookingFlow services={services} />

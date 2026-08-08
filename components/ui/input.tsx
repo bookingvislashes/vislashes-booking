@@ -22,7 +22,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           id={id}
-          className={`w-full h-[48px] box-border bg-white border border-light-tan rounded-control px-3 text-[14px] text-charcoal font-sans placeholder:text-muted focus:border-deep-brown transition-colors ${error ? "border-danger" : ""} ${className}`}
+          className={`w-full h-control box-border bg-white border border-light-tan rounded-control px-3 text-[14px] text-charcoal font-sans placeholder:text-muted focus:border-deep-brown transition-colors ${error ? "border-danger" : ""} ${className}`}
+          aria-invalid={error ? true : undefined}
           {...props}
         />
         {error && (

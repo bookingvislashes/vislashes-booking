@@ -44,7 +44,7 @@ export default function ClientsPage() {
       />
 
       {/* Client list */}
-      <div className="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+      <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
         {filtered.length === 0 ? (
           <div className="p-8 text-center">
             <p className="font-sans text-[14px] text-muted">

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useCart } from "@/lib/cart-context";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const products = [
   { name: "Chemistry", price: "$15", image: "/images/product-lash.png" },
@@ -14,10 +14,15 @@ export function ProductCards() {
   const { addItem } = useCart();
   const [addedProduct, setAddedProduct] = useState<string | null>(null);
 
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => () => clearTimeout(resetTimer.current), []);
+
   const handleAdd = (product: (typeof products)[number]) => {
     addItem(product);
     setAddedProduct(product.name);
-    setTimeout(() => setAddedProduct(null), 1200);
+    clearTimeout(resetTimer.current);
+    resetTimer.current = setTimeout(() => setAddedProduct(null), 1200);
   };
 
   return (
@@ -36,10 +41,15 @@ export function ProductCards() {
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 373px"
               quality={90}
             />
-            {/* Add to Cart overlay on hover */}
+            {/* Add to Cart. Sits open by default and only becomes a
+                slide-up-on-hover affordance where a real pointer exists —
+                Tailwind v4 gates `group-hover` behind `@media (hover: hover)`,
+                so the old hover-only version left the button parked off-screen
+                on every touch device and there was no way to add to cart at
+                all. `group-focus-within` does the same job for the keyboard. */}
             <button
               onClick={() => handleAdd(product)}
-              className="absolute inset-x-0 bottom-0 h-[48px] bg-brand-brown/95 text-white font-sans font-semibold text-[14px] translate-y-full group-hover:translate-y-0 transition-transform duration-300 motion-reduce:transition-none cursor-pointer"
+              className="absolute inset-x-0 bottom-0 h-control bg-brand-brown/95 text-white font-sans font-semibold text-[14px] transition-transform duration-300 motion-reduce:transition-none [@media(hover:hover)]:translate-y-full [@media(hover:hover)]:group-hover:translate-y-0 [@media(hover:hover)]:group-focus-within:translate-y-0"
             >
               {addedProduct === product.name ? "Added!" : "Add to Cart"}
             </button>

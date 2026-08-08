@@ -13,7 +13,7 @@ export default function AgreementsPage() {
         Signed Agreements
       </h1>
 
-      <div className="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+      <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
         {agreements.map((agreement) => (
           <div
             key={agreement.id}

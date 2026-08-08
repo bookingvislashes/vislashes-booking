@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/lib/cart-context";
+import { CtaLink } from "@/components/ui/CtaLink";
 import { useRef, useEffect } from "react";
 
 export function Header() {
@@ -69,12 +70,9 @@ export function Header() {
       <div className="flex items-center gap-4 sm:gap-[28px] shrink-0">
         {/* Sits outside the nav so it survives the `hidden md:flex` collapse —
             on mobile the header otherwise offered no way to book at all. */}
-        <Link
-          href="/book"
-          className="inline-flex items-center justify-center box-border h-[40px] px-4 sm:px-5 rounded-control border-2 border-transparent bg-brand-brown text-white font-sans font-semibold text-[14px] sm:text-[15px] whitespace-nowrap hover:bg-text-brown transition-colors"
-        >
+        <CtaLink href="/book" size="sm" className="whitespace-nowrap">
           Book<span className="hidden sm:inline">&nbsp;Appointment</span>
-        </Link>
+        </CtaLink>
 
         {/* Search Icon */}
         <button aria-label="Search" className="text-nav-brown hover:text-brand-brown transition-colors">
@@ -203,7 +201,7 @@ export function Header() {
                         }, 0).toFixed(2)}
                       </span>
                     </div>
-                    <button className="w-full bg-brand-brown text-white font-sans font-semibold text-[14px] py-3 rounded-control hover:bg-text-brown transition-colors">
+                    <button className="w-full h-control inline-flex items-center justify-center bg-brand-brown text-white font-sans font-semibold text-[14px] rounded-control hover:bg-text-brown transition-colors cursor-pointer">
                       Checkout
                     </button>
                   </div>

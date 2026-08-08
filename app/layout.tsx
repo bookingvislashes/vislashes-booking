@@ -46,6 +46,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${sans.variable} ${display.variable}`}>
+      <head>
+        {/* The scroll-reveal sections render hidden and are unhidden by an
+            IntersectionObserver. With scripting off that observer never runs,
+            which silently costs the homepage its three feature sections. */}
+        <noscript>
+          <style>{`[data-reveal]{opacity:1!important;transform:none!important}`}</style>
+        </noscript>
+      </head>
       <body className="antialiased">
         <Providers>{children}</Providers>
         <Script src={squareSdkUrl} strategy="lazyOnload" />
