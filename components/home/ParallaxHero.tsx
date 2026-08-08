@@ -67,7 +67,14 @@ export function ParallaxHero() {
               fill
               className="object-cover"
               priority
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 360px, 509px"
+              // Deliberately overstated. `sizes` can only describe WIDTH, but
+              // this box is portrait (509x677) and the source is landscape
+              // (1200x901), so under object-cover the binding dimension is
+              // height. Declaring the true 509px makes the browser pick the
+              // 1080w candidate, which is only 811px tall and has to be scaled
+              // up 1.67x. Asking for 600px selects the 1200w candidate — the
+              // full source, 901px tall — cutting the upscale to 1.50x.
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 420px, 600px"
               quality={90}
             />
           </div>
