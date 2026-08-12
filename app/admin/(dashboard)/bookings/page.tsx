@@ -14,6 +14,7 @@ export default function BookingsPage() {
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const supabase = createClient();
 
   const fetchBookings = useCallback(async () => {
@@ -87,17 +88,53 @@ export default function BookingsPage() {
 
   const updateStatus = async (bookingId: string, newStatus: BookingStatus) => {
     setUpdating(true);
+    setActionError(null);
+
+    const booking = bookings.find((b) => b.id === bookingId);
+
     const { error } = await supabase
       .from("bookings")
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq("id", bookingId);
 
     if (error) {
+      // Was only console.error'd: the button flipped back to "Mark Complete"
+      // and the badge stayed put, so a failed update looked like a no-op.
       console.error("Failed to update booking:", error);
-    } else {
-      setSelectedBooking(null);
-      fetchBookings();
+      setActionError(error.message);
+      setUpdating(false);
+      return;
     }
+
+    // Visit history is recorded here rather than at booking time, so it counts
+    // appointments actually kept. Booking-time counting meant a client who
+    // booked and cancelled three times read as a three-visit regular, and
+    // last_visit_date held a date in the future.
+    if (newStatus === "completed" && booking?.client?.id) {
+      const { data: client } = await supabase
+        .from("clients")
+        .select("visit_count")
+        .eq("id", booking.client.id)
+        .maybeSingle();
+
+      const { error: visitError } = await supabase
+        .from("clients")
+        .update({
+          visit_count: (client?.visit_count ?? 0) + 1,
+          last_visit_date: booking.booking_date,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", booking.client.id);
+
+      // The booking status is already saved; a failed visit tally should not
+      // present as a failed completion.
+      if (visitError) {
+        console.error("Failed to record visit:", visitError);
+      }
+    }
+
+    setSelectedBooking(null);
+    fetchBookings();
     setUpdating(false);
   };
 
@@ -361,6 +398,14 @@ export default function BookingsPage() {
               {/* Action buttons */}
               {selectedBooking.status === "confirmed" && (
                 <div className="border-t border-light-tan pt-4 mt-1 flex flex-col gap-2">
+                  {actionError && (
+                    <p
+                      role="alert"
+                      className="font-sans text-[16px] text-danger font-semibold"
+                    >
+                      Couldn&apos;t update this booking — {actionError}
+                    </p>
+                  )}
                   <Button
                     variant="primary"
                     size="sm"

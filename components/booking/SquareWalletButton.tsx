@@ -19,7 +19,10 @@ export function SquareWalletButton({
   onSuccess,
   onError,
 }: SquareWalletButtonProps) {
-  const [available, setAvailable] = useState(false);
+  // Tracked separately: one shared "available" flag meant Apple Pay succeeding
+  // was indistinguishable from Google Pay succeeding.
+  const [applePayReady, setApplePayReady] = useState(false);
+  const [googlePayReady, setGooglePayReady] = useState(false);
   const [processing, setProcessing] = useState(false);
   const applePayRef = useRef<SquareApplePay | null>(null);
   const googlePayRef = useRef<SquareGooglePay | null>(null);
@@ -49,19 +52,23 @@ export function SquareWalletButton({
           const ap = await payments.applePay(paymentRequest);
           if (ap) {
             applePayRef.current = ap;
-            setAvailable(true);
+            setApplePayReady(true);
           }
         } catch {
           /* Apple Pay not available */
         }
 
-        // Try Google Pay
+        // Try Google Pay. The container is mounted unconditionally now — it
+        // used to sit behind `if (!available) return null`, so during this
+        // effect the component had rendered nothing, the ref was null, the
+        // guard below failed, and Google Pay never attached for anyone. Every
+        // Android and desktop-Chrome customer saw blank space.
         try {
           const gp = await payments.googlePay(paymentRequest);
           if (gp && googlePayContainerRef.current) {
             await gp.attach("#square-google-pay");
             googlePayRef.current = gp;
-            setAvailable(true);
+            setGooglePayReady(true);
           }
         } catch {
           /* Google Pay not available */
@@ -74,7 +81,14 @@ export function SquareWalletButton({
   }, [depositAmount, serviceName]);
 
   const processPayment = useCallback(
-    async (tokenResult: SquareTokenResult) => {
+    async (
+      tokenResult: SquareTokenResult,
+      // Which wallet actually tokenized. Previously every wallet payment was
+      // recorded as "apple_pay" by a setValue that ran after a navigation and
+      // so never executed at all — "google_pay" was never written to the
+      // database by any path.
+      walletKind: "apple_pay" | "google_pay"
+    ) => {
       if (tokenResult.status !== "OK" || !tokenResult.token) {
         onError(tokenResult.errors?.[0]?.message || "Tokenization failed");
         return;
@@ -94,7 +108,7 @@ export function SquareWalletButton({
             timeSlot: formData.timeSlot,
             customerEmail: formData.email,
             customerName: formData.fullName,
-            formData,
+            formData: { ...formData, paymentMethod: walletKind },
           }),
         });
         const data = await res.json();
@@ -116,17 +130,27 @@ export function SquareWalletButton({
     if (!applePayRef.current || processing) return;
     try {
       const result = await applePayRef.current.tokenize();
-      await processPayment(result);
+      await processPayment(result, "apple_pay");
     } catch {
       onError("Apple Pay cancelled or failed");
     }
   }, [processing, processPayment, onError]);
 
-  if (!available) return null;
+  // Google Pay had no handler at all: attach() rendered the button but nothing
+  // ever called tokenize(), so tapping it did nothing.
+  const handleGooglePay = useCallback(async () => {
+    if (!googlePayRef.current || processing) return;
+    try {
+      const result = await googlePayRef.current.tokenize();
+      await processPayment(result, "google_pay");
+    } catch {
+      onError("Google Pay cancelled or failed");
+    }
+  }, [processing, processPayment, onError]);
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      {applePayRef.current && (
+      {applePayReady && (
         <button
           type="button"
           onClick={handleApplePay}
@@ -143,7 +167,14 @@ export function SquareWalletButton({
           {processing ? "Processing..." : "Pay with Apple Pay"}
         </button>
       )}
-      <div id="square-google-pay" ref={googlePayContainerRef} />
+      {/* Always in the DOM so attach() can find it during init; hidden rather
+          than unmounted until Square confirms Google Pay is usable. */}
+      <div
+        id="square-google-pay"
+        ref={googlePayContainerRef}
+        onClick={handleGooglePay}
+        className={googlePayReady ? "" : "hidden"}
+      />
     </div>
   );
 }

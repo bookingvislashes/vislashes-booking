@@ -23,7 +23,14 @@ interface CalendarPickerProps {
 }
 
 export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  // Opens on the month of the date already chosen. This component remounts on
+  // every step change, so booking in October and pressing Back landed on the
+  // current month with the selection highlighted off-screen — and clicking any
+  // visible day to get oriented wiped the chosen time.
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const chosen = form.getValues("bookingDate");
+    return chosen ? new Date(`${chosen}T00:00:00`) : new Date();
+  });
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 

@@ -95,7 +95,15 @@ export function BookingFlow({ services }: BookingFlowProps) {
       case 5:
         return <MedicalForm form={form} />;
       case 6:
-        return <AgreementForm form={form} />;
+        return (
+          <AgreementForm
+            form={form}
+            depositAmount={
+              services.find((s) => s.id === form.getValues("serviceId"))
+                ?.deposit_amount ?? 0
+            }
+          />
+        );
       case 7:
         return <PaymentStep form={form} services={services} />;
       default:

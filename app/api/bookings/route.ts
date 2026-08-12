@@ -25,7 +25,11 @@ const cashBookingSchema = z.object({
   liabilityWaiverSigned: z.boolean(),
   termsAccepted: z.boolean(),
   signatureData: z.string().min(1),
-  paymentMethod: z.string(),
+  // z.string() accepted anything, including "square" — which produced a
+  // booking the dashboard labelled as card-paid with no Square payment behind
+  // it. This is the cash endpoint, so the value is fixed below regardless of
+  // what the client sends.
+  paymentMethod: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -37,7 +41,8 @@ export async function POST(req: NextRequest) {
 
     const result = await createBooking({
       supabase,
-      formData: data,
+      // Hard-coded rather than trusted: this route never takes a card.
+      formData: { ...data, paymentMethod: "cash" as const },
       depositPaid: false,
     });
 

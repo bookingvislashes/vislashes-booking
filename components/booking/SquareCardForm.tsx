@@ -105,7 +105,9 @@ export function SquareCardForm({
           timeSlot: formData.timeSlot,
           customerEmail: formData.email,
           customerName: formData.fullName,
-          formData,
+          // Stated explicitly rather than relying on whatever the form happened
+          // to hold — this component is only ever the card path.
+          formData: { ...formData, paymentMethod: "square" },
         }),
       });
       const data = await res.json();

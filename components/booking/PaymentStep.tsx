@@ -30,21 +30,17 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
 
   const depositAmount = selectedService?.deposit_amount ?? 0;
 
-  const handlePaymentSuccess = useCallback(
-    (bookingId: string) => {
-      form.setValue("paymentMethod", "square", { shouldValidate: true });
-      window.location.href = `/confirmation/${bookingId}`;
-    },
-    [form]
-  );
+  // These used to setValue("paymentMethod") before navigating away. By then the
+  // booking had already been written server-side, so the value never reached
+  // the database — the method is now sent with the request instead, by whichever
+  // component made it.
+  const handlePaymentSuccess = useCallback((bookingId: string) => {
+    window.location.href = `/confirmation/${bookingId}`;
+  }, []);
 
-  const handleWalletSuccess = useCallback(
-    (bookingId: string) => {
-      form.setValue("paymentMethod", "apple_pay", { shouldValidate: true });
-      window.location.href = `/confirmation/${bookingId}`;
-    },
-    [form]
-  );
+  const handleWalletSuccess = useCallback((bookingId: string) => {
+    window.location.href = `/confirmation/${bookingId}`;
+  }, []);
 
   const handlePaymentError = useCallback((message: string) => {
     setError(message);
@@ -65,12 +61,17 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
   const handleCashBooking = async () => {
     setLoading(true);
     setError(null);
-    form.setValue("paymentMethod", "cash", { shouldValidate: true });
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formValues),
+        // form.getValues() re-read here, with the method set explicitly.
+        // `formValues` is a snapshot taken at render, and setValue writes to
+        // the form store rather than that copy — so the old setValue above had
+        // no effect on what was posted and every cash booking was recorded as
+        // payment_method "square", which the admin then showed as the
+        // contradictory "Pending (Cash) ... via square".
+        body: JSON.stringify({ ...form.getValues(), paymentMethod: "cash" }),
       });
       const data = await res.json();
       if (data.bookingId) {
@@ -147,8 +148,11 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
           checked={isCash}
           onChange={(e) => setIsCash(e.target.checked)}
         />
+        {/* The $3 convenience fee was never charged, never recorded, and had
+            no column to live in — and the terms stated it as unconditional
+            while this said "or". Removed rather than half-promised. */}
         <span className="font-sans text-[13px] text-charcoal">
-          I will bring cash as payment or pay a $3 convenience fee
+          I will bring cash to my appointment
         </span>
       </label>
 

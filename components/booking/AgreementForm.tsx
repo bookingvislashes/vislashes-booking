@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { BookingFormData } from "@/lib/schemas";
 import { Modal } from "@/components/ui/modal";
@@ -8,6 +8,14 @@ import SignatureCanvas from "react-signature-canvas";
 
 interface AgreementFormProps {
   form: UseFormReturn<BookingFormData>;
+  /**
+   * The deposit actually charged for the selected service. The terms used to
+   * hardcode "$10" while the charge follows services.deposit_amount, which is
+   * editable in the admin — so raising a deposit to $15 left the client
+   * agreeing to $10 while Square took $15. That is the version of the terms
+   * they signed, and the one that would be produced in a chargeback.
+   */
+  depositAmount: number;
 }
 
 const WAIVER_TEXT = `LASH CONSENTS, RELEASE, AND WAIVER OF LIABILITY AGREEMENT
@@ -20,23 +28,42 @@ I release VIS Lashes, its owner, and its employees from any liability for injury
 
 I understand that results may vary and that VIS Lashes does not guarantee specific outcomes.`;
 
-const TERMS_TEXT = `TERMS AND CONDITIONS
+// Clause 6 previously promised PayPal, which does not exist anywhere in the
+// codebase and is not even a permitted value of bookings.payment_method — while
+// omitting Google Pay, which is offered. Clause 7 charged a $3 cash fee that
+// nothing collects and no column records.
+const buildTerms = (depositAmount: number) => `TERMS AND CONDITIONS
 
-1. A $10 non-refundable deposit is required to secure your appointment.
+1. A $${depositAmount.toFixed(2)} non-refundable deposit is required to secure your appointment.
 2. Cancellations must be made at least 24 hours before the scheduled appointment.
 3. Late cancellations or no-shows may forfeit the deposit.
 4. Please arrive with clean, makeup-free eyes.
 5. The remaining balance is due at the time of your appointment.
-6. We accept cash, credit/debit cards, Apple Pay, and PayPal.
-7. A $3 convenience fee applies to cash payments.
-8. Refills are recommended every 2-3 weeks.
-9. VIS Lashes is not responsible for improper aftercare by the client.
-10. By booking an appointment, you agree to these terms and conditions.`;
+6. We accept cash, credit/debit cards, Apple Pay, and Google Pay.
+7. Refills are recommended every 2-3 weeks.
+8. VIS Lashes is not responsible for improper aftercare by the client.
+9. By booking an appointment, you agree to these terms and conditions.`;
 
-export function AgreementForm({ form }: AgreementFormProps) {
+export function AgreementForm({ form, depositAmount }: AgreementFormProps) {
+  const TERMS_TEXT = buildTerms(depositAmount);
   const { register, setValue, formState: { errors } } = form;
   const sigRef = useRef<SignatureCanvas>(null);
   const [modalContent, setModalContent] = useState<{ title: string; text: string } | null>(null);
+
+  // Stepping Back unmounts this component, so returning to it showed an empty
+  // pad while signatureData still held the earlier PNG. The step then passed
+  // validation over a blank canvas — the customer either re-signed needlessly
+  // or continued believing nothing had been captured, while the old signature
+  // was written to the agreement. Restoring it keeps what they see and what
+  // gets stored in agreement.
+  useEffect(() => {
+    const saved = form.getValues("signatureData");
+    if (saved && sigRef.current) {
+      sigRef.current.fromDataURL(saved);
+    }
+    // Mount only: re-running would overwrite ink drawn since.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSignatureEnd = () => {
     if (sigRef.current) {

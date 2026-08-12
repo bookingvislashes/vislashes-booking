@@ -42,35 +42,60 @@ export async function createBooking({
   squarePaymentId,
 }: CreateBookingOptions) {
   // 1. Upsert client (find by email or create new)
-  const { data: existingClient } = await supabase
+  //
+  // Normalised before it is used as the lookup key. clients.email is a
+  // case-sensitive unique text column, so "Jane@Example.com" on a second visit
+  // did not match "jane@example.com" from the first — it passed the constraint
+  // and forked the client into a second row, resetting visit_count and
+  // splitting their history.
+  const email = formData.email.trim().toLowerCase();
+  const fullName = formData.fullName.trim();
+
+  // maybeSingle, not single: single returns an error for "no rows", which is
+  // the normal first-visit case, and it was indistinguishable from a genuine
+  // query failure being silently read as "new client" — then rejected by the
+  // unique constraint at insert, on the card path, after capture.
+  const { data: existingClient, error: lookupError } = await supabase
     .from("clients")
     .select("id, visit_count")
-    .eq("email", formData.email)
-    .single();
+    .eq("email", email)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw new Error(`Client lookup failed: ${lookupError.message}`);
+  }
 
   let clientId: string;
 
   if (existingClient) {
     clientId = existingClient.id;
-    await supabase
+    // This error was discarded while the insert branch below checked properly.
+    // A failed update was completely silent: the booking confirmed, but a
+    // corrected phone number never saved and the salon called the old one.
+    //
+    // visit_count and last_visit_date are deliberately not touched here — they
+    // used to be written at booking time, which counted bookings rather than
+    // appointments kept and recorded a future date as the last visit. They
+    // belong to the admin's status change to "completed".
+    const { error: updateError } = await supabase
       .from("clients")
       .update({
-        full_name: formData.fullName,
+        full_name: fullName,
         phone: formData.phone,
-        visit_count: existingClient.visit_count + 1,
-        last_visit_date: formData.bookingDate,
         updated_at: new Date().toISOString(),
       })
       .eq("id", clientId);
+
+    if (updateError) {
+      throw new Error(`Failed to update client: ${updateError.message}`);
+    }
   } else {
     const { data: newClient, error: clientError } = await supabase
       .from("clients")
       .insert({
-        full_name: formData.fullName,
-        email: formData.email,
+        full_name: fullName,
+        email,
         phone: formData.phone,
-        visit_count: 1,
-        last_visit_date: formData.bookingDate,
       })
       .select("id")
       .single();

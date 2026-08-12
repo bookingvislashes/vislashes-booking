@@ -24,8 +24,22 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Fallback when Supabase is not configured (local preview mode)
+  // Local preview only. In production this used to answer 200 with a
+  // fabricated Mon-Fri 09:00-17:00 week that ignored real hours, blocked dates
+  // and existing bookings — so one mistyped env var showed customers an
+  // invented calendar, and the POST then failed because /api/bookings has no
+  // equivalent fallback. Failing closed is the only safe behaviour.
   if (!isSupabaseConfigured()) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        "Availability requested but Supabase is not configured. Refusing to serve mock slots."
+      );
+      return NextResponse.json(
+        { error: "Booking is temporarily unavailable. Please try again shortly." },
+        { status: 503 }
+      );
+    }
+
     const serviceDurations: Record<string, number> = {
       "svc-natural-glam": 110,
       "svc-premium-wispy": 110,
@@ -50,14 +64,34 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = await createServiceClient();
 
-    // Fetch service duration
-    const { data: service } = await supabase
+    // Fetch service duration. The error used to be discarded and the duration
+    // defaulted to 110, so a deactivated or unknown service returned a full,
+    // confident slot list — spacing a 60-minute refill as a 110-minute job, or
+    // letting the customer complete seven steps and pay before hitting
+    // "Service not found" at insert time.
+    const { data: service, error: serviceError } = await supabase
       .from("services")
       .select("duration_minutes")
       .eq("id", serviceId)
-      .single();
+      .eq("is_active", true)
+      .maybeSingle();
 
-    const serviceDuration = service?.duration_minutes || 110;
+    if (serviceError) {
+      console.error("Availability: service lookup failed:", serviceError);
+      return NextResponse.json(
+        { error: "Failed to fetch availability" },
+        { status: 500 }
+      );
+    }
+
+    if (!service) {
+      return NextResponse.json(
+        { error: "That service is no longer available." },
+        { status: 404 }
+      );
+    }
+
+    const serviceDuration = service.duration_minutes;
 
     // Fetch recurring availability hours
     const { data: availability } = await supabase
@@ -95,10 +129,16 @@ export async function GET(req: NextRequest) {
 
     // Map blocked dates to the format generateTimeSlots expects
     // The function expects { blocked_date, start_time, end_time }
+    // Truncated to HH:mm to match the slot strings they are compared against.
+    // Postgres `time` arrives as "12:00:00", and "12:00" < "12:00:00" is true
+    // lexicographically — so the slot starting exactly when a partial block
+    // ended was treated as overlapping and silently dropped. Block 09:00-12:00
+    // and the 12:00 appointment disappeared while the salon was free. The same
+    // route already truncates booking times this way.
     const blockedForSlots = (blockedDates || []).map((b) => ({
       blocked_date: b.date as string,
-      start_time: b.start_time as string | null,
-      end_time: b.end_time as string | null,
+      start_time: b.start_time ? (b.start_time as string).substring(0, 5) : null,
+      end_time: b.end_time ? (b.end_time as string).substring(0, 5) : null,
     }));
 
     // Map bookings to { start_time, end_time } time ranges

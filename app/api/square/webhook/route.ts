@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WebhooksHelper } from "square";
+import { createServiceClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -38,19 +39,38 @@ export async function POST(req: NextRequest) {
 
   const event = JSON.parse(body);
 
-  // Log payment events for reconciliation
-  if (event.type === "payment.completed") {
-    console.log(
-      "Square payment completed:",
-      event.data?.object?.payment?.id
-    );
-  }
+  // Square emits payment.created and payment.updated. The old handler branched
+  // on "payment.completed", which Square does not send, so that branch was
+  // dead and only the second ever ran.
+  if (event.type === "payment.created" || event.type === "payment.updated") {
+    const payment = event.data?.object?.payment;
 
-  if (event.type === "payment.updated") {
-    console.log(
-      "Square payment updated:",
-      event.data?.object?.payment?.id
-    );
+    if (payment?.status === "COMPLETED" && payment.id) {
+      const supabase = await createServiceClient();
+      const { data: booking, error } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("square_payment_id", payment.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Webhook: booking lookup failed:", error);
+      } else if (!booking) {
+        // A completed payment with no booking behind it: money taken and
+        // nothing delivered. Loud, and with everything needed to find the
+        // customer in the Square dashboard.
+        console.error(
+          "ORPHAN PAYMENT — captured with no matching booking.",
+          {
+            paymentId: payment.id,
+            amount: payment.amount_money?.amount,
+            currency: payment.amount_money?.currency,
+            email: payment.buyer_email_address,
+            createdAt: payment.created_at,
+          }
+        );
+      }
+    }
   }
 
   return NextResponse.json({ received: true });
