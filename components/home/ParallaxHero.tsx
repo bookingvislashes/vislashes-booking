@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRef, useEffect } from "react";
 import { CtaLink } from "@/components/ui/CtaLink";
+import { PRODUCTS_ENABLED } from "@/lib/features";
 
 export function ParallaxHero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -42,8 +43,12 @@ export function ParallaxHero() {
       <div className="flex flex-col lg:flex-row items-start lg:justify-between lg:min-h-[720px]">
         {/* Left: Headline + CTA — h1 must NOT be in a stacking context for blend to work */}
         <div className="relative max-w-full lg:max-w-[562px] pt-2 sm:pt-4 lg:pt-[3px]">
+          {/* Heavier and larger on phones only. At 48px in the regular weight
+              a display serif's thin strokes were losing the fight with the
+              photo underneath it through mix-blend-difference; the desktop
+              sizes keep the lighter setting, which has room to breathe. */}
           <h1
-            className="relative z-10 font-display text-[48px] sm:text-[72px] lg:text-[98px] leading-[0.95] text-white mix-blend-difference animate-fade-in-up"
+            className="relative z-10 font-display font-bold sm:font-normal text-[60px] sm:text-[72px] lg:text-[98px] leading-[0.92] sm:leading-[0.95] tracking-[-0.5px] sm:tracking-normal text-white mix-blend-difference animate-fade-in-up"
           >
             Unlock Mesmerizing Beauty
           </h1>
@@ -80,17 +85,21 @@ export function ParallaxHero() {
           </div>
         </div>
 
-        {/* Right: Book CTA */}
-        <div
-          className="relative z-10 text-left lg:text-right pt-6 sm:pt-10 lg:pt-[268px] animate-fade-in-up [animation-delay:300ms]"
-        >
-          <p className="font-sans font-light italic text-[14px] sm:text-[16px] text-dark-brown mb-3">
-            Looking for lashes to take home?
-          </p>
-          <CtaLink href="#products" variant="outline">
-            Shop Our Collection
-          </CtaLink>
-        </div>
+        {/* Right: retail prompt. Hidden with the rest of the shop — it invited
+            customers to "take lashes home" and pointed at #products, a section
+            that no longer renders, so the button scrolled nowhere. */}
+        {PRODUCTS_ENABLED && (
+          <div
+            className="relative z-10 text-left lg:text-right pt-6 sm:pt-10 lg:pt-[268px] animate-fade-in-up [animation-delay:300ms]"
+          >
+            <p className="font-sans font-light italic text-[14px] sm:text-[16px] text-dark-brown mb-3">
+              Looking for lashes to take home?
+            </p>
+            <CtaLink href="#products" variant="outline">
+              Shop Our Collection
+            </CtaLink>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/lib/cart-context";
-import { CtaLink } from "@/components/ui/CtaLink";
 import { PRODUCTS_ENABLED } from "@/lib/features";
 import { useRef, useEffect } from "react";
 
@@ -25,9 +24,9 @@ export function Header() {
   }, [isOpen, setIsOpen]);
 
   return (
-    // Tight horizontal padding until lg. At exactly 768px the nav, the Book
-    // CTA and the icons all become visible at once, and px-12 pushed the row
-    // past the viewport.
+    // Tight horizontal padding until lg. At exactly 768px the nav and the
+    // icons become visible at once, and px-12 pushed the row past the
+    // viewport.
     <header className="w-full px-4 sm:px-6 lg:px-[120px] pt-[27px] pb-[33px] flex items-center justify-between gap-3 max-w-[1440px] mx-auto">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-1 shrink-0">
@@ -48,9 +47,6 @@ export function Header() {
       </Link>
 
       {/* Navigation Links */}
-      {/* Booking is the action that makes money, so it is a button rather than
-          another link in the row — present on every page and every scroll
-          position, and never mistaken for navigation. */}
       <nav className="hidden md:flex items-center gap-4 lg:gap-[26px]">
         {/* "Lash Products" anchors #products, which only exists while retail
             is on — it would otherwise be a link to nothing. */}
@@ -71,22 +67,15 @@ export function Header() {
         ))}
       </nav>
 
-      {/* Icons */}
+      {/* Icons
+          The Book CTA that used to sit here has gone. The header is not
+          sticky, so it scrolled away with the rest of the bar anyway, and it
+          sat directly above the hero's own "Book an Appointment" — the same
+          action twice within one screen. The hero keeps it.
+
+          The search button went with it: nothing was wired to it, and there
+          is no search on the site to reach. */}
       <div className="flex items-center gap-4 sm:gap-[28px] shrink-0">
-        {/* Sits outside the nav so it survives the `hidden md:flex` collapse —
-            on mobile the header otherwise offered no way to book at all. */}
-        <CtaLink href="/book" size="sm" className="whitespace-nowrap">
-          Book<span className="hidden sm:inline">&nbsp;Appointment</span>
-        </CtaLink>
-
-        {/* Search Icon */}
-        <button aria-label="Search" className="text-nav-brown hover:text-brand-brown transition-colors">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-        </button>
-
         {/* Cart Icon — hidden while retail is off; nothing can be added to it,
             so an empty cart would only be a dead end. */}
         {PRODUCTS_ENABLED && (
