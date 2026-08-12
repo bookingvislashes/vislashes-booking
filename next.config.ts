@@ -5,11 +5,22 @@ import type { NextConfig } from "next";
 // unchanged, which reads as "the deploy didn't land". The timestamp moves every
 // build, so the pair together always answers "is this new?".
 const commit = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local";
-const builtAt = new Date().toISOString().slice(0, 16).replace("T", " ");
+// Formatted in Eastern rather than UTC so the stamp reads in salon-local time.
+// `timeZoneName` resolves to EDT or EST on its own, so this stays correct across
+// the DST change without anything to remember in November.
+const builtAt = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+  timeZoneName: "short",
+}).format(new Date());
 
 const nextConfig: NextConfig = {
   env: {
-    NEXT_PUBLIC_BUILD_ID: `${commit} · ${builtAt} UTC`,
+    NEXT_PUBLIC_BUILD_ID: `${commit} · ${builtAt}`,
   },
   images: {
     // AVIF is not on by default (Next only ships image/webp). At a given
