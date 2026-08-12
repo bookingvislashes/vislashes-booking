@@ -1,95 +1,380 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
+import { createClient } from "@/lib/supabase/client";
+import type { Service } from "@/lib/supabase/types";
 
-interface Service {
-  id: string;
+type Draft = {
+  id?: string;
   name: string;
-  category: string;
-  price: number;
-  depositAmount: number;
-  durationMinutes: number;
-  isActive: boolean;
+  category: "full_set" | "refill";
+  price: string;
+  deposit_amount: string;
+  duration_minutes: string;
+  description: string;
+};
+
+const emptyDraft: Draft = {
+  name: "",
+  category: "full_set",
+  price: "",
+  deposit_amount: "",
+  duration_minutes: "",
+  description: "",
+};
+
+function toDraft(service: Service): Draft {
+  return {
+    id: service.id,
+    name: service.name,
+    category: service.category,
+    price: String(service.price),
+    deposit_amount: String(service.deposit_amount),
+    duration_minutes: String(service.duration_minutes),
+    description: service.description ?? "",
+  };
 }
 
-const demoServices: Service[] = [
-  { id: "1", name: "Natural Glam", category: "full_set", price: 50, depositAmount: 10, durationMinutes: 110, isActive: true },
-  { id: "2", name: "Premium Wispy Glam", category: "full_set", price: 55, depositAmount: 10, durationMinutes: 110, isActive: true },
-  { id: "3", name: "Premium Wispy Glam (Custom)", category: "full_set", price: 55, depositAmount: 10, durationMinutes: 110, isActive: true },
-  { id: "4", name: "Natural Glam Refill", category: "refill", price: 25, depositAmount: 10, durationMinutes: 60, isActive: true },
-  { id: "5", name: "Premium Wispy Glam Refill", category: "refill", price: 30, depositAmount: 10, durationMinutes: 60, isActive: true },
-  { id: "6", name: "Premium Wispy Glam Refill (Custom)", category: "refill", price: 30, depositAmount: 10, durationMinutes: 60, isActive: true },
-];
+function formatDuration(mins: number) {
+  const hrs = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (hrs && m) return `${hrs}h ${m}m`;
+  if (hrs) return `${hrs}h`;
+  return `${m}m`;
+}
 
 export default function ServicesPage() {
-  const [services, setServices] = useState(demoServices);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const toggleActive = (id: string) => {
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const supabase = createClient();
+
+  const fetchServices = useCallback(async () => {
+    const { data, error: queryError } = await supabase
+      .from("services")
+      .select("*")
+      .order("sort_order", { ascending: true });
+
+    if (queryError) {
+      setError(queryError.message);
+      setLoading(false);
+      return;
+    }
+    setError(null);
+    setServices((data || []) as Service[]);
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
+
+  const toggleActive = async (service: Service) => {
+    const next = !service.is_active;
+    // Optimistic, because the switch should feel instant — reverted below if
+    // the write is rejected, so the UI can never claim a state the database
+    // did not accept.
     setServices((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, isActive: !s.isActive } : s))
+      prev.map((s) => (s.id === service.id ? { ...s, is_active: next } : s))
     );
+
+    const { error: writeError } = await supabase
+      .from("services")
+      .update({ is_active: next })
+      .eq("id", service.id);
+
+    if (writeError) {
+      setServices((prev) =>
+        prev.map((s) =>
+          s.id === service.id ? { ...s, is_active: service.is_active } : s
+        )
+      );
+      setError(`Couldn't update ${service.name}: ${writeError.message}`);
+    }
   };
 
-  const formatDuration = (mins: number) => {
-    const hrs = Math.floor(mins / 60);
-    const m = mins % 60;
-    if (hrs && m) return `${hrs}h ${m}m`;
-    if (hrs) return `${hrs}h`;
-    return `${m}m`;
+  const saveDraft = async () => {
+    if (!draft) return;
+
+    const price = Number(draft.price);
+    const deposit = Number(draft.deposit_amount);
+    const duration = Number(draft.duration_minutes);
+
+    // Guarded here because these land in Square's charge amount and in the
+    // slot generator; a NaN or a negative would either mischarge or produce
+    // an unbookable service.
+    if (!draft.name.trim()) return setFormError("Give the service a name.");
+    if (!Number.isFinite(price) || price < 0)
+      return setFormError("Price must be a number.");
+    if (!Number.isFinite(deposit) || deposit < 0)
+      return setFormError("Deposit must be a number.");
+    if (deposit > price)
+      return setFormError("Deposit can't be more than the price.");
+    if (!Number.isInteger(duration) || duration <= 0)
+      return setFormError("Duration must be a whole number of minutes.");
+
+    setSaving(true);
+    setFormError(null);
+
+    const payload = {
+      name: draft.name.trim(),
+      category: draft.category,
+      price,
+      deposit_amount: deposit,
+      duration_minutes: duration,
+      description: draft.description.trim() || null,
+    };
+
+    const { error: writeError } = draft.id
+      ? await supabase.from("services").update(payload).eq("id", draft.id)
+      : await supabase.from("services").insert({
+          ...payload,
+          is_active: true,
+          // Appended to the end of the list rather than colliding on 0.
+          sort_order: services.length
+            ? Math.max(...services.map((s) => s.sort_order)) + 1
+            : 0,
+        });
+
+    setSaving(false);
+
+    if (writeError) {
+      setFormError(writeError.message);
+      return;
+    }
+
+    setDraft(null);
+    setLoading(true);
+    fetchServices();
   };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between gap-3 mb-6">
         <h1 className="font-display text-[28px] font-bold text-dark-brown">
           Services
         </h1>
-        <Button size="sm">Add Service</Button>
+        <Button
+          onClick={() => {
+            setFormError(null);
+            setDraft(emptyDraft);
+          }}
+        >
+          Add Service
+        </Button>
       </div>
 
-      <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-        {services.map((service) => (
-          <div
-            key={service.id}
-            className="flex items-center justify-between px-5 py-4 border-b border-light-tan last:border-b-0"
+      {error && (
+        <div
+          role="alert"
+          className="bg-white border border-danger/30 rounded-surface p-4 mb-4"
+        >
+          <p className="font-sans text-[16px] text-danger font-semibold">
+            {error}
+          </p>
+          <Button
+            variant="secondary"
+            className="mt-3"
+            onClick={() => {
+              setLoading(true);
+              setError(null);
+              fetchServices();
+            }}
           >
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <p className="font-sans text-[16px] font-semibold text-dark-brown">
-                  {service.name}
-                </p>
-                {!service.isActive && (
-                  <span className="text-[12px] font-semibold font-sans text-muted bg-muted/15 px-2 py-0.5 rounded-full">
-                    Inactive
-                  </span>
-                )}
-              </div>
-              <p className="font-sans text-[12px] text-muted">
-                {service.category === "full_set" ? "Full Set" : "Refill"} &middot;{" "}
-                {formatDuration(service.durationMinutes)} &middot; ${service.depositAmount} deposit
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="font-sans text-[16px] font-semibold text-deep-brown">
-                ${service.price.toFixed(2)}
-              </span>
-              <button
-                onClick={() => toggleActive(service.id)}
-                className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${
-                  service.isActive ? "bg-deep-brown" : "bg-muted/30"
-                }`}
+            Retry
+          </Button>
+        </div>
+      )}
+
+      <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+        {loading ? (
+          <div>
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
               >
-                <span
-                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                    service.isActive ? "translate-x-5" : "translate-x-0.5"
-                  }`}
-                />
+                <div className="h-[16px] w-[45%] rounded-control bg-light-tan/70 animate-pulse" />
+                <div className="h-[12px] w-[30%] rounded-control bg-light-tan/50 animate-pulse mt-2" />
+              </div>
+            ))}
+          </div>
+        ) : services.length === 0 && !error ? (
+          <div className="px-5 py-10 text-center">
+            <p className="font-sans text-[16px] text-charcoal font-semibold">
+              No services yet
+            </p>
+            <p className="font-sans text-[16px] text-muted mt-1">
+              Add one and it becomes bookable straight away.
+            </p>
+          </div>
+        ) : (
+          services.map((service) => (
+            <div
+              key={service.id}
+              className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setFormError(null);
+                  setDraft(toDraft(service));
+                }}
+                className="flex-1 min-w-0 text-left rounded-control transition-transform active:scale-[0.99]"
+              >
+                <span className="flex items-center gap-2 flex-wrap">
+                  <span className="font-sans text-[16px] font-semibold text-dark-brown">
+                    {service.name}
+                  </span>
+                  {!service.is_active && (
+                    <span className="text-[12px] font-semibold font-sans text-muted bg-muted/15 px-2.5 py-1 rounded-full">
+                      Inactive
+                    </span>
+                  )}
+                </span>
+                <span className="block font-sans text-[12px] text-muted mt-0.5">
+                  {service.category === "full_set" ? "Full Set" : "Refill"}{" "}
+                  &middot; {formatDuration(service.duration_minutes)} &middot; $
+                  {service.deposit_amount} deposit
+                </span>
               </button>
+              <div className="flex items-center gap-4 shrink-0">
+                <span className="font-sans text-[16px] font-semibold text-deep-brown tabular-nums">
+                  ${Number(service.price).toFixed(2)}
+                </span>
+                {/* The pill keeps its compact look; the pseudo-element extends
+                    the hit area to the 44px minimum without moving anything. */}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={service.is_active}
+                  aria-label={`${service.name} — ${
+                    service.is_active ? "active" : "inactive"
+                  }`}
+                  onClick={() => toggleActive(service)}
+                  className={`relative w-10 h-5 rounded-full transition-[background-color,transform] duration-150 active:scale-[0.94] before:absolute before:content-[''] before:-inset-x-1 before:-inset-y-3 ${
+                    service.is_active ? "bg-deep-brown" : "bg-muted/30"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                      service.is_active ? "translate-x-5" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <Modal
+        isOpen={draft !== null}
+        onClose={() => setDraft(null)}
+        title={draft?.id ? "Edit Service" : "Add Service"}
+      >
+        {draft && (
+          <div className="flex flex-col gap-4">
+            <Input
+              id="service-name"
+              label="Name"
+              value={draft.name}
+              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+            />
+
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="service-category"
+                className="text-dark-brown text-[12px] font-semibold font-sans"
+              >
+                Category
+              </label>
+              <select
+                id="service-category"
+                value={draft.category}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    category: e.target.value as Draft["category"],
+                  })
+                }
+                className="w-full h-control box-border bg-white border border-light-tan rounded-control px-3 text-[16px] md:text-[14px] text-charcoal font-sans focus:border-deep-brown transition-colors"
+              >
+                <option value="full_set">Full Set</option>
+                <option value="refill">Refill</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                id="service-price"
+                label="Price ($)"
+                type="number"
+                inputMode="decimal"
+                value={draft.price}
+                onChange={(e) => setDraft({ ...draft, price: e.target.value })}
+              />
+              <Input
+                id="service-deposit"
+                label="Deposit ($)"
+                type="number"
+                inputMode="decimal"
+                value={draft.deposit_amount}
+                onChange={(e) =>
+                  setDraft({ ...draft, deposit_amount: e.target.value })
+                }
+              />
+            </div>
+
+            <Input
+              id="service-duration"
+              label="Duration (minutes)"
+              type="number"
+              inputMode="numeric"
+              value={draft.duration_minutes}
+              onChange={(e) =>
+                setDraft({ ...draft, duration_minutes: e.target.value })
+              }
+            />
+
+            <Input
+              id="service-description"
+              label="Description (optional)"
+              value={draft.description}
+              onChange={(e) =>
+                setDraft({ ...draft, description: e.target.value })
+              }
+            />
+
+            {formError && (
+              <p role="alert" className="font-sans text-[16px] text-danger font-semibold">
+                {formError}
+              </p>
+            )}
+
+            <div className="flex gap-3 mt-1">
+              <Button onClick={saveDraft} disabled={saving}>
+                {saving ? "Saving..." : "Save"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setDraft(null)}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
-        ))}
-      </div>
+        )}
+      </Modal>
     </div>
   );
 }

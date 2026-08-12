@@ -117,6 +117,30 @@
   }
 }
 
+/* Printing an agreement. Everything is hidden and only the agreement panel is
+   promoted back, so the salon gets the document on its own rather than the
+   surrounding admin chrome. visibility rather than display keeps the element's
+   own layout intact while its ancestors stay collapsed. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-agreement,
+  .print-agreement * {
+    visibility: visible;
+  }
+
+  .print-agreement {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+    background: #fff;
+  }
+}
+
 /* Signature canvas */
 .sig-canvas {
   border: 1.5px solid var(--color-light-tan);

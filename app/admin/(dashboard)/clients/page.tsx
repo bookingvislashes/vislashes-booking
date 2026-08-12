@@ -1,32 +1,73 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+import type { Client } from "@/lib/supabase/types";
 
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  visitCount: number;
-  lastVisit: string;
+function initials(name: string) {
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase() || "?"
+  );
 }
 
-const demoClients: Client[] = [
-  { id: "1", name: "Sarah Johnson", email: "sarah@example.com", phone: "(407) 555-1234", visitCount: 5, lastVisit: "2026-02-25" },
-  { id: "2", name: "Maria Lopez", email: "maria@example.com", phone: "(321) 555-5678", visitCount: 3, lastVisit: "2026-02-20" },
-  { id: "3", name: "Ashley Williams", email: "ashley@example.com", phone: "(407) 555-9012", visitCount: 1, lastVisit: "2026-02-15" },
-  { id: "4", name: "Jessica Davis", email: "jessica@example.com", phone: "(321) 555-3456", visitCount: 8, lastVisit: "2026-02-28" },
-  { id: "5", name: "Emma Brown", email: "emma@example.com", phone: "(407) 555-7890", visitCount: 2, lastVisit: "2026-02-10" },
-];
+function formatLastVisit(value: string | null) {
+  if (!value) return "No visits yet";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return `Last: ${date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+}
 
 export default function ClientsPage() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const filtered = demoClients.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const supabase = createClient();
+
+  const fetchClients = useCallback(async () => {
+    const { data, error: queryError } = await supabase
+      .from("clients")
+      .select("*")
+      .order("last_visit_date", { ascending: false, nullsFirst: false });
+
+    if (queryError) {
+      setError(queryError.message);
+      setLoading(false);
+      return;
+    }
+    setError(null);
+    setClients((data || []) as Client[]);
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchClients();
+  }, [fetchClients]);
+
+  // Filtered in memory rather than round-tripping per keystroke: a single salon's
+  // client list is small, and this keeps typing instant with no debounce.
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter(
+      (c) =>
+        c.full_name?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.phone?.toLowerCase().includes(q)
+    );
+  }, [clients, search]);
 
   return (
     <div>
@@ -34,50 +75,93 @@ export default function ClientsPage() {
         Clients
       </h1>
 
-      {/* Search */}
+      {/* Search. focus:outline-none removed — it was overriding the brand focus
+          ring that globals.css deliberately restores. */}
       <input
         type="text"
-        placeholder="Search by name or email..."
+        aria-label="Search clients by name, email or phone"
+        placeholder="Search by name, email or phone..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full bg-white border border-light-tan rounded-control px-3 py-2.5 text-[16px] text-charcoal font-sans placeholder:text-muted focus:outline-none focus:border-deep-brown transition-colors mb-6"
+        className="w-full bg-white border border-light-tan rounded-control px-3 h-control box-border text-[16px] text-charcoal font-sans placeholder:text-muted focus:border-deep-brown transition-colors mb-6"
       />
 
-      {/* Client list */}
-      <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-        {filtered.length === 0 ? (
+      <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+        {loading ? (
+          <div>
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
+              >
+                <div className="w-10 h-10 rounded-full bg-light-tan/70 animate-pulse shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="h-[16px] w-[40%] rounded-control bg-light-tan/70 animate-pulse" />
+                  <div className="h-[12px] w-[55%] rounded-control bg-light-tan/50 animate-pulse mt-2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
           <div className="p-8 text-center">
-            <p className="font-sans text-[16px] text-muted">
-              No clients found
+            <p className="font-sans text-[16px] text-danger font-semibold">
+              Couldn&apos;t load clients
+            </p>
+            <p className="font-sans text-[16px] text-muted mt-1 leading-[1.5]">
+              {error}
+            </p>
+            <Button
+              variant="secondary"
+              className="mt-3"
+              onClick={() => {
+                setLoading(true);
+                setError(null);
+                fetchClients();
+              }}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-8 text-center">
+            <p className="font-sans text-[16px] text-charcoal font-semibold">
+              {clients.length === 0 ? "No clients yet" : "No matches"}
+            </p>
+            <p className="font-sans text-[16px] text-muted mt-1">
+              {clients.length === 0
+                ? "Anyone who books is added here automatically."
+                : `Nothing matching "${search.trim()}".`}
             </p>
           </div>
         ) : (
           filtered.map((client) => (
             <div
               key={client.id}
-              className="flex items-center justify-between px-5 py-4 border-b border-light-tan last:border-b-0"
+              className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-warm-beige/30 flex items-center justify-center">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-10 h-10 rounded-full bg-warm-beige/30 flex items-center justify-center shrink-0">
                   <span className="font-sans text-[16px] font-semibold text-deep-brown">
-                    {client.name.split(" ").map((n) => n[0]).join("")}
+                    {initials(client.full_name)}
                   </span>
                 </div>
-                <div>
-                  <p className="font-sans text-[16px] font-semibold text-dark-brown">
-                    {client.name}
+                <div className="min-w-0">
+                  <p className="font-sans text-[16px] font-semibold text-dark-brown truncate">
+                    {client.full_name}
                   </p>
-                  <p className="font-sans text-[16px] text-muted">
+                  {/* Long unbroken addresses were forcing the page sideways at
+                      375px before this truncated. */}
+                  <p className="font-sans text-[16px] text-muted truncate">
                     {client.email}
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-sans text-[16px] text-charcoal font-semibold">
-                  {client.visitCount} visits
+              <div className="text-right shrink-0">
+                <p className="font-sans text-[16px] text-charcoal font-semibold tabular-nums">
+                  {client.visit_count} {client.visit_count === 1 ? "visit" : "visits"}
                 </p>
-                <p className="font-sans text-[12px] text-muted">
-                  Last: {client.lastVisit}
+                <p className="font-sans text-[12px] text-muted whitespace-nowrap">
+                  {formatLastVisit(client.last_visit_date)}
                 </p>
               </div>
             </div>

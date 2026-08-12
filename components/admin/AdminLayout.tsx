@@ -197,6 +197,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           inherits readable body text rather than the browser default. */}
       <main className="md:ml-[200px] p-4 md:p-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6 max-w-[1100px] text-[16px]">
         {children}
+
+        {/* Same build stamp the public footer carries, so a deploy can be
+            confirmed from inside the admin without leaving it. */}
+        <p className="mt-10 font-sans text-[12px] tracking-[0.4px] text-muted/70 tabular-nums">
+          {process.env.NEXT_PUBLIC_BUILD_ID}
+        </p>
       </main>
 
       {/* Mobile bottom nav */}
