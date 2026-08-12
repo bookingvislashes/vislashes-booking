@@ -4,7 +4,12 @@ import type { NextConfig } from "next";
 // live. The SHA alone isn't enough: redeploying the same commit leaves it
 // unchanged, which reads as "the deploy didn't land". The timestamp moves every
 // build, so the pair together always answers "is this new?".
-const commit = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local";
+// Single source of truth is package.json, so bumping the footer is one edit.
+// A trailing ".0" patch is dropped ("1.5.0" reads as "v1.5") since the patch
+// digit is noise for a release like that — but a real one ("1.5.2") is kept.
+import { version } from "./package.json";
+
+const displayVersion = `v${version.replace(/\.0$/, "")}`;
 // Formatted in Eastern rather than UTC so the stamp reads in salon-local time.
 // `timeZoneName` resolves to EDT or EST on its own, so this stays correct across
 // the DST change without anything to remember in November.
@@ -20,7 +25,7 @@ const builtAt = new Intl.DateTimeFormat("en-US", {
 
 const nextConfig: NextConfig = {
   env: {
-    NEXT_PUBLIC_BUILD_ID: `${commit} · ${builtAt}`,
+    NEXT_PUBLIC_BUILD_ID: `${displayVersion} · ${builtAt}`,
   },
   images: {
     // AVIF is not on by default (Next only ships image/webp). At a given
