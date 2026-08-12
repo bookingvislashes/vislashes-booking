@@ -1,11 +1,20 @@
 import type { MetadataRoute } from "next";
 
+/**
+ * The public site's manifest, linked from every page Next renders.
+ *
+ * The admin has its own at public/admin.webmanifest, referenced from
+ * app/admin/layout.tsx. They were previously one file describing the admin, so
+ * a client adding the booking site to their home screen got an icon labelled
+ * "VIS Admin" that opened the staff login.
+ */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "VIS Lashes Admin",
-    short_name: "VIS Admin",
-    description: "Manage your VIS Lashes bookings, clients, and availability",
-    start_url: "/admin",
+    name: "VIS Lashes",
+    short_name: "VIS Lashes",
+    description:
+      "Book lash extensions with VIS Lashes — Orlando, Saint Cloud and Kissimmee.",
+    start_url: "/",
     display: "standalone",
     background_color: "#F7F3EE",
     theme_color: "#3D2B1F",
