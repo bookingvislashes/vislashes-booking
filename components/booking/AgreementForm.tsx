@@ -141,11 +141,21 @@ export function AgreementForm({ form }: AgreementFormProps) {
           <p className="text-dark-brown text-[12px] font-semibold font-sans mb-2">
             Digital Signature
           </p>
+          {/* clearOnResize defaults to true, and the library only skips its
+              resize handler when BOTH width and height are given. On a phone,
+              collapsing the address bar or opening the keyboard fires resize —
+              which wiped the drawn signature while signatureData kept the old
+              PNG, so the step passed validation over a visibly blank pad and a
+              waiver was stored that the client never saw themselves sign.
+              Fixing width alongside height also stops retina strokes in the
+              lower half falling outside the bitmap. */}
           <SignatureCanvas
             ref={sigRef}
             onEnd={handleSignatureEnd}
+            clearOnResize={false}
             canvasProps={{
               className: "sig-canvas w-full bg-white rounded-surface border border-light-tan",
+              width: 600,
               height: 200,
             }}
           />

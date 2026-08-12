@@ -43,6 +43,18 @@ export async function createPublicClient() {
 }
 
 export async function createServiceClient() {
+  // isSupabaseConfigured() only vouches for the URL and the public key, so a
+  // deployment missing just the secret key looks healthy everywhere else and
+  // then fails at the one place it matters: writing the booking. Empty keys
+  // reach PostgREST as an unauthenticated request and come back as a generic
+  // authorisation error that says nothing about the real cause.
+  if (!supabaseSecretKey) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY) is not set. " +
+        "Bookings cannot be written without it."
+    );
+  }
+
   const { createClient: createSupabaseClient } = await import(
     "@supabase/supabase-js"
   );

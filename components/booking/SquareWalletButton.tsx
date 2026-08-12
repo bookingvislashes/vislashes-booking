@@ -24,6 +24,8 @@ export function SquareWalletButton({
   const applePayRef = useRef<SquareApplePay | null>(null);
   const googlePayRef = useRef<SquareGooglePay | null>(null);
   const googlePayContainerRef = useRef<HTMLDivElement>(null);
+  // See SquareCardForm — stable per mount so a retry cannot double-charge.
+  const attemptIdRef = useRef<string>(crypto.randomUUID());
 
   useEffect(() => {
     const init = async () => {
@@ -86,7 +88,8 @@ export function SquareWalletButton({
             sourceId: tokenResult.token,
             serviceId,
             serviceName,
-            depositAmount,
+            attemptId: attemptIdRef.current,
+            // depositAmount deliberately omitted — server-authoritative.
             bookingDate: formData.bookingDate,
             timeSlot: formData.timeSlot,
             customerEmail: formData.email,
@@ -98,7 +101,7 @@ export function SquareWalletButton({
         if (data.bookingId) {
           onSuccess(data.bookingId);
         } else {
-          onError(data.error || "Payment failed");
+          onError(data.message || data.error || "Payment failed");
         }
       } catch {
         onError("Payment processing failed");

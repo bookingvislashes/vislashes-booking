@@ -24,6 +24,9 @@ export function SquareCardForm({
   const [cardReady, setCardReady] = useState(false);
   const cardRef = useRef<SquareCard | null>(null);
   const paymentsRef = useRef<SquarePayments | null>(null);
+  // One attempt id per mounted form. Square deduplicates on it, so pressing Pay
+  // again after a failed attempt settles on a single charge.
+  const attemptIdRef = useRef<string>(crypto.randomUUID());
 
   useEffect(() => {
     const init = async () => {
@@ -92,7 +95,12 @@ export function SquareCardForm({
           verificationToken,
           serviceId,
           serviceName,
-          depositAmount,
+          // Stable for the life of this form, so a retry after a failure
+          // reuses one Square idempotency key instead of charging twice.
+          attemptId: attemptIdRef.current,
+          // depositAmount deliberately not sent — the server reads it from
+          // the services table. It was previously trusted from here, so the
+          // charged amount was editable in devtools.
           bookingDate: formData.bookingDate,
           timeSlot: formData.timeSlot,
           customerEmail: formData.email,
@@ -104,7 +112,7 @@ export function SquareCardForm({
       if (data.bookingId) {
         onSuccess(data.bookingId);
       } else {
-        onError(data.error || "Payment failed. Please try again.");
+        onError(data.message || data.error || "Payment failed. Please try again.");
       }
     } catch (err) {
       console.error("Payment error:", err);
