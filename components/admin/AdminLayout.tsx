@@ -136,9 +136,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`flex items-center gap-3 px-3 py-2 min-h-[40px] rounded-control text-[13px] font-sans transition-[color,background-color,transform] duration-200 active:scale-[0.98] ${
+                // The 3px active border lives in the shared class as
+                // transparent, so the label doesn't jump sideways when the
+                // route changes — only the colour switches.
+                className={`flex items-center gap-3 px-3 py-2 min-h-control rounded-control border-l-[3px] border-transparent text-[13px] font-sans transition-[color,background-color,border-color,transform] duration-200 active:scale-[0.98] ${
                   isActive
-                    ? "bg-deep-brown/10 text-deep-brown font-semibold border-l-[3px] border-deep-brown"
+                    ? "bg-deep-brown/10 text-deep-brown font-semibold border-deep-brown"
                     : "text-charcoal hover:bg-light-tan"
                 }`}
               >
@@ -187,12 +190,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       {/* Main content. The bottom padding has to clear the fixed tab bar AND
           the home indicator, otherwise the last row of any list is
           permanently unreachable on an iPhone. */}
-      <main
-        className="md:ml-[200px] p-4 md:p-6 md:pb-6 max-w-[1100px]"
-        style={{
-          paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))",
-        }}
-      >
+      {/* As a Tailwind class rather than an inline style — inline wins at every
+          breakpoint, so md:pb-6 never applied and desktop carried the mobile
+          tab-bar clearance as dead space. */}
+      <main className="md:ml-[200px] p-4 md:p-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6 max-w-[1100px]">
         {children}
       </main>
 

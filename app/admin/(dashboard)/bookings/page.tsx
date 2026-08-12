@@ -261,7 +261,12 @@ export default function BookingsPage() {
                         Paid (${selectedBooking.deposit_amount?.toFixed(2)})
                       </span>
                     ) : (
-                      <span className="text-warning font-semibold">Pending (Cash)</span>
+                      // `text-warning` compiled to nothing — there is no
+                      // --color-warning token and Tailwind has no stock one —
+                      // so unpaid rendered in the same charcoal as body copy
+                      // while its paid sibling above went green. deep-brown is
+                      // the palette's existing "needs attention, not failed".
+                      <span className="text-deep-brown font-semibold">Pending (Cash)</span>
                     )}
                   </p>
                   <p className="text-[12px] text-muted mt-0.5">

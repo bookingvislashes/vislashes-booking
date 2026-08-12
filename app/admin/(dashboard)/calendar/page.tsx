@@ -32,6 +32,10 @@ export default function CalendarPage() {
   const [savingHours, setSavingHours] = useState(false);
   const [addingBlock, setAddingBlock] = useState(false);
   const [hoursSaved, setHoursSaved] = useState(false);
+  // Kept apart on purpose: a load failure means there is nothing safe to save,
+  // while a save failure must leave the button available to retry.
+  const [hoursError, setHoursError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -44,18 +48,18 @@ export default function CalendarPage() {
       .order("day_of_week", { ascending: true });
 
     if (error) {
+      // This used to substitute an invented Mon-Fri 09:00-17:00 week, which
+      // rendered indistinguishably from real data — and Save would then write
+      // that fiction over the salon's actual hours. Wrong opening hours drive
+      // wrong booking availability, so failing visibly is the only safe
+      // behaviour here.
       console.error("Failed to fetch hours:", error);
-      // Fallback to defaults
-      setHours(
-        dayNames.map((day, i) => ({
-          day,
-          dayOfWeek: i,
-          startTime: i >= 1 && i <= 5 ? "09:00" : "",
-          endTime: i >= 1 && i <= 5 ? "17:00" : "",
-          isActive: i >= 1 && i <= 5,
-        }))
-      );
+      setHoursError(error.message);
+      setHours([]);
+      setLoadingHours(false);
+      return;
     } else {
+      setHoursError(null);
       setHours(
         dayNames.map((day, i) => {
           const row = (data || []).find((r) => r.day_of_week === i);
@@ -114,15 +118,22 @@ export default function CalendarPage() {
         is_active: h.isActive,
       };
 
-      if (h.id) {
-        await supabase.from("availability").update(payload).eq("id", h.id);
-      } else {
-        await supabase.from("availability").upsert(
-          { ...payload },
-          { onConflict: "day_of_week" }
-        );
+      // Every write's error was discarded and "✓ Saved" shown unconditionally,
+      // so a total failure looked exactly like a success.
+      const { error } = h.id
+        ? await supabase.from("availability").update(payload).eq("id", h.id)
+        : await supabase
+            .from("availability")
+            .upsert({ ...payload }, { onConflict: "day_of_week" });
+
+      if (error) {
+        setSaveError(error.message);
+        setHoursSaved(false);
+        setSavingHours(false);
+        return;
       }
     }
+    setSaveError(null);
     setHoursSaved(true);
     setSavingHours(false);
     // Re-fetch to get IDs for any new rows
@@ -179,9 +190,35 @@ export default function CalendarPage() {
         </h2>
 
         {loadingHours ? (
-          <p className="font-sans text-[14px] text-muted animate-pulse">
-            Loading...
-          </p>
+          // Seven placeholder rows matching the real geometry, so the panel
+          // doesn't jump height when the data lands.
+          <div className="flex flex-col gap-3">
+            {dayNames.map((day) => (
+              <div key={day} className="flex items-center gap-3">
+                <div className="h-5 w-28 rounded-control bg-light-tan/70 animate-pulse shrink-0" />
+                <div className="h-control-sm flex-1 max-w-[220px] rounded-control bg-light-tan/50 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : hoursError ? (
+          <div className="py-6 text-center">
+            <p className="font-sans text-[14px] text-danger font-semibold">
+              Couldn&apos;t load your hours
+            </p>
+            <p className="font-sans text-[13px] text-muted mt-1 leading-[1.5]">
+              {hoursError}
+            </p>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setHoursError(null);
+                fetchHours();
+              }}
+              className="mt-3"
+            >
+              Retry
+            </Button>
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
             {hours.map((day, i) => (
@@ -219,16 +256,28 @@ export default function CalendarPage() {
           </div>
         )}
 
-        <div className="flex items-center gap-3 mt-4">
-          <Button size="sm" onClick={saveHours} disabled={savingHours}>
-            {savingHours ? "Saving..." : "Save Hours"}
-          </Button>
-          {hoursSaved && (
-            <span className="text-success text-[13px] font-sans font-semibold">
-              ✓ Saved
-            </span>
-          )}
-        </div>
+        {/* Hidden while hours failed to load — there is nothing trustworthy to
+            save, and pressing it would overwrite real rows with an empty set. */}
+        {!hoursError && (
+          <div className="flex items-center gap-3 mt-4 flex-wrap">
+            <Button onClick={saveHours} disabled={savingHours || loadingHours}>
+              {savingHours ? "Saving..." : "Save Hours"}
+            </Button>
+            {hoursSaved && !saveError && (
+              <span className="text-success text-[13px] font-sans font-semibold">
+                ✓ Saved
+              </span>
+            )}
+            {saveError && (
+              <span
+                role="alert"
+                className="text-danger text-[13px] font-sans font-semibold"
+              >
+                Couldn&apos;t save hours — {saveError}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Blocked Dates */}

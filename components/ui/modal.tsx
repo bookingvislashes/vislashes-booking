@@ -19,7 +19,17 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     // Whatever had focus before the dialog opened gets it back on close,
     // otherwise focus falls to <body> and keyboard users lose their place.
     const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    // iOS Safari ignores `overflow: hidden` on body — the page rubber-bands
+    // under the dimmer and ends up scrolled somewhere else once the dialog
+    // closes. Pinning the body at a negative offset is what actually holds it,
+    // at the cost of having to restore the position by hand below.
+    const scrollY = window.scrollY;
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+
     panelRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -52,6 +62,12 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      // Before restoring focus — focusing an element first would scroll it into
+      // view and fight the position we are about to set.
+      window.scrollTo(0, scrollY);
       previouslyFocused?.focus();
     };
   }, [isOpen, onClose]);
@@ -67,7 +83,10 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className="relative bg-white rounded-surface shadow-lg max-w-lg w-full max-h-[85vh] overflow-y-auto p-6"
+        // dvh, not vh: iOS measures vh against the large viewport, so with the
+        // toolbar showing the bottom of the panel — usually the submit button —
+        // sits below the fold with no way to reach it.
+        className="relative bg-white rounded-surface shadow-lg max-w-lg w-full max-h-[85dvh] overflow-y-auto overscroll-contain p-6"
       >
         {title && (
           <h3
@@ -79,7 +98,9 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         )}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-muted hover:text-charcoal text-xl leading-none"
+          // The glyph stays put optically; the hit box grows outward from
+          // ~20px to the 44px minimum by moving the anchor in and padding out.
+          className="absolute top-2 right-2 w-11 h-11 inline-flex items-center justify-center rounded-control text-muted hover:text-charcoal active:bg-light-tan transition-colors text-xl leading-none"
           aria-label="Close"
         >
           &times;
