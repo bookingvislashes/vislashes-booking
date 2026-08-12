@@ -20,7 +20,7 @@ export default function AgreementsPage() {
             className="flex items-center justify-between px-5 py-4 border-b border-light-tan last:border-b-0"
           >
             <div>
-              <p className="font-sans text-[14px] font-semibold text-dark-brown">
+              <p className="font-sans text-[16px] font-semibold text-dark-brown">
                 {agreement.clientName}
               </p>
               <p className="font-sans text-[12px] text-muted">
@@ -28,23 +28,23 @@ export default function AgreementsPage() {
               </p>
               <div className="flex gap-2 mt-1">
                 {agreement.filming && (
-                  <span className="text-[10px] font-semibold font-sans text-deep-brown bg-deep-brown/10 px-2 py-0.5 rounded-full">
+                  <span className="text-[12px] font-semibold font-sans text-deep-brown bg-deep-brown/10 px-2 py-0.5 rounded-full">
                     Filming
                   </span>
                 )}
                 {agreement.waiver && (
-                  <span className="text-[10px] font-semibold font-sans text-deep-brown bg-deep-brown/10 px-2 py-0.5 rounded-full">
+                  <span className="text-[12px] font-semibold font-sans text-deep-brown bg-deep-brown/10 px-2 py-0.5 rounded-full">
                     Waiver
                   </span>
                 )}
                 {agreement.terms && (
-                  <span className="text-[10px] font-semibold font-sans text-deep-brown bg-deep-brown/10 px-2 py-0.5 rounded-full">
+                  <span className="text-[12px] font-semibold font-sans text-deep-brown bg-deep-brown/10 px-2 py-0.5 rounded-full">
                     Terms
                   </span>
                 )}
               </div>
             </div>
-            <button className="font-sans text-[13px] text-deep-brown font-semibold hover:underline cursor-pointer">
+            <button className="font-sans text-[16px] text-deep-brown font-semibold hover:underline cursor-pointer">
               View PDF
             </button>
           </div>

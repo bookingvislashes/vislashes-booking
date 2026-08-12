@@ -178,7 +178,7 @@ export default function AdminDashboard() {
         <h1 className="font-display text-[28px] font-bold text-dark-brown leading-tight">
           Dashboard
         </h1>
-        <p className="font-sans text-[13px] text-muted mt-0.5">{heading}</p>
+        <p className="font-sans text-[16px] text-muted mt-0.5">{heading}</p>
       </div>
 
       {error && (
@@ -186,10 +186,10 @@ export default function AdminDashboard() {
           role="alert"
           className="animate-fade-in-up bg-white border border-danger/30 rounded-surface p-4 mb-6"
         >
-          <p className="font-sans text-[14px] text-danger font-semibold">
+          <p className="font-sans text-[16px] text-danger font-semibold">
             Couldn&apos;t load today&apos;s numbers
           </p>
-          <p className="font-sans text-[13px] text-muted mt-1 leading-[1.5]">
+          <p className="font-sans text-[16px] text-muted mt-1 leading-[1.5]">
             {error}
           </p>
           <button
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
               setError(null);
               fetchStats();
             }}
-            className="mt-3 h-control px-4 inline-flex items-center bg-deep-brown text-white font-sans font-semibold text-[13px] rounded-control transition-transform active:scale-[0.97] cursor-pointer"
+            className="mt-3 h-control px-4 inline-flex items-center bg-deep-brown text-white font-sans font-semibold text-[16px] rounded-control transition-transform active:scale-[0.97] cursor-pointer"
           >
             Try again
           </button>
@@ -241,7 +241,7 @@ export default function AdminDashboard() {
           </h2>
           <Link
             href="/admin/bookings"
-            className="font-sans text-[13px] text-deep-brown font-semibold hover:underline -m-2 p-2 rounded-control transition-transform active:scale-[0.97]"
+            className="font-sans text-[16px] text-deep-brown font-semibold hover:underline -m-2 p-2 rounded-control transition-transform active:scale-[0.97]"
           >
             View All
           </Link>
@@ -270,10 +270,10 @@ export default function AdminDashboard() {
                 <path d="M16 2v4M8 2v4M3 10h18" />
               </svg>
             </div>
-            <p className="font-sans text-[14px] text-charcoal font-semibold">
+            <p className="font-sans text-[16px] text-charcoal font-semibold">
               Nothing booked today
             </p>
-            <p className="font-sans text-[13px] text-muted mt-1">
+            <p className="font-sans text-[16px] text-muted mt-1">
               New bookings appear here the moment they come in.
             </p>
           </div>
@@ -286,15 +286,15 @@ export default function AdminDashboard() {
                 className="animate-fade-in-up flex items-center justify-between px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-sans text-[14px] font-semibold text-dark-brown truncate">
+                  <p className="font-sans text-[16px] font-semibold text-dark-brown truncate">
                     {booking.client?.full_name || "Unknown"}
                   </p>
-                  <p className="font-sans text-[13px] text-muted truncate">
+                  <p className="font-sans text-[16px] text-muted truncate">
                     {booking.service?.name || "Unknown"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-3">
-                  <span className="font-sans text-[13px] text-charcoal font-semibold tabular-nums">
+                  <span className="font-sans text-[16px] text-charcoal font-semibold tabular-nums">
                     {booking.time_slot}
                   </span>
                   <Badge status={booking.status} />

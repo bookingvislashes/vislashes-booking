@@ -202,10 +202,10 @@ export default function CalendarPage() {
           </div>
         ) : hoursError ? (
           <div className="py-6 text-center">
-            <p className="font-sans text-[14px] text-danger font-semibold">
+            <p className="font-sans text-[16px] text-danger font-semibold">
               Couldn&apos;t load your hours
             </p>
-            <p className="font-sans text-[13px] text-muted mt-1 leading-[1.5]">
+            <p className="font-sans text-[16px] text-muted mt-1 leading-[1.5]">
               {hoursError}
             </p>
             <Button
@@ -230,7 +230,7 @@ export default function CalendarPage() {
                     onChange={(e) => updateHours(i, "isActive", e.target.checked)}
                     className="accent-deep-brown w-4 h-4"
                   />
-                  <span className="font-sans text-[13px] text-charcoal font-semibold">
+                  <span className="font-sans text-[16px] text-charcoal font-semibold">
                     {day.day}
                   </span>
                 </label>
@@ -240,14 +240,14 @@ export default function CalendarPage() {
                       type="time"
                       value={day.startTime}
                       onChange={(e) => updateHours(i, "startTime", e.target.value)}
-                      className="bg-white border border-light-tan rounded-control px-2 py-1.5 text-[13px] font-sans focus:outline-none focus:border-deep-brown"
+                      className="bg-white border border-light-tan rounded-control px-2 py-1.5 text-[16px] font-sans focus:outline-none focus:border-deep-brown"
                     />
-                    <span className="text-muted text-[13px]">to</span>
+                    <span className="text-muted text-[16px]">to</span>
                     <input
                       type="time"
                       value={day.endTime}
                       onChange={(e) => updateHours(i, "endTime", e.target.value)}
-                      className="bg-white border border-light-tan rounded-control px-2 py-1.5 text-[13px] font-sans focus:outline-none focus:border-deep-brown"
+                      className="bg-white border border-light-tan rounded-control px-2 py-1.5 text-[16px] font-sans focus:outline-none focus:border-deep-brown"
                     />
                   </div>
                 )}
@@ -264,14 +264,14 @@ export default function CalendarPage() {
               {savingHours ? "Saving..." : "Save Hours"}
             </Button>
             {hoursSaved && !saveError && (
-              <span className="text-success text-[13px] font-sans font-semibold">
+              <span className="text-success text-[16px] font-sans font-semibold">
                 ✓ Saved
               </span>
             )}
             {saveError && (
               <span
                 role="alert"
-                className="text-danger text-[13px] font-sans font-semibold"
+                className="text-danger text-[16px] font-sans font-semibold"
               >
                 Couldn&apos;t save hours — {saveError}
               </span>
@@ -285,7 +285,7 @@ export default function CalendarPage() {
         <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
           Blocked Dates
         </h2>
-        <p className="font-sans text-[13px] text-muted mb-4">
+        <p className="font-sans text-[16px] text-muted mb-4">
           Block off days when you&apos;re unavailable. Clients won&apos;t be able to book on these dates.
         </p>
 
@@ -309,11 +309,11 @@ export default function CalendarPage() {
         </div>
 
         {loadingBlocked ? (
-          <p className="font-sans text-[14px] text-muted animate-pulse">
+          <p className="font-sans text-[16px] text-muted animate-pulse">
             Loading...
           </p>
         ) : blockedDates.length === 0 ? (
-          <p className="font-sans text-[14px] text-muted">
+          <p className="font-sans text-[16px] text-muted">
             No dates blocked
           </p>
         ) : (
@@ -324,11 +324,11 @@ export default function CalendarPage() {
                 className="flex items-center justify-between py-2.5 px-3 bg-cream rounded-control"
               >
                 <div className="min-w-0">
-                  <span className="font-sans text-[14px] text-charcoal font-semibold">
+                  <span className="font-sans text-[16px] text-charcoal font-semibold">
                     {formatBlockedDate(bd.date)}
                   </span>
                   {bd.reason && (
-                    <span className="font-sans text-[13px] text-muted ml-2">
+                    <span className="font-sans text-[16px] text-muted ml-2">
                       — {bd.reason}
                     </span>
                   )}

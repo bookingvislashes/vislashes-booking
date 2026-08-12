@@ -102,10 +102,10 @@ export default function SettingsPage() {
             className="w-3 h-3 rounded-full bg-muted mt-[5px] shrink-0"
           />
           <div>
-            <p className="font-sans text-[14px] text-charcoal">
+            <p className="font-sans text-[16px] text-charcoal">
               Not available yet
             </p>
-            <p className="font-sans text-[13px] text-muted leading-[1.5] mt-1 max-w-[46ch]">
+            <p className="font-sans text-[16px] text-muted leading-[1.5] mt-1 max-w-[46ch]">
               Appointments live in the Bookings and Calendar tabs here. They do
               not sync to Google Calendar — that integration has not been built.
             </p>

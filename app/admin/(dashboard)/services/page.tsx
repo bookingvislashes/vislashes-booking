@@ -56,11 +56,11 @@ export default function ServicesPage() {
           >
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <p className="font-sans text-[14px] font-semibold text-dark-brown">
+                <p className="font-sans text-[16px] font-semibold text-dark-brown">
                   {service.name}
                 </p>
                 {!service.isActive && (
-                  <span className="text-[10px] font-semibold font-sans text-muted bg-muted/15 px-2 py-0.5 rounded-full">
+                  <span className="text-[12px] font-semibold font-sans text-muted bg-muted/15 px-2 py-0.5 rounded-full">
                     Inactive
                   </span>
                 )}

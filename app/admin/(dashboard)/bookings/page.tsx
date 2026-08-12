@@ -115,7 +115,7 @@ export default function BookingsPage() {
         <h1 className="font-display text-[28px] font-bold text-dark-brown">
           Bookings
         </h1>
-        <span className="font-sans text-[13px] text-muted">
+        <span className="font-sans text-[16px] text-muted">
           {bookings.length} total
         </span>
       </div>
@@ -148,13 +148,13 @@ export default function BookingsPage() {
       <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
         {loading ? (
           <div className="p-8 text-center">
-            <p className="font-sans text-[14px] text-muted animate-pulse">
+            <p className="font-sans text-[16px] text-muted animate-pulse">
               Loading bookings...
             </p>
           </div>
         ) : bookings.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="font-sans text-[14px] text-muted">
+            <p className="font-sans text-[16px] text-muted">
               No bookings found
             </p>
           </div>
@@ -166,16 +166,16 @@ export default function BookingsPage() {
               className="w-full flex items-center justify-between px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0 hover:bg-cream/50 transition-colors text-left cursor-pointer"
             >
               <div className="min-w-0 flex-1">
-                <p className="font-sans text-[14px] font-semibold text-dark-brown truncate">
+                <p className="font-sans text-[16px] font-semibold text-dark-brown truncate">
                   {booking.client?.full_name || "Unknown"}
                 </p>
-                <p className="font-sans text-[13px] text-muted truncate">
+                <p className="font-sans text-[16px] text-muted truncate">
                   {booking.service?.name || "Unknown Service"}
                 </p>
               </div>
               <div className="flex items-center gap-2 sm:gap-3 text-right shrink-0 ml-3">
                 <div>
-                  <p className="font-sans text-[13px] text-charcoal font-semibold">
+                  <p className="font-sans text-[16px] text-charcoal font-semibold">
                     {booking.time_slot}
                   </p>
                   <p className="font-sans text-[12px] text-muted">
@@ -210,18 +210,18 @@ export default function BookingsPage() {
               &times;
             </button>
 
-            <h2 className="font-display text-[22px] font-bold text-dark-brown mb-5">
+            <h2 className="font-display text-[18px] font-bold text-dark-brown mb-5">
               Booking Details
             </h2>
 
             <div className="flex flex-col gap-5 font-sans">
               {/* Client info */}
               <Section title="Client">
-                <p className="text-[14px] text-charcoal font-semibold">
+                <p className="text-[16px] text-charcoal font-semibold">
                   {selectedBooking.client?.full_name}
                 </p>
-                <p className="text-[13px] text-muted">{selectedBooking.client?.email}</p>
-                <p className="text-[13px] text-muted">{selectedBooking.client?.phone}</p>
+                <p className="text-[16px] text-muted">{selectedBooking.client?.email}</p>
+                <p className="text-[16px] text-muted">{selectedBooking.client?.phone}</p>
                 {selectedBooking.client && selectedBooking.client.visit_count > 1 && (
                   <p className="text-[12px] text-deep-brown mt-1">
                     Returning client ({selectedBooking.client.visit_count} visits)
@@ -231,10 +231,10 @@ export default function BookingsPage() {
 
               {/* Service info */}
               <Section title="Service">
-                <p className="text-[14px] text-charcoal font-semibold">
+                <p className="text-[16px] text-charcoal font-semibold">
                   {selectedBooking.service?.name}
                 </p>
-                <p className="text-[13px] text-muted">
+                <p className="text-[16px] text-muted">
                   ${selectedBooking.service?.price?.toFixed(2)} &middot;{" "}
                   {selectedBooking.service?.duration_minutes} min
                 </p>
@@ -242,7 +242,7 @@ export default function BookingsPage() {
 
               {/* Date & time */}
               <Section title="Date & Time">
-                <p className="text-[14px] text-charcoal">
+                <p className="text-[16px] text-charcoal">
                   {formatDate(selectedBooking.booking_date)} at {selectedBooking.time_slot}
                 </p>
               </Section>
@@ -255,7 +255,7 @@ export default function BookingsPage() {
                 </div>
                 <div className="flex-1">
                   <SectionTitle>Deposit</SectionTitle>
-                  <p className="text-[14px] text-charcoal">
+                  <p className="text-[16px] text-charcoal">
                     {selectedBooking.deposit_paid ? (
                       <span className="text-success font-semibold">
                         Paid (${selectedBooking.deposit_amount?.toFixed(2)})
@@ -278,7 +278,7 @@ export default function BookingsPage() {
               {/* Intake form */}
               {selectedBooking.intake_form && (
                 <Section title="Intake Answers">
-                  <div className="grid grid-cols-1 gap-2 text-[13px]">
+                  <div className="grid grid-cols-1 gap-2 text-[16px]">
                     <Row
                       label="Had extensions before?"
                       value={selectedBooking.intake_form.has_had_extensions ? "Yes" : "No"}
@@ -326,17 +326,17 @@ export default function BookingsPage() {
                 <Section title="Agreements">
                   <div className="flex flex-wrap gap-2 mb-3">
                     {selectedBooking.agreement.filming_consent && (
-                      <span className="bg-success/15 text-success text-[11px] px-2 py-0.5 rounded-full font-semibold">
+                      <span className="bg-success/15 text-success text-[12px] px-2 py-0.5 rounded-full font-semibold">
                         Filming OK
                       </span>
                     )}
                     {selectedBooking.agreement.liability_waiver_signed && (
-                      <span className="bg-deep-brown/10 text-deep-brown text-[11px] px-2 py-0.5 rounded-full font-semibold">
+                      <span className="bg-deep-brown/10 text-deep-brown text-[12px] px-2 py-0.5 rounded-full font-semibold">
                         Waiver Signed
                       </span>
                     )}
                     {selectedBooking.agreement.terms_accepted && (
-                      <span className="bg-deep-brown/10 text-deep-brown text-[11px] px-2 py-0.5 rounded-full font-semibold">
+                      <span className="bg-deep-brown/10 text-deep-brown text-[12px] px-2 py-0.5 rounded-full font-semibold">
                         Terms Accepted
                       </span>
                     )}
@@ -344,7 +344,7 @@ export default function BookingsPage() {
                   {/* Signature preview */}
                   {selectedBooking.agreement.signature_data && (
                     <div>
-                      <p className="text-[11px] text-muted mb-1">Signature</p>
+                      <p className="text-[12px] text-muted mb-1">Signature</p>
                       <div className="bg-cream rounded-control p-2 inline-block">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -407,7 +407,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] text-muted font-semibold uppercase tracking-wider mb-1.5 font-sans">
+    <p className="text-[12px] text-muted font-semibold uppercase tracking-wider mb-1.5 font-sans">
       {children}
     </p>
   );

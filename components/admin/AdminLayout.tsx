@@ -120,7 +120,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <span className="font-display text-[12px] font-bold text-dark-brown tracking-[3px] uppercase italic">
             LASHES
           </span>
-          <span className="font-sans text-[10px] text-muted ml-1">
+          <span className="font-sans text-[12px] text-muted ml-1">
             Admin
           </span>
         </Link>
@@ -139,7 +139,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 // The 3px active border lives in the shared class as
                 // transparent, so the label doesn't jump sideways when the
                 // route changes — only the colour switches.
-                className={`flex items-center gap-3 px-3 py-2 min-h-control rounded-control border-l-[3px] border-transparent text-[13px] font-sans transition-[color,background-color,border-color,transform] duration-200 active:scale-[0.98] ${
+                className={`flex items-center gap-3 px-3 py-2 min-h-control rounded-control border-l-[3px] border-transparent text-[14px] font-sans transition-[color,background-color,border-color,transform] duration-200 active:scale-[0.98] ${
                   isActive
                     ? "bg-deep-brown/10 text-deep-brown font-semibold border-deep-brown"
                     : "text-charcoal hover:bg-light-tan"
@@ -154,7 +154,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
         <button
           onClick={handleSignOut}
-          className="mt-auto px-3 py-2 text-[13px] text-muted hover:text-danger font-sans text-left cursor-pointer"
+          className="mt-auto px-3 py-2 text-[14px] text-muted hover:text-danger font-sans text-left cursor-pointer"
         >
           Sign Out
         </button>
@@ -181,7 +181,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </Link>
         <button
           onClick={handleSignOut}
-          className="-m-2 p-2 min-h-[44px] flex items-center text-[12px] text-muted font-sans cursor-pointer rounded-control transition-transform active:scale-[0.97]"
+          className="-m-2 p-2 min-h-[44px] flex items-center text-[14px] text-muted font-sans cursor-pointer rounded-control transition-transform active:scale-[0.97]"
         >
           Sign Out
         </button>
@@ -193,7 +193,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       {/* As a Tailwind class rather than an inline style — inline wins at every
           breakpoint, so md:pb-6 never applied and desktop carried the mobile
           tab-bar clearance as dead space. */}
-      <main className="md:ml-[200px] p-4 md:p-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6 max-w-[1100px]">
+      {/* 16px baseline for the admin. Anything that doesn't set its own size
+          inherits readable body text rather than the browser default. */}
+      <main className="md:ml-[200px] p-4 md:p-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6 max-w-[1100px] text-[16px]">
         {children}
       </main>
 
@@ -212,7 +214,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               key={item.href}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-2 text-[10px] font-sans transition-[color,transform] duration-200 active:scale-[0.94] ${
+              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-2 text-[12px] font-sans transition-[color,transform] duration-200 active:scale-[0.94] ${
                 isActive ? "text-deep-brown font-semibold" : "text-muted"
               }`}
             >
