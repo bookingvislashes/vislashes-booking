@@ -108,7 +108,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     <div className="min-h-[100dvh] bg-cream">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-[200px] bg-white border-r border-light-tan p-4">
-        <div className="flex items-baseline gap-0.5 mb-8 px-2">
+        {/* The wordmark doubles as the way back to the public site. */}
+        <Link
+          href="/"
+          title="Back to the VIS Lashes site"
+          className="flex items-baseline gap-0.5 mb-8 px-2 py-1 -mx-1 rounded-control transition-colors hover:bg-light-tan/60 active:bg-light-tan"
+        >
           <span className="font-display text-[12px] font-bold text-dark-brown tracking-[3px] uppercase">
             VIS
           </span>
@@ -118,7 +123,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <span className="font-sans text-[10px] text-muted ml-1">
             Admin
           </span>
-        </div>
+        </Link>
 
         <nav className="flex flex-col gap-1 flex-1">
           {navItems.map((item) => {
@@ -130,7 +135,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-control text-[13px] font-sans transition-colors ${
+                aria-current={isActive ? "page" : undefined}
+                className={`flex items-center gap-3 px-3 py-2 min-h-[40px] rounded-control text-[13px] font-sans transition-[color,background-color,transform] duration-200 active:scale-[0.98] ${
                   isActive
                     ? "bg-deep-brown/10 text-deep-brown font-semibold border-l-[3px] border-deep-brown"
                     : "text-charcoal hover:bg-light-tan"
@@ -151,31 +157,50 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </button>
       </aside>
 
-      {/* Mobile header */}
-      <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-light-tan">
-        <div className="flex items-baseline gap-0.5">
+      {/* Mobile header — sticky so the way out is always reachable on a long
+          list, and translucent so content passing under it reads as depth
+          rather than a hard cut. pt picks up the notch inset on iOS. */}
+      <header
+        className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-white/85 backdrop-blur-md border-b border-light-tan"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+      >
+        <Link
+          href="/"
+          title="Back to the VIS Lashes site"
+          className="flex items-baseline gap-0.5 -m-2 p-2 rounded-control transition-transform active:scale-[0.97]"
+        >
           <span className="font-display text-[12px] font-bold text-dark-brown tracking-[3px] uppercase">
             VIS
           </span>
           <span className="font-display text-[12px] font-bold text-dark-brown tracking-[3px] uppercase italic">
             LASHES
           </span>
-        </div>
+        </Link>
         <button
           onClick={handleSignOut}
-          className="text-[12px] text-muted font-sans cursor-pointer"
+          className="-m-2 p-2 min-h-[44px] flex items-center text-[12px] text-muted font-sans cursor-pointer rounded-control transition-transform active:scale-[0.97]"
         >
           Sign Out
         </button>
       </header>
 
-      {/* Main content */}
-      <main className="md:ml-[200px] p-4 md:p-6 pb-20 md:pb-6 max-w-[1100px]">
+      {/* Main content. The bottom padding has to clear the fixed tab bar AND
+          the home indicator, otherwise the last row of any list is
+          permanently unreachable on an iPhone. */}
+      <main
+        className="md:ml-[200px] p-4 md:p-6 md:pb-6 max-w-[1100px]"
+        style={{
+          paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))",
+        }}
+      >
         {children}
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-light-tan flex">
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-md border-t border-light-tan flex"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         {mobileNavItems.map((item) => {
           const isActive =
             item.href === "/admin"
@@ -185,12 +210,21 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex-1 flex flex-col items-center py-2 text-[10px] font-sans ${
+              aria-current={isActive ? "page" : undefined}
+              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-2 text-[10px] font-sans transition-[color,transform] duration-200 active:scale-[0.94] ${
                 isActive ? "text-deep-brown font-semibold" : "text-muted"
               }`}
             >
+              {/* Active marker rides the top edge. Scales on the x-axis rather
+                  than animating width, so it stays on the compositor. */}
+              <span
+                aria-hidden="true"
+                className={`absolute top-0 h-[2px] w-8 rounded-full bg-deep-brown origin-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  isActive ? "scale-x-100" : "scale-x-0"
+                }`}
+              />
               <Icon name={item.icon} size={18} />
-              <span className="mt-0.5">{item.label}</span>
+              <span>{item.label}</span>
             </Link>
           );
         })}

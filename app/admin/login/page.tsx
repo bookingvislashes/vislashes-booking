@@ -46,7 +46,19 @@ export default function AdminLoginPage() {
       return;
     }
 
-    router.push("/admin");
+    // The guard in proxy.ts passes the page they were trying to reach. Read it
+    // from the URL directly rather than useSearchParams, which would force this
+    // page dynamic or need a Suspense boundary for no benefit.
+    //
+    // Only same-origin admin paths are honoured — accepting an arbitrary value
+    // here would turn the login screen into an open redirect.
+    const next = new URLSearchParams(window.location.search).get("next");
+    const destination =
+      next && next.startsWith("/admin") && !next.startsWith("//")
+        ? next
+        : "/admin";
+
+    router.push(destination);
     router.refresh();
   };
 

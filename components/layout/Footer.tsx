@@ -21,9 +21,22 @@ export function Footer() {
             @vislashesbooking
           </Link>
         </div>
-        <p className="font-sans text-[11px] leading-none tracking-[0.4px] text-white/40 tabular-nums">
-          {process.env.NEXT_PUBLIC_BUILD_ID}
-        </p>
+        {/* Staff entry point. Deliberately quiet and in the footer rather than
+            the header — it is for the salon, not for clients. */}
+        <div className="flex items-center gap-2 text-[11px] leading-none tracking-[0.4px]">
+          <Link
+            href="/admin/login"
+            className="font-sans text-white/40 hover:text-white/70 focus-visible:text-white/70 transition-colors"
+          >
+            Staff Login
+          </Link>
+          <span aria-hidden="true" className="text-white/20">
+            ·
+          </span>
+          <span className="font-sans text-white/40 tabular-nums">
+            {process.env.NEXT_PUBLIC_BUILD_ID}
+          </span>
+        </div>
       </div>
     </footer>
   );

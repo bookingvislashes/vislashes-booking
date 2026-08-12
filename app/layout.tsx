@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { DM_Sans, Playfair_Display } from "next/font/google";
 import { Providers } from "./providers";
@@ -37,6 +37,14 @@ export const metadata: Metadata = {
       "Book your lash extension appointment online. Serving Orlando, Saint Cloud, and Kissimmee.",
     type: "website",
   },
+};
+
+// `viewportFit: "cover"` is what makes env(safe-area-inset-*) resolve to real
+// values on iPhone. Without it every inset reads as 0 and the admin tab bar
+// sits underneath the home indicator.
+export const viewport: Viewport = {
+  themeColor: "#F7F3EE",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

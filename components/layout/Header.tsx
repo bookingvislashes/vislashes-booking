@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/lib/cart-context";
 import { CtaLink } from "@/components/ui/CtaLink";
+import { PRODUCTS_ENABLED } from "@/lib/features";
 import { useRef, useEffect } from "react";
 
 export function Header() {
@@ -51,9 +52,13 @@ export function Header() {
           another link in the row — present on every page and every scroll
           position, and never mistaken for navigation. */}
       <nav className="hidden md:flex items-center gap-4 lg:gap-[26px]">
+        {/* "Lash Products" anchors #products, which only exists while retail
+            is on — it would otherwise be a link to nothing. */}
         {[
           { label: "Home", href: "/" },
-          { label: "Lash Products", href: "#products" },
+          ...(PRODUCTS_ENABLED
+            ? [{ label: "Lash Products", href: "#products" }]
+            : []),
           { label: "Contact", href: "#contact" },
         ].map((link) => (
           <Link
@@ -82,7 +87,9 @@ export function Header() {
           </svg>
         </button>
 
-        {/* Cart Icon */}
+        {/* Cart Icon — hidden while retail is off; nothing can be added to it,
+            so an empty cart would only be a dead end. */}
+        {PRODUCTS_ENABLED && (
         <div className="relative" ref={dropdownRef}>
           <button
             aria-label="Cart"
@@ -210,6 +217,7 @@ export function Header() {
             </div>
           )}
         </div>
+        )}
       </div>
     </header>
   );

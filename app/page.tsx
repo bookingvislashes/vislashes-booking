@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { ProductCards } from "@/components/home/ProductCards";
 import { ParallaxHero } from "@/components/home/ParallaxHero";
 import { AnimateOnScroll } from "@/components/home/AnimateOnScroll";
+import { PRODUCTS_ENABLED } from "@/lib/features";
 
 const featureSections = [
   {
@@ -55,10 +56,12 @@ export default function HomePage() {
       {/* Hero Section — parallax + mix-blend-difference */}
       <ParallaxHero />
 
-      {/* Product Cards Section */}
-      <section id="products" className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] py-12 sm:py-16 lg:py-[100px]">
-        <ProductCards />
-      </section>
+      {/* Product Cards Section — retail is off, see lib/features.ts */}
+      {PRODUCTS_ENABLED && (
+        <section id="products" className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] py-12 sm:py-16 lg:py-[100px]">
+          <ProductCards />
+        </section>
+      )}
 
       {/* Feature Sections */}
       {featureSections.map((section, index) => (
@@ -133,11 +136,15 @@ export default function HomePage() {
                 <p className="font-sans font-light text-[15px] sm:text-[16px] lg:text-[18px] text-white leading-[1.445] max-w-[320px] sm:max-w-[340px] lg:max-w-[360px] mt-2 mb-4 lg:mb-5">
                   {section.description}
                 </p>
+                {/* These pointed at #connection / #passion / #chemistry —
+                    anchors that were never rendered anywhere on the page, so
+                    the buttons scrolled nowhere even while retail was on. With
+                    products archived, booking is the live action. */}
                 <CtaLink
-                  href={`#${section.name.toLowerCase()}`}
+                  href={PRODUCTS_ENABLED ? "#products" : "/book"}
                   variant="onImage"
                 >
-                  {section.buttonText}
+                  {PRODUCTS_ENABLED ? section.buttonText : "Book Appointment"}
                 </CtaLink>
               </div>
             </div>
