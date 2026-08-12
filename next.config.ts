@@ -1,6 +1,16 @@
 import type { NextConfig } from "next";
 
+// Stamped into the bundle at build time so the footer can show which deploy is
+// live. The SHA alone isn't enough: redeploying the same commit leaves it
+// unchanged, which reads as "the deploy didn't land". The timestamp moves every
+// build, so the pair together always answers "is this new?".
+const commit = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local";
+const builtAt = new Date().toISOString().slice(0, 16).replace("T", " ");
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_ID: `${commit} · ${builtAt} UTC`,
+  },
   images: {
     // AVIF is not on by default (Next only ships image/webp). At a given
     // quality AVIF keeps noticeably more detail than WebP, which matters
