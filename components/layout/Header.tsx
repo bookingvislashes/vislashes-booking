@@ -24,10 +24,12 @@ export function Header() {
   }, [isOpen, setIsOpen]);
 
   return (
-    // Tight horizontal padding until lg. At exactly 768px the nav and the
-    // icons become visible at once, and px-12 pushed the row past the
-    // viewport.
-    <header className="w-full px-4 sm:px-6 lg:px-[120px] pt-[27px] pb-[33px] flex items-center justify-between gap-3 max-w-[1440px] mx-auto">
+    // Padding matches the page sections exactly (px-6 sm:px-12 lg:px-[120px]),
+    // so the nav's right edge sits on the same line as the content below it.
+    // It used to be tighter because the row also carried a Book CTA, a search
+    // icon and a cart, which overflowed at 768px; with only the wordmark and
+    // two links left there is room to align properly.
+    <header className="w-full px-6 sm:px-12 lg:px-[120px] pt-[27px] pb-[33px] flex items-center justify-between gap-3 max-w-[1440px] mx-auto">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-1 shrink-0">
         <Image
@@ -46,8 +48,12 @@ export function Header() {
         />
       </Link>
 
-      {/* Navigation Links */}
-      <nav className="hidden md:flex items-center gap-4 lg:gap-[26px]">
+      {/* Navigation Links
+          ml-auto pins the links to the right edge of the same container the
+          page content sits in. With the cart hidden the icons group next to it
+          is empty, and justify-between was spacing the nav against that empty
+          slot — leaving the links stranded mid-row with a gap to their right. */}
+      <nav className="hidden md:flex items-center gap-4 lg:gap-[26px] ml-auto">
         {/* "Lash Products" anchors #products, which only exists while retail
             is on — it would otherwise be a link to nothing. */}
         {[
@@ -75,10 +81,12 @@ export function Header() {
 
           The search button went with it: nothing was wired to it, and there
           is no search on the site to reach. */}
-      <div className="flex items-center gap-4 sm:gap-[28px] shrink-0">
-        {/* Cart Icon — hidden while retail is off; nothing can be added to it,
-            so an empty cart would only be a dead end. */}
-        {PRODUCTS_ENABLED && (
+      {/* The whole group is dropped rather than emptied while retail is off —
+          an empty flex child still occupies a slot in the row. */}
+      {PRODUCTS_ENABLED && (
+      <div className="flex items-center gap-4 sm:gap-[28px] shrink-0 ml-4 sm:ml-7">
+        {/* Cart Icon — nothing can be added to it while retail is off, so an
+            empty cart would only be a dead end. */}
         <div className="relative" ref={dropdownRef}>
           <button
             aria-label="Cart"
@@ -206,8 +214,8 @@ export function Header() {
             </div>
           )}
         </div>
-        )}
       </div>
+      )}
     </header>
   );
 }
