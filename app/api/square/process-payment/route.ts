@@ -4,6 +4,7 @@ import { SquareError } from "square";
 import { createServiceClient } from "@/lib/supabase/server";
 import { createBooking } from "@/lib/create-booking";
 import { bookingSchema } from "@/lib/schemas";
+import { notifyAdmins } from "@/lib/push";
 import { z } from "zod";
 
 const paymentSchema = z.object({
@@ -107,6 +108,15 @@ export async function POST(req: NextRequest) {
         depositPaid: true,
         depositAmount,
         squarePaymentId: payment.id,
+      });
+
+      // Best-effort: notifyAdmins swallows its own errors internally, so this
+      // can never turn a successful, already-charged booking into a failed
+      // response just because a phone was unreachable.
+      await notifyAdmins(supabase, {
+        title: "New booking",
+        body: `${data.formData.fullName} · ${service.name} · ${data.formData.bookingDate} at ${data.formData.timeSlot}`,
+        url: "/admin/bookings",
       });
 
       return NextResponse.json({
