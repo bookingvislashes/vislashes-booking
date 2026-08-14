@@ -48,22 +48,68 @@ export function AgreementForm({ form, depositAmount }: AgreementFormProps) {
   const TERMS_TEXT = buildTerms(depositAmount);
   const { register, setValue, formState: { errors } } = form;
   const sigRef = useRef<SignatureCanvas>(null);
+  const sigContainerRef = useRef<HTMLDivElement>(null);
   const [modalContent, setModalContent] = useState<{ title: string; text: string } | null>(null);
+
+  // The canvas's drawing buffer used to be hardcoded to 600x200 while `w-full`
+  // stretched it to whatever the phone actually measured — roughly 340-390px.
+  // Passing an explicit width/height makes react-signature-canvas skip its own
+  // DPR-aware resize handling entirely (it only runs that when both are left
+  // unset), so nothing corrected for the mismatch: a touch at screen position
+  // X was recorded at buffer position X, then that 600-wide buffer was
+  // squeezed back down to ~380px on screen — so every stroke landed to the
+  // left of the finger, worse the further right you touched. Matching the
+  // buffer to the actual rendered width one-to-one is what makes touch
+  // coordinates land where the finger actually is.
+  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number } | null>(null);
+  const restoredFromForm = useRef(false);
+
+  useEffect(() => {
+    const measure = () => {
+      if (!sigContainerRef.current) return;
+      const width = Math.round(sigContainerRef.current.clientWidth);
+
+      setCanvasSize((prev) => {
+        if (prev && prev.width === width) return prev; // Nothing actually changed — don't wipe the pad for no reason.
+
+        // Changing a canvas's width/height attribute clears its bitmap, which
+        // is exactly the resize-wipes-the-signature bug this component was
+        // already fixed for once. Carrying the current stroke across the
+        // resize (an orientation change, mainly) keeps that fix intact.
+        const saved =
+          sigRef.current && !sigRef.current.isEmpty()
+            ? sigRef.current.toDataURL()
+            : null;
+        if (saved) {
+          requestAnimationFrame(() => sigRef.current?.fromDataURL(saved));
+        }
+        return { width, height: 200 };
+      });
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
 
   // Stepping Back unmounts this component, so returning to it showed an empty
   // pad while signatureData still held the earlier PNG. The step then passed
   // validation over a blank canvas — the customer either re-signed needlessly
   // or continued believing nothing had been captured, while the old signature
   // was written to the agreement. Restoring it keeps what they see and what
-  // gets stored in agreement.
+  // gets stored in agreement. Gated on canvasSize because the canvas does not
+  // exist to draw into until it has been measured once, and on a ref rather
+  // than running every time canvasSize changes, so a later orientation resize
+  // (handled above) can't stomp on ink drawn since this ran.
   useEffect(() => {
+    if (!canvasSize || restoredFromForm.current) return;
+    restoredFromForm.current = true;
     const saved = form.getValues("signatureData");
     if (saved && sigRef.current) {
       sigRef.current.fromDataURL(saved);
     }
-    // Mount only: re-running would overwrite ink drawn since.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [canvasSize]);
 
   const handleSignatureEnd = () => {
     if (sigRef.current) {
@@ -168,24 +214,31 @@ export function AgreementForm({ form, depositAmount }: AgreementFormProps) {
           <p className="text-dark-brown text-[12px] font-semibold font-sans mb-2">
             Digital Signature
           </p>
-          {/* clearOnResize defaults to true, and the library only skips its
-              resize handler when BOTH width and height are given. On a phone,
-              collapsing the address bar or opening the keyboard fires resize —
-              which wiped the drawn signature while signatureData kept the old
-              PNG, so the step passed validation over a visibly blank pad and a
-              waiver was stored that the client never saw themselves sign.
-              Fixing width alongside height also stops retina strokes in the
-              lower half falling outside the bitmap. */}
-          <SignatureCanvas
-            ref={sigRef}
-            onEnd={handleSignatureEnd}
-            clearOnResize={false}
-            canvasProps={{
-              className: "sig-canvas w-full bg-white rounded-surface border border-light-tan",
-              width: 600,
-              height: 200,
-            }}
-          />
+          <div ref={sigContainerRef} className="w-full">
+            {canvasSize ? (
+              <SignatureCanvas
+                ref={sigRef}
+                onEnd={handleSignatureEnd}
+                clearOnResize={false}
+                canvasProps={{
+                  className: "sig-canvas bg-white rounded-surface border border-light-tan",
+                  width: canvasSize.width,
+                  height: canvasSize.height,
+                  // Explicit and equal to the width/height attributes, so the
+                  // canvas is never CSS-stretched away from its own buffer
+                  // resolution — that stretch is the entire bug.
+                  style: {
+                    width: `${canvasSize.width}px`,
+                    height: `${canvasSize.height}px`,
+                  },
+                }}
+              />
+            ) : (
+              // One frame of layout placeholder while the container is
+              // measured, so the page doesn't jump once the real pad mounts.
+              <div className="h-[200px] rounded-surface border border-light-tan bg-white" />
+            )}
+          </div>
           <button
             type="button"
             onClick={clearSignature}

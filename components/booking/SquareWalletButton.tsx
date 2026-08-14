@@ -47,15 +47,21 @@ export function SquareWalletButton({
           },
         };
 
-        // Try Apple Pay
+        // Try Apple Pay. Square rejects this silently for any of: browser
+        // isn't Safari, the device has no card in Apple Wallet, or — the one
+        // that is actually a setup step rather than a device limitation —
+        // this domain was never registered for Apple Pay in the Square
+        // Developer Dashboard (Apple Pay → Add Domain). Logged rather than
+        // swallowed, since from the button's absence alone there is no way to
+        // tell which of those it is.
         try {
           const ap = await payments.applePay(paymentRequest);
           if (ap) {
             applePayRef.current = ap;
             setApplePayReady(true);
           }
-        } catch {
-          /* Apple Pay not available */
+        } catch (err) {
+          console.warn("Apple Pay unavailable:", err);
         }
 
         // Try Google Pay. The container is mounted unconditionally now — it
@@ -70,8 +76,8 @@ export function SquareWalletButton({
             googlePayRef.current = gp;
             setGooglePayReady(true);
           }
-        } catch {
-          /* Google Pay not available */
+        } catch (err) {
+          console.warn("Google Pay unavailable:", err);
         }
       } catch (err) {
         console.error("Failed to initialize Square wallets:", err);
