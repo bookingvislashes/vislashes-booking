@@ -65,6 +65,13 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
           <circle cx="12" cy="11" r="2" />
         </svg>
       );
+    case "sparkle":
+      return (
+        <svg {...props}>
+          <path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4L12 3z" />
+          <path d="M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" />
+        </svg>
+      );
     case "settings":
       return (
         <svg {...props}>
@@ -85,6 +92,7 @@ const navItems = [
   { label: "Agreements", href: "/admin/agreements", icon: "file-text" },
   { label: "Services", href: "/admin/services", icon: "tag" },
   { label: "Settings", href: "/admin/settings", icon: "settings" },
+  { label: "What's New", href: "/admin/whats-new", icon: "sparkle" },
 ];
 
 // Mobile bottom nav shows first 5
@@ -199,10 +207,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         {children}
 
         {/* Same build stamp the public footer carries, so a deploy can be
-            confirmed from inside the admin without leaving it. */}
-        <p className="mt-10 font-sans text-[12px] tracking-[0.4px] text-muted/70 tabular-nums">
+            confirmed from inside the admin without leaving it. Links to the
+            release notes: the mobile tab bar only shows the first five nav
+            items, so this is how What's New is reachable on a phone. */}
+        <Link
+          href="/admin/whats-new"
+          className="mt-10 inline-block font-sans text-[12px] tracking-[0.4px] text-muted/70 tabular-nums underline decoration-transparent hover:decoration-inherit transition-colors"
+        >
           {process.env.NEXT_PUBLIC_BUILD_ID}
-        </p>
+        </Link>
       </main>
 
       {/* Mobile bottom nav */}
