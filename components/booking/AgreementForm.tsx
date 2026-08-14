@@ -38,8 +38,8 @@ const buildTerms = (depositAmount: number) => `TERMS AND CONDITIONS
 2. Cancellations must be made at least 24 hours before the scheduled appointment.
 3. Late cancellations or no-shows may forfeit the deposit.
 4. Please arrive with clean, makeup-free eyes.
-5. The remaining balance is due at the time of your appointment.
-6. We accept cash, credit/debit cards, Apple Pay, and Google Pay.
+5. The deposit is paid at the time of booking by card, Apple Pay, or Google Pay.
+6. The remaining balance is due at your appointment and may be paid by cash or card.
 7. Refills are recommended every 2-3 weeks.
 8. VIS Lashes is not responsible for improper aftercare by the client.
 9. By booking an appointment, you agree to these terms and conditions.`;

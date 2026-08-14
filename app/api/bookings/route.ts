@@ -1,63 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { createServiceClient } from "@/lib/supabase/server";
-import { createBooking } from "@/lib/create-booking";
+import { NextResponse } from "next/server";
 
-const cashBookingSchema = z.object({
-  serviceId: z.string().min(1),
-  bookingDate: z.string().min(1),
-  timeSlot: z.string().min(1),
-  fullName: z.string().min(2),
-  phone: z.string().min(1),
-  email: z.string().email(),
-  hasHadExtensions: z.boolean(),
-  isSpecialOccasion: z.boolean(),
-  occasionDetails: z.string().optional(),
-  hasCataracts: z.boolean(),
-  hasConjunctivitis: z.boolean(),
-  hasDryEye: z.boolean(),
-  hasGlaucoma: z.boolean(),
-  otherComplaints: z.string().optional(),
-  doctorName: z.string().optional(),
-  surgeryNotes: z.string().optional(),
-  medicalAcknowledgment: z.boolean(),
-  filmingConsent: z.boolean(),
-  liabilityWaiverSigned: z.boolean(),
-  termsAccepted: z.boolean(),
-  signatureData: z.string().min(1),
-  // z.string() accepted anything, including "square" — which produced a
-  // booking the dashboard labelled as card-paid with no Square payment behind
-  // it. This is the cash endpoint, so the value is fixed below regardless of
-  // what the client sends.
-  paymentMethod: z.string().optional(),
-});
-
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const data = cashBookingSchema.parse(body);
-
-    const supabase = await createServiceClient();
-
-    const result = await createBooking({
-      supabase,
-      // Hard-coded rather than trusted: this route never takes a card.
-      formData: { ...data, paymentMethod: "cash" as const },
-      depositPaid: false,
-    });
-
-    return NextResponse.json({ bookingId: result.bookingId });
-  } catch (error) {
-    console.error("Booking error:", error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid booking data", details: error.issues },
-        { status: 400 }
-      );
-    }
-    return NextResponse.json(
-      { error: "Failed to create booking" },
-      { status: 500 }
-    );
-  }
+/**
+ * Retired: the pay-on-the-day booking endpoint.
+ *
+ * The deposit is what secures an appointment, and it is now taken at booking
+ * time. This route created a `confirmed` booking with `deposit_paid = false`
+ * and no payment behind it, so leaving it reachable would let anyone hold the
+ * salon's calendar open for free — the booking form no longer calls it, but a
+ * public POST does not need a form.
+ *
+ * Paid bookings go through /api/square/process-payment, which charges first and
+ * only then writes the booking.
+ *
+ * The original implementation is in git history if cash-by-phone bookings are
+ * ever wanted; they would need to be admin-authenticated rather than public.
+ */
+export async function POST() {
+  return NextResponse.json(
+    {
+      error: "DEPOSIT_REQUIRED",
+      message:
+        "Appointments are confirmed by paying the deposit. Please complete payment to book.",
+    },
+    { status: 410 }
+  );
 }
