@@ -19,7 +19,7 @@ create table if not exists public.services (
   name text not null,
   category text not null check (category in ('full_set', 'refill')),
   price numeric(6,2) not null,
-  deposit_amount numeric(6,2) not null default 10.00,
+  deposit_amount numeric(6,2) not null default 25.00,
   duration_minutes integer not null,
   description text,
   is_active boolean not null default true,
@@ -44,12 +44,12 @@ create policy "Admin manage services" on public.services for all using (
 -- does not silently rename services out from under the brand.
 insert into public.services (name, category, price, deposit_amount, duration_minutes, description, sort_order)
 select * from (values
-  ('Natural Glam',                       'full_set', 50.00, 10.00, 110, 'A subtle, natural-looking lash set that enhances your everyday beauty.', 1),
-  ('Premium Wispy Glam',                 'full_set', 55.00, 10.00, 110, 'Wispy, textured volume for a glamorous yet effortless look.', 2),
-  ('Premium Wispy Glam (Custom)',        'full_set', 55.00, 10.00, 110, 'Fully customized wispy lash design tailored to your eye shape.', 3),
-  ('Natural Glam Refill',                'refill',   25.00, 10.00,  60, 'Maintain your Natural Glam set with a fresh fill.', 4),
-  ('Premium Wispy Glam Refill',          'refill',   30.00, 10.00,  60, 'Keep your wispy volume looking flawless.', 5),
-  ('Premium Wispy Glam Refill (Custom)', 'refill',   30.00, 10.00,  60, 'Custom refill for your personalized wispy set.', 6)
+  ('Natural Glam',                       'full_set', 50.00, 25.00, 110, 'A subtle, natural-looking lash set that enhances your everyday beauty.', 1),
+  ('Premium Wispy Glam',                 'full_set', 55.00, 25.00, 110, 'Wispy, textured volume for a glamorous yet effortless look.', 2),
+  ('Premium Wispy Glam (Custom)',        'full_set', 55.00, 25.00, 110, 'Fully customized wispy lash design tailored to your eye shape.', 3),
+  ('Natural Glam Refill',                'refill',   25.00, 25.00,  60, 'Maintain your Natural Glam set with a fresh fill.', 4),
+  ('Premium Wispy Glam Refill',          'refill',   30.00, 25.00,  60, 'Keep your wispy volume looking flawless.', 5),
+  ('Premium Wispy Glam Refill (Custom)', 'refill',   30.00, 25.00,  60, 'Custom refill for your personalized wispy set.', 6)
 ) as seed(name, category, price, deposit_amount, duration_minutes, description, sort_order)
 where not exists (select 1 from public.services);
 
