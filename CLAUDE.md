@@ -70,6 +70,15 @@ fails safe, but that also means a typo silently stops taking real payments.
 `001` is safe to re-run; `002` is deliberately not — each section has an audit
 query to run first. If you add a migration, say so with `kind: "note"`.
 
+**Never write a migration to change service names, prices, durations,
+deposits, ordering, or business details.** The salon owner manages all of that
+herself in the admin — Services and Settings — and a migration that rewrites
+those rows silently overwrites decisions she made in the app. Migrations are
+for *schema*: new tables, new columns, changed constraints. The one exception
+already in the tree is `004`, which replaced a placeholder seed she had never
+edited; a data migration needs that kind of justification. If she asks for a
+price change, the answer is "change it in Services", not a SQL file.
+
 **Do not invent business details.** Studio address, artist name, prices and
 service names come from the database or from Settings. If a value is missing,
 render nothing rather than a placeholder — a wrong address is worse than none.

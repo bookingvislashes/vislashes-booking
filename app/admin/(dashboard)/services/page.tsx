@@ -60,6 +60,9 @@ export default function ServicesPage() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Service | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [reordering, setReordering] = useState(false);
 
   const supabase = createClient();
 
@@ -105,6 +108,90 @@ export default function ServicesPage() {
       );
       setError(`Couldn't update ${service.name}: ${writeError.message}`);
     }
+  };
+
+  // Swaps sort_order with the neighbour above or below. Buttons rather than
+  // drag-and-drop: this is used on a phone, where dragging a row inside a
+  // scrolling list fights the scroll.
+  const move = async (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= services.length) return;
+
+    const a = services[index];
+    const b = services[target];
+
+    // Reordered locally first so the row visibly moves on tap; re-fetched
+    // below so a rejected write can never leave the screen disagreeing with
+    // the database.
+    setServices((prev) => {
+      const next = [...prev];
+      next[index] = b;
+      next[target] = a;
+      return next;
+    });
+    setReordering(true);
+
+    // Two rows can share a sort_order if they were seeded that way, which
+    // would make a swap a no-op. Writing positions by index instead of
+    // exchanging the two stored values sidesteps that entirely.
+    const [{ error: errA }, { error: errB }] = await Promise.all([
+      supabase.from("services").update({ sort_order: target }).eq("id", a.id),
+      supabase.from("services").update({ sort_order: index }).eq("id", b.id),
+    ]);
+
+    setReordering(false);
+
+    if (errA || errB) {
+      setError(`Couldn't reorder: ${(errA || errB)!.message}`);
+    }
+    fetchServices();
+  };
+
+  const deleteService = async (service: Service) => {
+    setDeleting(true);
+    setError(null);
+
+    // bookings.service_id references services(id), so deleting a service that
+    // has ever been booked would either be rejected by the foreign key or
+    // orphan that appointment's history. Checked up front so she gets an
+    // explanation and a working alternative rather than a database error.
+    const { count, error: countError } = await supabase
+      .from("bookings")
+      .select("id", { count: "exact", head: true })
+      .eq("service_id", service.id);
+
+    if (countError) {
+      setDeleting(false);
+      setError(`Couldn't check bookings for ${service.name}: ${countError.message}`);
+      return;
+    }
+
+    if (count && count > 0) {
+      setDeleting(false);
+      setConfirmDelete(null);
+      setError(
+        `${service.name} can't be deleted — it's on ${count} ${
+          count === 1 ? "appointment" : "appointments"
+        }. Switch it off instead to remove it from booking while keeping that history.`
+      );
+      return;
+    }
+
+    const { error: deleteError } = await supabase
+      .from("services")
+      .delete()
+      .eq("id", service.id);
+
+    setDeleting(false);
+    setConfirmDelete(null);
+
+    if (deleteError) {
+      setError(`Couldn't delete ${service.name}: ${deleteError.message}`);
+      return;
+    }
+
+    setLoading(true);
+    fetchServices();
   };
 
   const saveDraft = async () => {
@@ -223,11 +310,38 @@ export default function ServicesPage() {
             </p>
           </div>
         ) : (
-          services.map((service) => (
+          services.map((service, index) => (
             <div
               key={service.id}
-              className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
+              className="flex items-center justify-between gap-2 sm:gap-3 px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
             >
+              {/* Order controls. This is the order clients see on the booking
+                  page, so it is worth being able to set without a database. */}
+              <div className="flex flex-col shrink-0 -my-1">
+                <button
+                  type="button"
+                  onClick={() => move(index, -1)}
+                  disabled={index === 0 || reordering}
+                  aria-label={`Move ${service.name} up`}
+                  className="w-8 h-7 inline-flex items-center justify-center rounded-control text-muted hover:text-deep-brown hover:bg-cream disabled:opacity-25 disabled:hover:bg-transparent transition-colors active:scale-95"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 15l-6-6-6 6" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => move(index, 1)}
+                  disabled={index === services.length - 1 || reordering}
+                  aria-label={`Move ${service.name} down`}
+                  className="w-8 h-7 inline-flex items-center justify-center rounded-control text-muted hover:text-deep-brown hover:bg-cream disabled:opacity-25 disabled:hover:bg-transparent transition-colors active:scale-95"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={() => {
@@ -252,7 +366,7 @@ export default function ServicesPage() {
                   {service.deposit_amount} deposit
                 </span>
               </button>
-              <div className="flex items-center gap-4 shrink-0">
+              <div className="flex items-center gap-3 sm:gap-4 shrink-0">
                 <span className="font-sans text-[16px] font-semibold text-deep-brown tabular-nums">
                   ${Number(service.price).toFixed(2)}
                 </span>
@@ -275,6 +389,18 @@ export default function ServicesPage() {
                       service.is_active ? "translate-x-5" : "translate-x-0.5"
                     }`}
                   />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(service)}
+                  aria-label={`Delete ${service.name}`}
+                  className="w-11 h-11 -mr-2 inline-flex items-center justify-center rounded-control text-muted hover:text-danger hover:bg-danger/10 transition-colors active:scale-95"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -375,6 +501,39 @@ export default function ServicesPage() {
                 variant="ghost"
                 onClick={() => setDraft(null)}
                 disabled={saving}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        title="Delete this service?"
+      >
+        {confirmDelete && (
+          <div>
+            <p className="font-sans text-[16px] text-charcoal leading-[1.5]">
+              <span className="font-semibold">{confirmDelete.name}</span> will
+              be removed for good. If it has ever been booked it can&apos;t be
+              deleted — switch it off instead, which hides it from clients but
+              keeps those appointments intact.
+            </p>
+            <div className="flex gap-3 mt-5">
+              <Button
+                variant="danger"
+                onClick={() => deleteService(confirmDelete)}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setConfirmDelete(null)}
+                disabled={deleting}
               >
                 Cancel
               </Button>

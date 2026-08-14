@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.7.0",
+    date: "2026-08-14",
+    changes: [
+      {
+        kind: "added",
+        text: "Reorder services with the arrows on each row — that's the order clients see when booking.",
+      },
+      {
+        kind: "added",
+        text: "Delete a service you no longer offer. Anything that's been booked can't be deleted, so switch it off instead and its appointments stay intact.",
+      },
+    ],
+  },
+  {
     version: "1.6.1",
     date: "2026-08-14",
     changes: [
