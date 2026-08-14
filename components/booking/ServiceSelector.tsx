@@ -22,6 +22,10 @@ export function ServiceSelector({ form, services }: ServiceSelectorProps) {
   const selectedId = form.watch("serviceId");
   const fullSets = services.filter((s) => s.category === "full_set");
   const refills = services.filter((s) => s.category === "refill");
+  // A lift is a lash treatment with no extensions applied — a different kind
+  // of appointment from a set, not a lighter version of one — so it gets its
+  // own section rather than being folded into Full Sets.
+  const lifts = services.filter((s) => s.category === "lift");
 
   const formatDuration = (mins: number) => {
     const hrs = Math.floor(mins / 60);
@@ -96,8 +100,21 @@ export function ServiceSelector({ form, services }: ServiceSelectorProps) {
           <p className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider mb-3">
             Refills
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
             {refills.map((s) => (
+              <ServiceCard key={s.id} service={s} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {lifts.length > 0 && (
+        <>
+          <p className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider mb-3">
+            Lash Lifts
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {lifts.map((s) => (
               <ServiceCard key={s.id} service={s} />
             ))}
           </div>

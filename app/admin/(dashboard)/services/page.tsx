@@ -10,11 +10,17 @@ import type { Service } from "@/lib/supabase/types";
 type Draft = {
   id?: string;
   name: string;
-  category: "full_set" | "refill";
+  category: "full_set" | "refill" | "lift";
   price: string;
   deposit_amount: string;
   duration_minutes: string;
   description: string;
+};
+
+const CATEGORY_LABELS: Record<Draft["category"], string> = {
+  full_set: "Full Set",
+  refill: "Refill",
+  lift: "Lash Lift",
 };
 
 const emptyDraft: Draft = {
@@ -241,7 +247,7 @@ export default function ServicesPage() {
                   )}
                 </span>
                 <span className="block font-sans text-[12px] text-muted mt-0.5">
-                  {service.category === "full_set" ? "Full Set" : "Refill"}{" "}
+                  {CATEGORY_LABELS[service.category]}{" "}
                   &middot; {formatDuration(service.duration_minutes)} &middot; $
                   {service.deposit_amount} deposit
                 </span>
@@ -310,6 +316,7 @@ export default function ServicesPage() {
               >
                 <option value="full_set">Full Set</option>
                 <option value="refill">Refill</option>
+                <option value="lift">Lash Lift</option>
               </select>
             </div>
 

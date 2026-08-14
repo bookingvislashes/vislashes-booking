@@ -106,8 +106,8 @@ function DepositSection() {
   const parsed = Number(amount);
   const isValid = amount.trim() !== "" && Number.isFinite(parsed) && parsed >= 0;
   // Warned, not blocked: a deposit equal to or above a service's price is a
-  // real choice (see Natural Glam Refill, priced at exactly $25) — it just
-  // means that service is paid in full at booking rather than partially.
+  // real choice — it just means that service is paid in full at booking
+  // rather than partially.
   const exceeds = isValid
     ? services.filter((s) => parsed >= s.price)
     : [];

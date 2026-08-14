@@ -17,7 +17,9 @@
 create table if not exists public.services (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  category text not null check (category in ('full_set', 'refill')),
+  -- 'lift' is a lash lift/tint — no extensions applied, a different kind of
+  -- appointment from a set rather than a lighter version of one.
+  category text not null check (category in ('full_set', 'refill', 'lift')),
   price numeric(6,2) not null,
   deposit_amount numeric(6,2) not null default 25.00,
   duration_minutes integer not null,
@@ -39,17 +41,15 @@ create policy "Admin manage services" on public.services for all using (
 -- from duplicating the menu, and from resurrecting rows edited or deleted in
 -- the admin dashboard.
 --
--- Names, prices and durations match what the site shows in demo mode
--- (app/book/page.tsx) and its own meta description, so connecting the database
--- does not silently rename services out from under the brand.
+-- This is her real live menu (also in app/book/page.tsx's fallback list, and
+-- carried onto an already-seeded database by 004_real_service_menu.sql), so a
+-- fresh install starts with the actual services rather than placeholders.
 insert into public.services (name, category, price, deposit_amount, duration_minutes, description, sort_order)
 select * from (values
-  ('Natural Glam',                       'full_set', 50.00, 25.00, 110, 'A subtle, natural-looking lash set that enhances your everyday beauty.', 1),
-  ('Premium Wispy Glam',                 'full_set', 55.00, 25.00, 110, 'Wispy, textured volume for a glamorous yet effortless look.', 2),
-  ('Premium Wispy Glam (Custom)',        'full_set', 55.00, 25.00, 110, 'Fully customized wispy lash design tailored to your eye shape.', 3),
-  ('Natural Glam Refill',                'refill',   25.00, 25.00,  60, 'Maintain your Natural Glam set with a fresh fill.', 4),
-  ('Premium Wispy Glam Refill',          'refill',   30.00, 25.00,  60, 'Keep your wispy volume looking flawless.', 5),
-  ('Premium Wispy Glam Refill (Custom)', 'refill',   30.00, 25.00,  60, 'Custom refill for your personalized wispy set.', 6)
+  ('Classic Set', 'full_set', 85.00,  25.00, 70, 'Wake up to naturally defined lashes every day. Clean, flutter-worthy, and never overdone. Perfect for first-timers or anyone wanting effortless polish without the drama. One extension per natural lash — your eyes, enhanced.', 1),
+  ('Wispy Set',   'full_set', 100.00, 25.00, 80, 'Feathery, dimensional, and a little bit editorial. The "I woke up like this" lash — fluffy enough to be noticed, soft enough to be effortless. If you want lashes that photograph beautifully, this is your style.', 2),
+  ('Hybrid Set',  'full_set', 110.00, 25.00, 90, 'Our most-requested style. Fuller than Classic, softer than full Volume — the sweet spot. Half classic extensions, half wispy fans, all gorgeous. Looks just as good in real life as it does in photos.', 3),
+  ('Lash Lift',   'lift',     70.00,  25.00, 60, 'No extensions. No fills. Just your own lashes, lifted and tinted to look impossibly long and curled for 6-8 weeks straight. Zero maintenance, maximum impact. Perfect between extension sets or on its own.', 4)
 ) as seed(name, category, price, deposit_amount, duration_minutes, description, sort_order)
 where not exists (select 1 from public.services);
 

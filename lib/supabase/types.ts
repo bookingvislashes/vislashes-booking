@@ -3,7 +3,7 @@
 export interface Service {
   id: string;
   name: string;
-  category: "full_set" | "refill";
+  category: "full_set" | "refill" | "lift";
   price: number;
   deposit_amount: number;
   duration_minutes: number;

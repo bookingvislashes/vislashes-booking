@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.6.0",
+    date: "2026-08-14",
+    changes: [
+      {
+        kind: "changed",
+        text: "The service menu now matches what's actually booked: Classic Set ($85), Wispy Set ($100), Hybrid Set ($110), and Lash Lift ($70).",
+      },
+      {
+        kind: "added",
+        text: "Lash Lift gets its own section on the booking page — it's not an extension set, so it no longer has to pretend to be one.",
+      },
+      {
+        kind: "note",
+        text: "Run supabase/migrations/004_real_service_menu.sql to bring the live database onto the new menu. The old placeholder services are hidden, not deleted, so nothing already booked is affected.",
+      },
+    ],
+  },
+  {
     version: "1.5.0",
     date: "2026-08-14",
     changes: [

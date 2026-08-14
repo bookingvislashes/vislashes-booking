@@ -15,64 +15,52 @@ export const revalidate = 60;
 // cannot be saved — which is correct: without a database there is nowhere to
 // save it. Once Supabase is configured, getServices() returns real rows with
 // real UUIDs and bookings persist.
+//
+// Matches her actual live menu (supabase/migrations/004_real_service_menu.sql
+// carries the same four services onto the real database), so a misconfigured
+// preview never shows placeholder services under the real brand.
 const fallbackServices = [
   {
-    id: "svc-natural-glam",
-    name: "Natural Glam",
-    description: "A subtle, natural-looking lash set that enhances your everyday beauty.",
+    id: "svc-classic",
+    name: "Classic Set",
+    description:
+      "Wake up to naturally defined lashes every day. Clean, flutter-worthy, and never overdone. Perfect for first-timers or anyone wanting effortless polish without the drama. One extension per natural lash — your eyes, enhanced.",
     category: "full_set",
-    price: 50.0,
-    deposit_amount: 10.0,
-    duration_minutes: 110,
+    price: 85.0,
+    deposit_amount: 25.0,
+    duration_minutes: 70,
     image_url: null,
   },
   {
-    id: "svc-premium-wispy",
-    name: "Premium Wispy Glam",
-    description: "Wispy, textured volume for a glamorous yet effortless look.",
+    id: "svc-wispy",
+    name: "Wispy Set",
+    description:
+      "Feathery, dimensional, and a little bit editorial. The \"I woke up like this\" lash — fluffy enough to be noticed, soft enough to be effortless. If you want lashes that photograph beautifully, this is your style.",
     category: "full_set",
-    price: 55.0,
-    deposit_amount: 10.0,
-    duration_minutes: 110,
+    price: 100.0,
+    deposit_amount: 25.0,
+    duration_minutes: 80,
     image_url: null,
   },
   {
-    id: "svc-premium-custom",
-    name: "Premium Wispy Glam (Custom)",
-    description: "Fully customized wispy lash design tailored to your eye shape.",
+    id: "svc-hybrid",
+    name: "Hybrid Set",
+    description:
+      "Our most-requested style. Fuller than Classic, softer than full Volume — the sweet spot. Half classic extensions, half wispy fans, all gorgeous. Looks just as good in real life as it does in photos.",
     category: "full_set",
-    price: 55.0,
-    deposit_amount: 10.0,
-    duration_minutes: 110,
+    price: 110.0,
+    deposit_amount: 25.0,
+    duration_minutes: 90,
     image_url: null,
   },
   {
-    id: "svc-natural-refill",
-    name: "Natural Glam Refill",
-    description: "Maintain your Natural Glam set with a fresh fill.",
-    category: "refill",
-    price: 25.0,
-    deposit_amount: 10.0,
-    duration_minutes: 60,
-    image_url: null,
-  },
-  {
-    id: "svc-premium-refill",
-    name: "Premium Wispy Glam Refill",
-    description: "Keep your wispy volume looking flawless.",
-    category: "refill",
-    price: 30.0,
-    deposit_amount: 10.0,
-    duration_minutes: 60,
-    image_url: null,
-  },
-  {
-    id: "svc-premium-custom-refill",
-    name: "Premium Wispy Glam Refill (Custom)",
-    description: "Custom refill for your personalized wispy set.",
-    category: "refill",
-    price: 30.0,
-    deposit_amount: 10.0,
+    id: "svc-lash-lift",
+    name: "Lash Lift",
+    description:
+      "No extensions. No fills. Just your own lashes, lifted and tinted to look impossibly long and curled for 6–8 weeks straight. Zero maintenance, maximum impact. Perfect between extension sets or on its own.",
+    category: "lift",
+    price: 70.0,
+    deposit_amount: 25.0,
     duration_minutes: 60,
     image_url: null,
   },

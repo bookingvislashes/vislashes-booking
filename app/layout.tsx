@@ -30,7 +30,7 @@ const squareSdkUrl =
 export const metadata: Metadata = {
   title: "VIS Lashes — Premium Lash Extensions in Orlando",
   description:
-    "Book your lash extension appointment with VIS Lashes. Natural Glam, Premium Wispy Glam, and custom lash sets in Orlando, Saint Cloud, and Kissimmee, FL.",
+    "Book your lash extension appointment with VIS Lashes. Classic, Wispy, and Hybrid sets, plus lash lifts, in Orlando, Saint Cloud, and Kissimmee, FL.",
   openGraph: {
     title: "VIS Lashes — Premium Lash Extensions",
     description:
