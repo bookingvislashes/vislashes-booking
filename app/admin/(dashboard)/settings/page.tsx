@@ -30,6 +30,21 @@ const FIELDS = [
   { key: "business_name", label: "Business Name", type: "text", fallback: "VIS Lashes" },
   { key: "business_email", label: "Business Email", type: "email", fallback: "" },
   { key: "business_phone", label: "Business Phone", type: "tel", fallback: "" },
+  // Shown on the client's confirmation page. Both are left blank rather than
+  // guessed — the confirmation simply omits whichever is empty, so a wrong
+  // address is never displayed to someone about to drive to it.
+  {
+    key: "business_address",
+    label: "Studio Address (shown on confirmations)",
+    type: "text",
+    fallback: "",
+  },
+  {
+    key: "lash_artist",
+    label: "Lash Artist (shown on confirmations)",
+    type: "text",
+    fallback: "",
+  },
 ] as const;
 
 type Values = Record<string, string>;
