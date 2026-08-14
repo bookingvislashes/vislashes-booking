@@ -30,13 +30,22 @@ export function Header() {
     // icon and a cart, which overflowed at 768px; with only the wordmark and
     // two links left there is room to align properly.
     <header className="w-full px-6 sm:px-12 lg:px-[120px] pt-[27px] pb-[33px] flex items-center justify-between gap-3 max-w-[1440px] mx-auto">
-      {/* Logo */}
+      {/* Logo
+          unoptimized on both: Next refuses to run an SVG through its image
+          optimizer unless dangerouslyAllowSVG is set (it is not, and turning
+          it on site-wide would apply to every future image path, not just
+          these two trusted local files). Without this, the optimizer logs an
+          error and serves nothing, which renders as a broken-image icon —
+          exactly what showed up in place of the wordmark. SVGs are already
+          vector, so there was nothing for the optimizer to do for them
+          anyway. */}
       <Link href="/" className="flex items-center gap-1 shrink-0">
         <Image
           src="/images/logo-icon.svg"
           alt=""
           width={76}
           height={34}
+          unoptimized
           className="h-[26px] lg:h-[34px] w-auto"
         />
         <Image
@@ -44,6 +53,7 @@ export function Header() {
           alt="VIS Lashes"
           width={138}
           height={32}
+          unoptimized
           className="h-[24px] lg:h-[32px] w-auto"
         />
       </Link>

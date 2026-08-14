@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.6.1",
+    date: "2026-08-14",
+    changes: [
+      {
+        kind: "fixed",
+        text: "The logo in the header showed as a broken image instead of the wordmark.",
+      },
+    ],
+  },
+  {
     version: "1.6.0",
     date: "2026-08-14",
     changes: [
