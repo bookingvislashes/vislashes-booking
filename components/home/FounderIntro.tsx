@@ -16,7 +16,14 @@ export function FounderIntro() {
   const portraitReady = hasAsset(PORTRAIT);
 
   return (
-    <section className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] py-12 sm:py-14 lg:py-[45px]">
+    // Top and bottom are set separately, and the top is much larger at lg. The
+    // hero's photo is absolutely positioned at top-[134px] with h-[677px] —
+    // 811px inside a min-h-[720px] container — so overflow-hidden crops it
+    // flush against the hero's bottom edge on desktop. The Figma padding of
+    // 45px was measured against a mockup where the photo ended higher, and
+    // read as almost no gap at all. Bottom padding stays as designed so the
+    // spacing to How to Book is unchanged.
+    <section className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] pt-16 sm:pt-20 lg:pt-[100px] pb-12 sm:pb-14 lg:pb-[45px]">
       <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-12 lg:gap-[77px]">
         {/* The design uses a tall rounded oval rather than a circle — the
             radius is half the width, not half the height. */}
