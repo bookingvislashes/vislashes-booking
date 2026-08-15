@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.8.1",
+    date: "2026-08-15",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Your photo and the three \"How to Book\" photos now show on the home page — those four spots were a plain tan block before.",
+      },
+      {
+        kind: "fixed",
+        text: "Your portrait had the GPS location of your home studio saved inside the photo file. That was removed before the photo went on the live site.",
+      },
+    ],
+  },
+  {
     version: "1.8.0",
     date: "2026-08-15",
     changes: [

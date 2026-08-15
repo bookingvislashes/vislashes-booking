@@ -1,7 +1,9 @@
 import Image from "next/image";
 import { hasAsset } from "@/lib/has-asset";
 
-const PORTRAIT = "/images/vianney-portrait.png";
+// A photograph, so it stays a JPEG — the same call as hero-photo.jpg. Next's
+// image optimiser re-encodes to WebP/AVIF on delivery either way.
+const PORTRAIT = "/images/vianney-portrait.jpg";
 
 /**
  * Founder intro — Figma node 516:123 on the Home Page.
