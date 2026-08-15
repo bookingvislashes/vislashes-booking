@@ -65,6 +65,13 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
           <circle cx="12" cy="11" r="2" />
         </svg>
       );
+    case "receipt":
+      return (
+        <svg {...props}>
+          <path d="M5 3v18l2-1.4 2 1.4 2-1.4 2 1.4 2-1.4 2 1.4V3l-2 1.4L13 3l-2 1.4L9 3 7 4.4 5 3z" />
+          <path d="M9 8h6M9 12h6" />
+        </svg>
+      );
     case "sparkle":
       return (
         <svg {...props}>
@@ -91,6 +98,7 @@ const navItems = [
   { label: "Clients", href: "/admin/clients", icon: "users" },
   { label: "Agreements", href: "/admin/agreements", icon: "file-text" },
   { label: "Services", href: "/admin/services", icon: "tag" },
+  { label: "Payments", href: "/admin/payments", icon: "receipt" },
   { label: "Settings", href: "/admin/settings", icon: "settings" },
   { label: "What's New", href: "/admin/whats-new", icon: "sparkle" },
 ];

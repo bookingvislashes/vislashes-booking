@@ -43,6 +43,17 @@ const nextConfig: NextConfig = {
     // When swapping in a new photo, give it a new filename.
     minimumCacheTTL: 60 * 60 * 24 * 30,
   },
+  // Apple requires its verification file at this exact path. Next ignores
+  // directories beginning with a dot under app/, so the handler lives at a
+  // normal route and is mapped onto the well-known path here.
+  async rewrites() {
+    return [
+      {
+        source: "/.well-known/apple-developer-merchantid-domain-association",
+        destination: "/apple-pay-domain-association",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

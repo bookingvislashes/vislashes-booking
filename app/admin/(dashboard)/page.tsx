@@ -17,6 +17,12 @@ interface Stats {
   today: TodayBooking[];
   monthCount: number;
   clientCount: number;
+  /**
+   * Card payments with no booking behind them. Surfaced here rather than only
+   * on /admin/payments because the phone's bottom nav stops at five items and
+   * never reaches that page — an alert nobody can see is not an alert.
+   */
+  orphanCount: number;
 }
 
 /** Entrance stagger. Index-driven so rows cascade instead of popping at once. */
@@ -90,6 +96,7 @@ export default function AdminDashboard() {
     today: [],
     monthCount: 0,
     clientCount: 0,
+    orphanCount: 0,
   });
   // Starts true and is only ever cleared. Refreshes triggered by realtime
   // update in place — flipping back to a loading state on every change made
@@ -102,7 +109,7 @@ export default function AdminDashboard() {
   const monthStart = `${today.slice(0, 7)}-01`;
 
   const fetchStats = useCallback(async () => {
-    const [todayRes, monthRes, clientRes] = await Promise.all([
+    const [todayRes, monthRes, clientRes, orphanRes] = await Promise.all([
       supabase
         .from("bookings")
         .select(
@@ -117,11 +124,20 @@ export default function AdminDashboard() {
         .gte("booking_date", monthStart)
         .in("status", ["confirmed", "completed"]),
       supabase.from("clients").select("id", { count: "exact", head: true }),
+      supabase
+        .from("orphan_payments")
+        .select("id", { count: "exact", head: true })
+        .eq("resolved", false),
     ]);
 
     // These errors were being discarded, so a failed query was indistinguishable
     // from a genuinely empty day — the worst possible confusion for someone
     // deciding whether to expect a client.
+    // orphanRes is deliberately absent from this check. It is a secondary
+    // alert, and a deployment whose database has not had 005 applied yet
+    // would otherwise show "couldn't load today's numbers" and no schedule at
+    // all — breaking the screen she actually runs her day from over a panel
+    // that is empty on a healthy salon anyway.
     const failure = todayRes.error || monthRes.error || clientRes.error;
     if (failure) {
       setError(failure.message);
@@ -140,6 +156,7 @@ export default function AdminDashboard() {
       today: mapped,
       monthCount: monthRes.count || 0,
       clientCount: clientRes.count || 0,
+      orphanCount: orphanRes.error ? 0 : orphanRes.count || 0,
     });
     setLoading(false);
   }, [supabase, today, monthStart]);
@@ -203,6 +220,23 @@ export default function AdminDashboard() {
             Try again
           </button>
         </div>
+      )}
+
+      {stats.orphanCount > 0 && (
+        <Link
+          href="/admin/payments"
+          className="animate-fade-in-up block bg-white border border-danger/30 rounded-surface p-4 mb-6 transition-transform active:scale-[0.99]"
+        >
+          <p className="font-sans text-[16px] text-danger font-semibold">
+            {stats.orphanCount === 1
+              ? "1 payment needs review"
+              : `${stats.orphanCount} payments need review`}
+          </p>
+          <p className="font-sans text-[16px] text-muted mt-1 leading-[1.5]">
+            A card was charged without a booking being saved. Tap to see the
+            details.
+          </p>
+        </Link>
       )}
 
       {/* Today leads, so it carries more weight than the two reference figures

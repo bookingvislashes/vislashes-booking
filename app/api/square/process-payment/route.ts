@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { createBooking } from "@/lib/create-booking";
 import { bookingSchema } from "@/lib/schemas";
 import { notifyAdmins } from "@/lib/push";
+import { recordOrphanPayment } from "@/lib/orphan-payments";
 import { z } from "zod";
 
 const paymentSchema = z.object({
@@ -88,7 +89,17 @@ export async function POST(req: NextRequest) {
       verificationToken: data.verificationToken,
     });
 
-    if (!payment || payment.status !== "COMPLETED") {
+    // `id` is optional on Square's Payment type. A completed capture without
+    // one cannot be refunded, reconciled or even referred to in a support
+    // conversation, so it is treated as a failure here rather than carried
+    // forward as an undefined that quietly disables both recovery paths below.
+    if (!payment || payment.status !== "COMPLETED" || !payment.id) {
+      if (payment && payment.status === "COMPLETED" && !payment.id) {
+        console.error(
+          "Square returned a COMPLETED payment with no id — cannot reconcile.",
+          { amount: depositAmount, email: data.customerEmail }
+        );
+      }
       return NextResponse.json(
         { error: "Payment was not completed" },
         { status: 400 }
@@ -143,6 +154,22 @@ export async function POST(req: NextRequest) {
           `REFUND ALSO FAILED — manual action required for paymentId=${payment.id}`,
           refundError
         );
+
+        // Charged, no booking, and the money could not be handed back. This
+        // is the only state where the customer is genuinely out of pocket
+        // with nothing to show for it, so it goes somewhere durable rather
+        // than living in a log line — Settings → Payments surfaces it.
+        await recordOrphanPayment(supabase, {
+          squarePaymentId: payment.id,
+          amount: depositAmount,
+          currency: "USD",
+          customerEmail: data.customerEmail,
+          serviceId: data.serviceId,
+          bookingDate: data.formData.bookingDate,
+          timeSlot: data.formData.timeSlot,
+          failureReason:
+            "Card was charged but the booking could not be saved, and the automatic refund also failed.",
+        });
       }
 
       return NextResponse.json(
