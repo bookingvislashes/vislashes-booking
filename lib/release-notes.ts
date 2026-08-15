@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.8.0",
+    date: "2026-08-15",
+    changes: [
+      {
+        kind: "added",
+        text: "Two new sections on the home page from the Figma design: your intro with your photo, and a three-step \"How to Book\".",
+      },
+      {
+        kind: "note",
+        text: "Four photos still need exporting from Figma into public/images — until then those spots show a soft tan block rather than a broken image.",
+      },
+    ],
+  },
+  {
     version: "1.7.0",
     date: "2026-08-14",
     changes: [

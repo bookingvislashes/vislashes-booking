@@ -5,6 +5,8 @@ import { Footer } from "@/components/layout/Footer";
 import { ProductCards } from "@/components/home/ProductCards";
 import { ParallaxHero } from "@/components/home/ParallaxHero";
 import { AnimateOnScroll } from "@/components/home/AnimateOnScroll";
+import { FounderIntro } from "@/components/home/FounderIntro";
+import { HowToBook } from "@/components/home/HowToBook";
 import { PRODUCTS_ENABLED } from "@/lib/features";
 
 const featureSections = [
@@ -55,6 +57,16 @@ export default function HomePage() {
 
       {/* Hero Section — parallax + mix-blend-difference */}
       <ParallaxHero />
+
+      {/* Founder intro, then How to Book — in the order they sit on the Figma
+          Home Page: hero, founder, how-to-book, then the feature sections. */}
+      <AnimateOnScroll>
+        <FounderIntro />
+      </AnimateOnScroll>
+
+      <AnimateOnScroll>
+        <HowToBook />
+      </AnimateOnScroll>
 
       {/* Product Cards Section — retail is off, see lib/features.ts */}
       {PRODUCTS_ENABLED && (
