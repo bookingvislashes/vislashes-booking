@@ -31,6 +31,32 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.9.0",
+    date: "2026-08-15",
+    changes: [
+      {
+        kind: "added",
+        text: "A Payments tab. If a card is ever charged without the booking saving, it's listed there with the Square reference so you can refund her or book her in.",
+      },
+      {
+        kind: "added",
+        text: "The dashboard warns you when a payment needs reviewing, so it can't sit unnoticed until you go looking.",
+      },
+      {
+        kind: "added",
+        text: "Apple Pay is verified for www.vislashes.com — the domain check Apple requires is done and passing.",
+      },
+      {
+        kind: "note",
+        text: "Apple Pay stays hidden on the site until Square is switched from test mode to your real account.",
+      },
+      {
+        kind: "note",
+        text: "Phone notifications still need three keys (VAPID) added in Vercel before any alert can actually send.",
+      },
+    ],
+  },
+  {
     version: "1.8.2",
     date: "2026-08-15",
     changes: [
