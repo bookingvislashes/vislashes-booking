@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.9.1",
+    date: "2026-08-15",
+    changes: [
+      {
+        kind: "changed",
+        text: "The space above your intro on the home page is a little wider again.",
+      },
+    ],
+  },
+  {
     version: "1.9.0",
     date: "2026-08-15",
     changes: [
