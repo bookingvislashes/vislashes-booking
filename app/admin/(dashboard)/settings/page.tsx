@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
+import { PushNotificationSetup } from "@/components/admin/PushNotificationSetup";
 
 // Keys as they exist in the settings table. buffer_minutes and
 // advance_booking_hours are the two the slot generator actually reads
@@ -204,6 +205,8 @@ export default function SettingsPage() {
           ))}
         </div>
       </div>
+
+      <PushNotificationSetup />
 
       {/* Google Calendar
           There is no Google Calendar integration in this codebase — no OAuth

@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { sendConfirmationEmail } from "./email";
+import { sendPushToAdmins } from "./push";
 
 interface BookingFormData {
   serviceId: string;
@@ -189,6 +190,19 @@ export async function createBooking({
   } catch (emailErr) {
     // Log but don't fail the booking if email fails
     console.error("Failed to send confirmation email:", emailErr);
+  }
+
+  // 7. Notify admins on subscribed devices. Best-effort, same as the email
+  // above — sendPushToAdmins already swallows its own errors, but this stays
+  // wrapped so a future change to that function can't take the booking down.
+  try {
+    await sendPushToAdmins({
+      title: "New booking",
+      body: `${fullName} — ${service.name} on ${formData.bookingDate} at ${formData.timeSlot}`,
+      url: "/admin/bookings",
+    });
+  } catch (pushErr) {
+    console.error("Failed to send push notification:", pushErr);
   }
 
   return { bookingId: booking.id, clientId };
