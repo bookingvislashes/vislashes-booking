@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const props = {
@@ -86,6 +86,14 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
           <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1.08 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001.08 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1.08z" />
         </svg>
       );
+    case "ellipsis":
+      return (
+        <svg {...props}>
+          <circle cx="5" cy="12" r="1.5" />
+          <circle cx="12" cy="12" r="1.5" />
+          <circle cx="19" cy="12" r="1.5" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -103,8 +111,14 @@ const navItems = [
   { label: "What's New", href: "/admin/whats-new", icon: "sparkle" },
 ];
 
-// Mobile bottom nav shows first 5
-const mobileNavItems = navItems.slice(0, 5);
+// The phone's tab bar fits five targets at a comfortable size. It used to be
+// the first five nav items full stop, which quietly stranded everything after
+// Agreements — Services, Payments, Settings and What's New had no route on a
+// phone at all, and Settings is where notifications and the deposit live. Four
+// primary destinations plus "More" reaches all of them.
+const PRIMARY_TAB_COUNT = 4;
+const primaryNavItems = navItems.slice(0, PRIMARY_TAB_COUNT);
+const overflowNavItems = navItems.slice(PRIMARY_TAB_COUNT);
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -113,6 +127,13 @@ interface AdminLayoutProps {
 export function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  // "/admin" would prefix-match every page, so it alone is compared exactly.
+  const isActive = (href: string) =>
+    href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+
+  const overflowActive = overflowNavItems.some((item) => isActive(item.href));
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -143,20 +164,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
         <nav className="flex flex-col gap-1 flex-1">
           {navItems.map((item) => {
-            const isActive =
-              item.href === "/admin"
-                ? pathname === "/admin"
-                : pathname.startsWith(item.href);
+            const active = isActive(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                aria-current={isActive ? "page" : undefined}
+                aria-current={active ? "page" : undefined}
                 // The 3px active border lives in the shared class as
                 // transparent, so the label doesn't jump sideways when the
                 // route changes — only the colour switches.
                 className={`flex items-center gap-3 px-3 py-2 min-h-control rounded-control border-l-[3px] border-transparent text-[14px] font-sans transition-[color,background-color,border-color,transform] duration-200 active:scale-[0.98] ${
-                  isActive
+                  active
                     ? "bg-deep-brown/10 text-deep-brown font-semibold border-deep-brown"
                     : "text-charcoal hover:bg-light-tan"
                 }`}
@@ -216,8 +234,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Same build stamp the public footer carries, so a deploy can be
             confirmed from inside the admin without leaving it. Links to the
-            release notes: the mobile tab bar only shows the first five nav
-            items, so this is how What's New is reachable on a phone. */}
+            release notes — the same place the version is displayed is the
+            most natural thing to tap to find out what changed. What's New is
+            also in the phone's More menu. */}
         <Link
           href="/admin/whats-new"
           className="mt-10 inline-block font-sans text-[12px] tracking-[0.4px] text-muted/70 tabular-nums underline decoration-transparent hover:decoration-inherit transition-colors"
@@ -226,38 +245,97 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </Link>
       </main>
 
+      {/* Overflow sheet. Rendered above the tab bar and dismissed by tapping
+          the backdrop, the close button, or any destination inside it. */}
+      {moreOpen && (
+        <div className="md:hidden fixed inset-0 z-40">
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMoreOpen(false)}
+            className="absolute inset-0 w-full h-full bg-dark-brown/40 animate-fade-in cursor-default"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="More"
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-surface border-t border-light-tan pt-2 pb-[env(safe-area-inset-bottom)] animate-sheet-up"
+          >
+            {/* Grab handle: signals the sheet is dismissable without needing a
+                visible Cancel row. */}
+            <div
+              aria-hidden="true"
+              className="w-9 h-1 rounded-full bg-light-tan mx-auto mb-2"
+            />
+            {overflowNavItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMoreOpen(false)}
+                aria-current={isActive(item.href) ? "page" : undefined}
+                className={`flex items-center gap-3 px-5 min-h-[52px] text-[16px] font-sans transition-colors ${
+                  isActive(item.href)
+                    ? "text-deep-brown font-semibold bg-deep-brown/5"
+                    : "text-charcoal"
+                }`}
+              >
+                <Icon name={item.icon} size={18} />
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Mobile bottom nav */}
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-md border-t border-light-tan flex"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {mobileNavItems.map((item) => {
-          const isActive =
-            item.href === "/admin"
-              ? pathname === "/admin"
-              : pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive ? "page" : undefined}
-              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-2 text-[12px] font-sans transition-[color,transform] duration-200 active:scale-[0.94] ${
-                isActive ? "text-deep-brown font-semibold" : "text-muted"
+        {primaryNavItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={isActive(item.href) ? "page" : undefined}
+            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-2 text-[12px] font-sans transition-[color,transform] duration-200 active:scale-[0.94] ${
+              isActive(item.href) ? "text-deep-brown font-semibold" : "text-muted"
+            }`}
+          >
+            {/* Active marker rides the top edge. Scales on the x-axis rather
+                than animating width, so it stays on the compositor. */}
+            <span
+              aria-hidden="true"
+              className={`absolute top-0 h-[2px] w-8 rounded-full bg-deep-brown origin-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                isActive(item.href) ? "scale-x-100" : "scale-x-0"
               }`}
-            >
-              {/* Active marker rides the top edge. Scales on the x-axis rather
-                  than animating width, so it stays on the compositor. */}
-              <span
-                aria-hidden="true"
-                className={`absolute top-0 h-[2px] w-8 rounded-full bg-deep-brown origin-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                  isActive ? "scale-x-100" : "scale-x-0"
-                }`}
-              />
-              <Icon name={item.icon} size={18} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+            />
+            <Icon name={item.icon} size={18} />
+            <span>{item.label}</span>
+          </Link>
+        ))}
+
+        {/* Reads as selected whenever the current page lives inside it, so the
+            bar never looks like nothing is active. */}
+        <button
+          type="button"
+          onClick={() => setMoreOpen((open) => !open)}
+          aria-expanded={moreOpen}
+          aria-haspopup="menu"
+          className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-2 text-[12px] font-sans transition-[color,transform] duration-200 active:scale-[0.94] cursor-pointer ${
+            overflowActive || moreOpen
+              ? "text-deep-brown font-semibold"
+              : "text-muted"
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className={`absolute top-0 h-[2px] w-8 rounded-full bg-deep-brown origin-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              overflowActive ? "scale-x-100" : "scale-x-0"
+            }`}
+          />
+          <Icon name="ellipsis" size={18} />
+          <span>More</span>
+        </button>
       </nav>
     </div>
   );

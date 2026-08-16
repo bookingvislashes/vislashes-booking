@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.9.2",
+    date: "2026-08-15",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Services, Payments, Settings and What's New are reachable on your phone — tap \"More\" in the bottom bar. They only opened on a computer before.",
+      },
+    ],
+  },
+  {
     version: "1.9.1",
     date: "2026-08-15",
     changes: [
