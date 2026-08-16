@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.12.2",
+    date: "2026-08-16",
+    changes: [
+      {
+        kind: "fixed",
+        text: "The three photo panels lower down the home page — Connection, Passion and Chemistry — now have their photos ready before you reach them, instead of sitting empty while they loaded.",
+      },
+    ],
+  },
+  {
     version: "1.12.1",
     date: "2026-08-16",
     changes: [

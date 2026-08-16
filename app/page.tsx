@@ -118,7 +118,19 @@ export default function HomePage() {
                   alt={section.name}
                   fill
                   className="object-cover"
-                  loading="lazy"
+                  // Eager, not lazy. These sit inside AnimateOnScroll, which
+                  // holds them at opacity 0 until they scroll into view — so
+                  // lazy loading only STARTED the download at the moment the
+                  // reveal began, and the section faded in as an empty
+                  // gradient while the photo was still on the wire. All three
+                  // together are about 0.9MB of 433x576 source, so fetching
+                  // them up front costs little.
+                  //
+                  // eager rather than priority on purpose: priority also emits
+                  // a preload link, and three of those would compete with the
+                  // hero photo, which is the LCP element and the one image
+                  // that genuinely needs to win.
+                  loading="eager"
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   quality={90}
                   style={{

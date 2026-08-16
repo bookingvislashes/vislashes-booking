@@ -54,7 +54,15 @@ export function AnimateOnScroll({ children, delay = 0 }: AnimateOnScrollProps) {
           observer.unobserve(entry.target);
         }
       },
-      { threshold: 0.15 }
+      {
+        threshold: 0.1,
+        // Extends the root downwards so a section begins its fade while it is
+        // still just below the fold, instead of only once a sixth of it is
+        // already on screen. Combined with eagerly-loaded photos, the section
+        // is drawn and settled by the time it is properly in view rather than
+        // starting to assemble itself as she arrives.
+        rootMargin: "0px 0px 12% 0px",
+      }
     );
 
     if (ref.current) observer.observe(ref.current);
