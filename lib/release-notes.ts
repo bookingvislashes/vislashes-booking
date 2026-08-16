@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.12.1",
+    date: "2026-08-16",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Switching tabs at the bottom of the app is quick again — the last update made it lag.",
+      },
+    ],
+  },
+  {
     version: "1.12.0",
     date: "2026-08-16",
     changes: [

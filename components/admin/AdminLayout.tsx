@@ -296,10 +296,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Mobile bottom nav */}
       <nav
-        // Thinner white and a stronger, saturated blur so what scrolls beneath
-        // tints the bar instead of disappearing behind it — the whole reason
-        // iOS glass reads as a physical layer rather than a painted strip.
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/70 backdrop-blur-xl backdrop-saturate-150 border-t border-light-tan/80 flex"
+        // blur-md, not blur-xl. A backdrop filter re-samples everything behind
+        // a full-width fixed bar on every frame, and on iOS the cost scales
+        // hard with the radius — xl plus saturate made switching tabs visibly
+        // slow. md reads nearly the same and composites cheaply.
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-md border-t border-light-tan/80 flex"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         {primaryNavItems.map((item) => (
@@ -307,7 +308,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             key={item.href}
             href={item.href}
             aria-current={isActive(item.href) ? "page" : undefined}
-            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-2 text-[12px] font-sans transition-[color,transform] duration-200 active:scale-[0.94] ${
+            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-2 text-[12px] font-sans transition-[color,transform] duration-150 active:scale-[0.94] ${
               isActive(item.href) ? "text-deep-brown font-semibold" : "text-muted"
             }`}
           >
@@ -324,7 +325,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 settle an iOS selection has. */}
             <span
               aria-hidden="true"
-              className={`absolute inset-x-2 inset-y-1 rounded-control bg-light-tan/45 origin-center transition-[transform,opacity] duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+              className={`absolute inset-x-2 inset-y-1 rounded-control bg-light-tan/45 origin-center transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.4,0.64,1)] ${
                 isActive(item.href)
                   ? "scale-100 opacity-100"
                   : "scale-75 opacity-0"
@@ -344,7 +345,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           onClick={() => setMoreOpen((open) => !open)}
           aria-expanded={moreOpen}
           aria-haspopup="menu"
-          className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-2 text-[12px] font-sans transition-[color,transform] duration-200 active:scale-[0.94] cursor-pointer ${
+          className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-2 text-[12px] font-sans transition-[color,transform] duration-150 active:scale-[0.94] cursor-pointer ${
             overflowActive || moreOpen
               ? "text-deep-brown font-semibold"
               : "text-muted"
@@ -358,7 +359,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           />
           <span
             aria-hidden="true"
-            className={`absolute inset-x-2 inset-y-1 rounded-control bg-light-tan/45 origin-center transition-[transform,opacity] duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            className={`absolute inset-x-2 inset-y-1 rounded-control bg-light-tan/45 origin-center transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.4,0.64,1)] ${
               overflowActive || moreOpen
                 ? "scale-100 opacity-100"
                 : "scale-75 opacity-0"
