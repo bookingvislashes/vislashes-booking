@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRegisterRefresh } from "@/components/admin/RefreshProvider";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
@@ -49,6 +50,10 @@ export default function BookingsPage() {
     }
     setLoading(false);
   }, [supabase, statusFilter]);
+
+  // Pull-to-refresh, the header control and coming back to the
+  // app all re-run this screen's own fetch.
+  useRegisterRefresh(fetchBookings);
 
   useEffect(() => {
     fetchBookings();

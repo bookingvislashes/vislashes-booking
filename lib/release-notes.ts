@@ -31,6 +31,36 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.12.0",
+    date: "2026-08-16",
+    changes: [
+      {
+        kind: "added",
+        text: "A real calendar — month, week and day. Tap any date to give it its own hours, close it, or block part of it.",
+      },
+      {
+        kind: "added",
+        text: "You can now block just part of a day, like 1pm to 3pm for an appointment of your own, instead of losing the whole day.",
+      },
+      {
+        kind: "added",
+        text: "Closing a day that already has someone booked is refused, and it shows you who — so a paid client can never be quietly stranded.",
+      },
+      {
+        kind: "added",
+        text: "Pull down to refresh, or tap the arrow at the top. It also refreshes on its own when you come back to the app, so new bookings appear without closing and reopening it.",
+      },
+      {
+        kind: "added",
+        text: "With no signal the calendar shows your last saved copy instead of an error, clearly labelled.",
+      },
+      {
+        kind: "note",
+        text: "Run supabase/migrations/008_date_overrides.sql in Supabase. Section 2 has a query to run first. Until it's done the calendar works but per-date hours won't save.",
+      },
+    ],
+  },
+  {
     version: "1.11.2",
     date: "2026-08-16",
     changes: [

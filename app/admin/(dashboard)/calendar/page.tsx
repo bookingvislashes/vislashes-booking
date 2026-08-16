@@ -6,6 +6,8 @@ import { Modal } from "@/components/ui/modal";
 import { MonthGrid } from "@/components/admin/calendar/MonthGrid";
 import { DayEditor } from "@/components/admin/calendar/DayEditor";
 import { WeeklyHoursPanel } from "@/components/admin/calendar/WeeklyHoursPanel";
+import { useRegisterRefresh } from "@/components/admin/RefreshProvider";
+import { readCache, writeCache } from "@/lib/admin-cache";
 import {
   ScheduleDay,
   addDays,
@@ -19,6 +21,7 @@ import {
   startOfWeek,
   todayISO,
   toISO,
+  type SchedulePayload,
   type WeeklyHourRow,
 } from "@/lib/schedule";
 
@@ -99,6 +102,7 @@ export default function CalendarPage() {
   const [days, setDays] = useState<ScheduleDay[]>([]);
   const [weeklyHours, setWeeklyHours] = useState<WeeklyHourRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   // The range currently on screen. Comparing it to the range we want is what
   // tells us a fetch is outstanding, without setting any state synchronously
@@ -123,16 +127,33 @@ export default function CalendarPage() {
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
+      const key = `schedule:${from}..${to}`;
       try {
         const result = await fetchSchedule(from, to, signal);
         if (signal?.aborted) return;
         setDays(result.days);
         setWeeklyHours(result.weeklyHours);
-        setLoadedRange(`${from}..${to}`);
+        setLoadedRange(key);
+        setStale(false);
         setError(null);
+        writeCache(key, result);
       } catch (err) {
         if (signal?.aborted) return;
         if (err instanceof DOMException && err.name === "AbortError") return;
+
+        // No signal, or the server is unreachable. A saved copy of this exact
+        // range is far more use than an error — she mostly needs to know what
+        // is booked, and that does not change while she is offline. Clearly
+        // labelled, because acting on stale hours would be worse than useless.
+        const cached = readCache<SchedulePayload>(key);
+        if (cached) {
+          setDays(cached.data.days);
+          setWeeklyHours(cached.data.weeklyHours);
+          setLoadedRange(key);
+          setStale(true);
+          setError(null);
+          return;
+        }
         setError("Couldn't load the schedule.");
       }
     },
@@ -146,6 +167,8 @@ export default function CalendarPage() {
   }, [load]);
 
   const refresh = useCallback(() => load(), [load]);
+
+  useRegisterRefresh(refresh);
 
   const step = (direction: 1 | -1) => {
     setSelected(null);
@@ -184,6 +207,16 @@ export default function CalendarPage() {
       <h1 className="font-display text-[28px] font-bold text-dark-brown mb-4">
         Calendar
       </h1>
+
+      {stale && (
+        <p
+          role="status"
+          className="font-sans text-[13px] text-charcoal bg-light-tan/60 rounded-control px-3 py-2 mb-4"
+        >
+          Showing a saved copy — couldn&apos;t reach the server just now. Pull
+          down to try again.
+        </p>
+      )}
 
       <div className="bg-white rounded-surface p-4 sm:p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
         {/* View switcher */}

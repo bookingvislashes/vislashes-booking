@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRegisterRefresh } from "@/components/admin/RefreshProvider";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -196,6 +197,10 @@ export default function AdminDashboard() {
     });
     setLoading(false);
   }, [supabase, today, monthStart, weekEnd]);
+
+  // Pull-to-refresh, the header control and coming back to the
+  // app all re-run this screen's own fetch.
+  useRegisterRefresh(fetchStats);
 
   useEffect(() => {
     fetchStats();

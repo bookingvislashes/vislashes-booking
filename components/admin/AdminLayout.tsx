@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ReactNode, useState } from "react";
+import { RefreshProvider, RefreshButton } from "@/components/admin/RefreshProvider";
 
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const props = {
@@ -142,6 +143,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   return (
+    // Wraps the whole shell so pull-to-refresh, refresh-on-resume and the
+    // header control all reach whichever screen is currently mounted.
+    <RefreshProvider>
     <div className="min-h-[100dvh] bg-cream">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-[200px] bg-white border-r border-light-tan p-4">
@@ -213,12 +217,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             LASHES
           </span>
         </Link>
-        <button
-          onClick={handleSignOut}
-          className="-m-2 p-2 min-h-[44px] flex items-center text-[14px] text-muted font-sans cursor-pointer rounded-control transition-transform active:scale-[0.97]"
-        >
-          Sign Out
-        </button>
+        <div className="flex items-center gap-3">
+          <RefreshButton />
+          <button
+            onClick={handleSignOut}
+            className="-m-2 p-2 min-h-[44px] flex items-center text-[14px] text-muted font-sans cursor-pointer rounded-control transition-transform active:scale-[0.97]"
+          >
+            Sign Out
+          </button>
+        </div>
       </header>
 
       {/* Main content. The bottom padding has to clear the fixed tab bar AND
@@ -289,7 +296,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Mobile bottom nav */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-md border-t border-light-tan flex"
+        // Thinner white and a stronger, saturated blur so what scrolls beneath
+        // tints the bar instead of disappearing behind it — the whole reason
+        // iOS glass reads as a physical layer rather than a painted strip.
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/70 backdrop-blur-xl backdrop-saturate-150 border-t border-light-tan/80 flex"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         {primaryNavItems.map((item) => (
@@ -309,8 +319,21 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 isActive(item.href) ? "scale-x-100" : "scale-x-0"
               }`}
             />
-            <Icon name={item.icon} size={18} />
-            <span>{item.label}</span>
+            {/* Glass pill behind the active tab. Transform and opacity only, so
+                it composites; the overshoot in the curve gives it the slight
+                settle an iOS selection has. */}
+            <span
+              aria-hidden="true"
+              className={`absolute inset-x-2 inset-y-1 rounded-control bg-light-tan/45 origin-center transition-[transform,opacity] duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                isActive(item.href)
+                  ? "scale-100 opacity-100"
+                  : "scale-75 opacity-0"
+              }`}
+            />
+            <span className="relative">
+              <Icon name={item.icon} size={18} />
+            </span>
+            <span className="relative">{item.label}</span>
           </Link>
         ))}
 
@@ -333,10 +356,21 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               overflowActive ? "scale-x-100" : "scale-x-0"
             }`}
           />
-          <Icon name="ellipsis" size={18} />
-          <span>More</span>
+          <span
+            aria-hidden="true"
+            className={`absolute inset-x-2 inset-y-1 rounded-control bg-light-tan/45 origin-center transition-[transform,opacity] duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+              overflowActive || moreOpen
+                ? "scale-100 opacity-100"
+                : "scale-75 opacity-0"
+            }`}
+          />
+          <span className="relative">
+            <Icon name="ellipsis" size={18} />
+          </span>
+          <span className="relative">More</span>
         </button>
       </nav>
     </div>
+    </RefreshProvider>
   );
 }
