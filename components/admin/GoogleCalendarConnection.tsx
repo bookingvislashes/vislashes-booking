@@ -102,14 +102,24 @@ export function GoogleCalendarConnection() {
       )}
 
       {status?.configured && status.connected && (
-        <div className="flex items-center gap-4 flex-wrap">
-          <span className="flex items-center gap-2 font-sans text-[14px] text-success font-semibold">
-            <span
-              aria-hidden="true"
-              className="w-2 h-2 rounded-full bg-success"
-            />
-            Connected{status.email ? ` — ${status.email}` : ""}
-          </span>
+        <div className="flex items-start gap-4 flex-wrap">
+          <div className="min-w-0">
+            <span className="flex items-center gap-2 font-sans text-[14px] text-success font-semibold">
+              <span
+                aria-hidden="true"
+                className="w-2 h-2 rounded-full bg-success"
+              />
+              Connected
+            </span>
+            {/* Indented to clear the status dot so it reads as belonging to
+                "Connected". break-all because a long address has nowhere to go
+                on a phone, which is where she uses this. */}
+            {status.email && (
+              <p className="font-sans text-[13px] text-charcoal mt-1 pl-4 break-all">
+                {status.email}
+              </p>
+            )}
+          </div>
           <Button
             variant="ghost"
             size="sm"

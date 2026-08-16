@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.11.2",
+    date: "2026-08-16",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Settings now shows which Google account your calendar is connected to, under the word \"Connected\". It was never able to show it before.",
+      },
+      {
+        kind: "note",
+        text: "Press Disconnect and connect again once, so it can read the address. Your appointments already on the calendar stay where they are.",
+      },
+    ],
+  },
+  {
     version: "1.11.1",
     date: "2026-08-16",
     changes: [

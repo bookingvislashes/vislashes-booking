@@ -21,7 +21,17 @@ const TIMEZONE = "America/New_York";
 // for reading her manually-blocked time back into availability — that half is
 // not built, and requesting a scope nothing uses only makes the consent screen
 // more alarming for no benefit.
-const SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
+//
+// userinfo.email is what lets Settings name the account that is connected.
+// Without it the userinfo lookup in saveConnectionFromCode fails on scope,
+// google_email is stored as null every time, and the panel can only ever say
+// "Connected" with no way to tell which account it means. It is a basic
+// profile scope rather than a sensitive one, so it adds nothing to Google's
+// verification requirements.
+const SCOPES = [
+  "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/userinfo.email",
+];
 
 // Trimmed at the point of use. Pasting into Vercel's field very easily carries
 // a trailing newline or space, and Google rejects the result as an unknown
