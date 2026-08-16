@@ -84,6 +84,12 @@ export function HowToBook() {
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 336px"
                       quality={90}
+                      // Eager for the same reason as the founder portrait. The
+                      // sources are the heaviest on the site at ~1.2MB each,
+                      // but `sizes` means the browser only ever fetches the
+                      // 336px-wide rendition, so this costs far less than the
+                      // source weight suggests.
+                      loading="eager"
                     />
                   )}
                 </div>

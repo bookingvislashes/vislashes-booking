@@ -36,6 +36,9 @@ export function FounderIntro() {
               className="object-cover"
               sizes="(max-width: 640px) 200px, 251px"
               quality={90}
+              // Sits just under the hero, so it is on screen within a scroll or
+              // two. Lazy loading only started the download once she got there.
+              loading="eager"
             />
           )}
         </div>

@@ -59,14 +59,21 @@ export default function HomePage() {
       <ParallaxHero />
 
       {/* Founder intro, then How to Book — in the order they sit on the Figma
-          Home Page: hero, founder, how-to-book, then the feature sections. */}
-      <AnimateOnScroll>
-        <FounderIntro />
-      </AnimateOnScroll>
+          Home Page: hero, founder, how-to-book, then the feature sections.
 
-      <AnimateOnScroll>
-        <HowToBook />
-      </AnimateOnScroll>
+          Deliberately NOT wrapped in AnimateOnScroll. These two sit directly
+          under the hero, so they are reached almost immediately, and the reveal
+          was costing more than it added: the section held at opacity 0 until it
+          scrolled into view, and only then did its lazy photos begin
+          downloading. What that looked like in practice was a tall blank gap
+          where How to Book should be, for several seconds.
+
+          They now render with the page, like any ordinary section. The feature
+          panels further down keep the reveal — they are far enough away to have
+          loaded long before she arrives. */}
+      <FounderIntro />
+
+      <HowToBook />
 
       {/* Product Cards Section — retail is off, see lib/features.ts */}
       {PRODUCTS_ENABLED && (

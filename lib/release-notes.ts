@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.12.3",
+    date: "2026-08-16",
+    changes: [
+      {
+        kind: "changed",
+        text: "Your intro and the \"How to Book\" steps are there as soon as the home page opens. They used to wait until you scrolled to them and then take several seconds to fade in, leaving a blank gap.",
+      },
+    ],
+  },
+  {
     version: "1.12.2",
     date: "2026-08-16",
     changes: [
