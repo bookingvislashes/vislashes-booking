@@ -94,10 +94,51 @@
 }
 
 @layer base {
+  html {
+    /* iOS Safari inflates text when a phone is turned to landscape, which
+       breaks the admin's fixed-height controls — a 48px row with 19px text in
+       it. The standard property is still unimplemented in WebKit, so the
+       prefixed one is the one actually doing the work here. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     background-color: var(--color-cream);
     color: var(--color-charcoal);
     font-family: var(--font-sans);
+  }
+
+  /* iOS paints a grey block over anything tappable for ~300ms on touch. Every
+     interactive element here already answers a tap with its own `active:`
+     state, so the default only muddies them — and it ignores border-radius,
+     so it squared off the corners of the pills and switches while it showed. */
+  a,
+  button,
+  [role="button"],
+  [role="switch"],
+  input,
+  select,
+  textarea,
+  label {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Safari ignores width/height on a checkbox or radio unless the native
+     appearance is dropped first, and renders selects with its own chrome that
+     disagrees with the control scale. */
+  select {
+    -webkit-appearance: none;
+    appearance: none;
+    /* Dropping the appearance also drops Safari's own arrow, so the control
+       would read as a plain text box with no hint that it opens. This is the
+       same chevron the reorder buttons use, in --color-muted (#6E6A63). */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236E6A63' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 12px 12px;
+    /* Clears the arrow so a long option label cannot run underneath it. */
+    padding-right: 2.25rem;
   }
 
   h1, h2, h3, h4, h5, h6 {

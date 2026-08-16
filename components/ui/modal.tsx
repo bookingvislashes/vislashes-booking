@@ -13,6 +13,20 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Held in a ref so the effect below can key on `isOpen` alone.
+  //
+  // Every caller passes this as an inline arrow (`onClose={() => setDraft(null)}`),
+  // so its identity changes on every render of the parent. With `onClose` in
+  // the dependency array, typing one character into a field inside the dialog
+  // re-ran the whole effect: the cleanup moved focus back to whatever opened
+  // the dialog and the re-run moved it to the panel, so the field lost focus
+  // on every keystroke and the iOS keyboard collapsed after each letter. It
+  // also unpinned and re-pinned the body and re-ran window.scrollTo each time.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -34,7 +48,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab" || !panelRef.current) return;
@@ -70,7 +84,9 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       window.scrollTo(0, scrollY);
       previouslyFocused?.focus();
     };
-  }, [isOpen, onClose]);
+    // `onClose` is deliberately absent — see onCloseRef above. Adding it back
+    // reintroduces the keystroke-by-keystroke focus loss.
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

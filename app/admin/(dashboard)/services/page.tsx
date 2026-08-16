@@ -384,9 +384,16 @@ export default function ServicesPage() {
                     service.is_active ? "bg-deep-brown" : "bg-muted/30"
                   }`}
                 >
+                  {/* `left-0.5` is load-bearing. Without a left anchor this
+                      span is positioned from its static position, and a
+                      <button> centres its content — so the knob started near
+                      the middle of the track and `translate-x-5` carried it
+                      out past the right edge instead of sliding to it.
+                      Anchored at 2px and travelling 20px, it lands 2px from
+                      the right of the 40px track: even inset at both ends. */}
                   <span
-                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                      service.is_active ? "translate-x-5" : "translate-x-0.5"
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ease-out ${
+                      service.is_active ? "translate-x-5" : "translate-x-0"
                     }`}
                   />
                 </button>

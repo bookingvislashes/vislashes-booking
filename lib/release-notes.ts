@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.10.1",
+    date: "2026-08-15",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Editing a service on your phone closed the keyboard after every single letter. Fixed in every pop-up with a form in it, including the agreement customers sign when they book.",
+      },
+      {
+        kind: "fixed",
+        text: "The on/off switch on Services slides across properly — the white dot used to jump outside the switch instead of sliding along it.",
+      },
+      {
+        kind: "fixed",
+        text: "Text no longer jumps to a larger size when you turn your phone sideways.",
+      },
+      {
+        kind: "fixed",
+        text: "Tapping a button on iPhone no longer flashes a grey square over it, and dropdowns match the rest of the buttons instead of using Safari's own styling.",
+      },
+    ],
+  },
+  {
     version: "1.10.0",
     date: "2026-08-15",
     changes: [
