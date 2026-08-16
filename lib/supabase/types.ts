@@ -54,6 +54,12 @@ export interface Booking {
   deposit_amount: number | null;
   square_payment_id: string | null;
   notes: string | null;
+  /** Google Calendar event for this appointment (migration 006). */
+  google_event_id: string | null;
+  /** Set once the 24-hour reminder has gone out (migration 007). */
+  reminder_sent_at: string | null;
+  /** Free text, only when the admin gave one on cancelling (migration 007). */
+  cancellation_reason: string | null;
   created_at: string;
   updated_at: string;
 }

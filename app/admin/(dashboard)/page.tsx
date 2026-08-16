@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -13,8 +13,14 @@ interface TodayBooking {
   service: { name: string } | null;
 }
 
+interface WeekBooking extends TodayBooking {
+  booking_date: string;
+}
+
 interface Stats {
   today: TodayBooking[];
+  /** The next seven days after today, so the week is visible on a phone. */
+  week: WeekBooking[];
   monthCount: number;
   clientCount: number;
   /**
@@ -94,6 +100,7 @@ function ScheduleSkeleton() {
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats>({
     today: [],
+    week: [],
     monthCount: 0,
     clientCount: 0,
     orphanCount: 0,
@@ -105,11 +112,23 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createClient();
-  const today = new Date().toISOString().split("T")[0];
+  // Formatted in the salon's timezone, not UTC. toISOString() rolls over at
+  // 8pm Eastern, so from then until midnight "Today's Bookings" was showing
+  // tomorrow's appointments — every evening.
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
   const monthStart = `${today.slice(0, 7)}-01`;
+  const weekEnd = (() => {
+    const [y, m, d] = today.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d + 7)).toISOString().slice(0, 10);
+  })();
 
   const fetchStats = useCallback(async () => {
-    const [todayRes, monthRes, clientRes, orphanRes] = await Promise.all([
+    const [todayRes, weekRes, monthRes, clientRes, orphanRes] = await Promise.all([
       supabase
         .from("bookings")
         .select(
@@ -117,6 +136,16 @@ export default function AdminDashboard() {
         )
         .eq("booking_date", today)
         .in("status", ["confirmed", "completed"])
+        .order("time_slot", { ascending: true }),
+      supabase
+        .from("bookings")
+        .select(
+          "id, booking_date, time_slot, status, client:clients(full_name), service:services(name)"
+        )
+        .gt("booking_date", today)
+        .lte("booking_date", weekEnd)
+        .in("status", ["confirmed", "completed"])
+        .order("booking_date", { ascending: true })
         .order("time_slot", { ascending: true }),
       supabase
         .from("bookings")
@@ -151,15 +180,22 @@ export default function AdminDashboard() {
       service: Array.isArray(b.service) ? b.service[0] : b.service,
     })) as TodayBooking[];
 
+    const weekMapped = (weekRes.data || []).map((b) => ({
+      ...b,
+      client: Array.isArray(b.client) ? b.client[0] : b.client,
+      service: Array.isArray(b.service) ? b.service[0] : b.service,
+    })) as WeekBooking[];
+
     setError(null);
     setStats({
       today: mapped,
+      week: weekRes.error ? [] : weekMapped,
       monthCount: monthRes.count || 0,
       clientCount: clientRes.count || 0,
       orphanCount: orphanRes.error ? 0 : orphanRes.count || 0,
     });
     setLoading(false);
-  }, [supabase, today, monthStart]);
+  }, [supabase, today, monthStart, weekEnd]);
 
   useEffect(() => {
     fetchStats();
@@ -182,6 +218,26 @@ export default function AdminDashboard() {
       supabase.removeChannel(channel);
     };
   }, [supabase, fetchStats]);
+
+  // Seven fixed day buckets rather than grouping whatever came back, so a day
+  // with nothing booked still gets a row. An empty Thursday is information.
+  const nextSevenDays = useMemo(() => {
+    const [y, m, d] = today.split("-").map(Number);
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(Date.UTC(y, m - 1, d + i + 1));
+      const iso = date.toISOString().slice(0, 10);
+      return {
+        date: iso,
+        label: date.toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "short",
+          day: "numeric",
+          timeZone: "UTC",
+        }),
+        bookings: stats.week.filter((b) => b.booking_date === iso),
+      };
+    });
+  }, [today, stats.week]);
 
   const heading = new Date(`${today}T00:00:00`).toLocaleDateString("en-US", {
     weekday: "long",
@@ -314,10 +370,11 @@ export default function AdminDashboard() {
         ) : (
           <div>
             {stats.today.map((booking, i) => (
-              <div
+              <Link
                 key={booking.id}
+                href={`/admin/bookings/${booking.id}`}
                 style={stagger(i)}
-                className="animate-fade-in-up flex items-center justify-between px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
+                className="animate-fade-in-up flex items-center justify-between px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0 hover:bg-cream/50 transition-colors"
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-sans text-[16px] font-semibold text-dark-brown truncate">
@@ -333,6 +390,74 @@ export default function AdminDashboard() {
                   </span>
                   <Badge status={booking.status} />
                 </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* The week ahead. The phone had no way to see past today — the only
+          other schedule view is the bookings list, which is a flat reverse
+          chronological feed rather than something you can read a week off. */}
+      <div
+        style={stagger(4)}
+        className="animate-fade-in-up bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden mt-6"
+      >
+        <div className="p-5 border-b border-light-tan">
+          <h2 className="font-display text-[18px] font-bold text-dark-brown">
+            Next 7 Days
+          </h2>
+        </div>
+
+        {loading ? (
+          <ScheduleSkeleton />
+        ) : (
+          <div>
+            {nextSevenDays.map((day) => (
+              <div
+                key={day.date}
+                className="border-b border-light-tan last:border-b-0"
+              >
+                <div className="flex items-baseline justify-between gap-3 px-4 sm:px-5 pt-3 pb-1">
+                  <p className="font-sans text-[12px] font-semibold text-muted uppercase tracking-wider">
+                    {day.label}
+                  </p>
+                  {day.bookings.length > 0 && (
+                    <span className="font-sans text-[12px] text-muted tabular-nums">
+                      {day.bookings.length}
+                    </span>
+                  )}
+                </div>
+
+                {day.bookings.length === 0 ? (
+                  /* Free days are shown rather than skipped: knowing which
+                     days are open is as useful as knowing which are full. */
+                  <p className="px-4 sm:px-5 pb-3 font-sans text-[16px] text-muted/70">
+                    Nothing booked
+                  </p>
+                ) : (
+                  <div className="pb-1">
+                    {day.bookings.map((booking) => (
+                      <Link
+                        key={booking.id}
+                        href={`/admin/bookings/${booking.id}`}
+                        className="flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 hover:bg-cream/50 transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-sans text-[16px] font-semibold text-dark-brown truncate">
+                            {booking.client?.full_name || "Unknown"}
+                          </p>
+                          <p className="font-sans text-[16px] text-muted truncate">
+                            {booking.service?.name || "Unknown"}
+                          </p>
+                        </div>
+                        <span className="font-sans text-[16px] text-charcoal font-semibold tabular-nums shrink-0">
+                          {booking.time_slot}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

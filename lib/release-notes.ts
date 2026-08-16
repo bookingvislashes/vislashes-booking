@@ -31,6 +31,40 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.11.0",
+    date: "2026-08-15",
+    changes: [
+      {
+        kind: "added",
+        text: "Tap any appointment — on the dashboard or in Bookings — for its own page, with her number and email tappable, her intake answers, and everything you can do with it.",
+      },
+      {
+        kind: "added",
+        text: "Reschedule an appointment. Only times that fit your hours and buffer are offered, and your Google Calendar moves with it.",
+      },
+      {
+        kind: "added",
+        text: "Cancelling now emails the client, clears it off your calendar, and lets you note why for your own records.",
+      },
+      {
+        kind: "added",
+        text: "\"Next 7 Days\" on the dashboard — the week at a glance from your phone, including which days are free.",
+      },
+      {
+        kind: "added",
+        text: "The 24-hour reminder email actually sends now. It never has until today, despite customers being told to expect one.",
+      },
+      {
+        kind: "fixed",
+        text: "After 8pm, \"Today's Bookings\" was showing tomorrow's appointments.",
+      },
+      {
+        kind: "note",
+        text: "Run supabase/migrations/007_reminders_and_cancellation.sql — reminders can't send until it's there. 004 is still waiting too, for the real Classic/Wispy/Hybrid menu.",
+      },
+    ],
+  },
+  {
     version: "1.10.1",
     date: "2026-08-15",
     changes: [

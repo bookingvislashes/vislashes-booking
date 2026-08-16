@@ -127,7 +127,9 @@ export async function POST(req: NextRequest) {
       await notifyAdmins(supabase, {
         title: "New booking",
         body: `${data.formData.fullName} · ${service.name} · ${data.formData.bookingDate} at ${data.formData.timeSlot}`,
-        url: "/admin/bookings",
+        // Straight to the appointment rather than the list — tapping an alert
+        // should land on the thing the alert was about.
+        url: `/admin/bookings/${bookingResult.bookingId}`,
       });
 
       return NextResponse.json({
