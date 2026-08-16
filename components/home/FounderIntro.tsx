@@ -1,9 +1,9 @@
 import Image from "next/image";
 import { hasAsset } from "@/lib/has-asset";
 
-// A photograph, so it stays a JPEG — the same call as hero-photo.jpg. Next's
-// image optimiser re-encodes to WebP/AVIF on delivery either way.
-const PORTRAIT = "/images/vianney-portrait.jpg";
+// WebP at 1000x1258, down from an 841KB JPEG straight off a phone. Served
+// unoptimised below, so this file is exactly what the browser receives.
+const PORTRAIT = "/images/vianney-portrait.webp";
 
 /**
  * Founder intro — Figma node 516:123 on the Home Page.
@@ -35,10 +35,12 @@ export function FounderIntro() {
               fill
               className="object-cover"
               sizes="(max-width: 640px) 200px, 251px"
-              quality={90}
               // Sits just under the hero, so it is on screen within a scroll or
               // two. Lazy loading only started the download once she got there.
               loading="eager"
+              // See HowToBook: at 112KB the optimiser has nothing left to win,
+              // and its cache is cold after every deploy.
+              unoptimized
             />
           )}
         </div>

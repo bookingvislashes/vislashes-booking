@@ -14,21 +14,21 @@ const STEPS = [
     number: "1",
     title: "Choose Your Look",
     body: "Pick from classic, hybrid, or volume lash sets tailored to your eye shape and desired fullness.",
-    image: "/images/howtobook-choose.png",
+    image: "/images/howtobook-choose.webp",
     alt: "Close-up of finished lash extensions",
   },
   {
     number: "2",
     title: "Book & Deposit",
     body: "Secure your private studio session with a $25 deposit - just you and your lash artist, no salon chaos.",
-    image: "/images/howtobook-deposit.png",
+    image: "/images/howtobook-deposit.webp",
     alt: "The private lash studio",
   },
   {
     number: "3",
     title: "Confirm & Arrive",
     body: "Check your email for appointment details, studio address, and pre-care tips for lasting results.",
-    image: "/images/howtobook-arrive.png",
+    image: "/images/howtobook-arrive.webp",
     alt: "Client being prepared for a lash appointment",
   },
 ] as const;
@@ -83,13 +83,19 @@ export function HowToBook() {
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 336px"
-                      quality={90}
-                      // Eager for the same reason as the founder portrait. The
-                      // sources are the heaviest on the site at ~1.2MB each,
-                      // but `sizes` means the browser only ever fetches the
-                      // 336px-wide rendition, so this costs far less than the
-                      // source weight suggests.
                       loading="eager"
+                      // These were 1.2MB PNGs — photographs in a lossless
+                      // format — and are now 42-52KB WebP at the same 1248x832.
+                      //
+                      // At that size the optimiser has nothing left to win, and
+                      // it costs something real: /_next/image renders each
+                      // width on demand and its cache is cold after every
+                      // deploy, so whoever loads the page first waits for the
+                      // transform. Unoptimised, the file is served straight
+                      // from the CDN as an immutable static asset — the same
+                      // bytes every time, fast on the first request as well as
+                      // the hundredth.
+                      unoptimized
                     />
                   )}
                 </div>

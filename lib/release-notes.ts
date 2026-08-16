@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.13.2",
+    date: "2026-08-16",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Home page photos appear straight away. They were far larger than they needed to be — all of them together are now about a twentieth of the size, and they no longer wait on anything.",
+      },
+    ],
+  },
+  {
     version: "1.13.1",
     date: "2026-08-16",
     changes: [

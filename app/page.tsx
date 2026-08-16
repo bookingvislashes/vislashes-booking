@@ -16,7 +16,7 @@ const featureSections = [
       "Elevate your look with 'Connection' – designed for the bold and confident.",
     buttonText: "Shop Connection",
     gradient: "linear-gradient(270deg, #A4846A 3.5%, rgba(180,149,124,0.39) 124%)",
-    imageSrc: "/images/connection-photo.png",
+    imageSrc: "/images/connection-photo.webp",
     imagePosition: "right" as const,
     imageWidth: "50%",
     imageEdgeOffset: "-8%",
@@ -29,7 +29,7 @@ const featureSections = [
       "Elevate your look with 'Passion' – designed for the bold and confident.",
     buttonText: "Shop Passion",
     gradient: "linear-gradient(271deg, #9D7859 8%, #E0C7B3 102%)",
-    imageSrc: "/images/passion-photo.png",
+    imageSrc: "/images/passion-photo.webp",
     imagePosition: "left" as const,
     imageWidth: "42.5%",
     imageEdgeOffset: "-5%",
@@ -42,7 +42,7 @@ const featureSections = [
       "Elevate your look with 'Chemistry' – designed for the bold and confident.",
     buttonText: "Shop Chemistry",
     gradient: "linear-gradient(95deg, #B4957C 7%, #3F2D1F 96%)",
-    imageSrc: "/images/chemistry-photo.png",
+    imageSrc: "/images/chemistry-photo.webp",
     imagePosition: "right" as const,
     imageWidth: "46%",
     imageEdgeOffset: "-10%",
@@ -124,21 +124,14 @@ export default function HomePage() {
                   alt={section.name}
                   fill
                   className="object-cover"
-                  // Eager, not lazy. These used to fade in on scroll, and lazy
-                  // loading only STARTED the download at the moment the reveal
-                  // began — so the panel appeared as an empty gradient while
-                  // the photo was still on the wire. The reveal is gone now,
-                  // but the panels are still well below the fold, so they stay
-                  // eager: all three together are about 0.9MB of 433x576
-                  // source, which costs little up front.
-                  //
-                  // eager rather than priority on purpose: priority also emits
+                  // Eager rather than priority on purpose: priority also emits
                   // a preload link, and three of those would compete with the
-                  // hero photo, which is the LCP element and the one image
-                  // that genuinely needs to win.
+                  // hero photo, which is the LCP element and the one image that
+                  // genuinely needs to win. All three together are now 49KB.
                   loading="eager"
+                  // See HowToBook for why these bypass /_next/image.
+                  unoptimized
                   sizes="(max-width: 1024px) 100vw, 50vw"
-                  quality={90}
                   style={{
                     ...(section.flipImage ? { transform: "scaleX(-1)" } : {}),
                   }}
