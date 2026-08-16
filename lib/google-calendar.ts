@@ -23,10 +23,40 @@ const TIMEZONE = "America/New_York";
 // more alarming for no benefit.
 const SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
 
+// Trimmed at the point of use. Pasting into Vercel's field very easily carries
+// a trailing newline or space, and Google rejects the result as an unknown
+// client — a "401: invalid_client" page on Google's own domain, with nothing
+// in it to suggest the cause is one invisible character.
+const clientId = (process.env.GOOGLE_CLIENT_ID || "").trim();
+const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
+
 export function isGoogleConfigured(): boolean {
-  return Boolean(
-    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-  );
+  return Boolean(clientId && clientSecret);
+}
+
+/**
+ * Catches a credential that is present but cannot possibly work, so the admin
+ * is told here instead of being handed to Google and bounced back with an
+ * error page that never names the app.
+ *
+ * Returns null when configured correctly, or not configured at all — "not set
+ * up yet" is a different state and has its own message.
+ */
+export function googleConfigProblem(): string | null {
+  if (!clientId || !clientSecret) return null;
+
+  // Every Google OAuth client ID ends this way. A value that doesn't is
+  // almost always the client *secret*, an API key, or an ID truncated on
+  // paste — all three produce the same opaque invalid_client from Google.
+  if (!clientId.endsWith(".apps.googleusercontent.com")) {
+    return "The Google Client ID doesn't look right — it should end in .apps.googleusercontent.com. Check it hasn't been swapped with the secret or cut short.";
+  }
+
+  if (clientId === clientSecret) {
+    return "The Google Client ID and Client Secret are set to the same value.";
+  }
+
+  return null;
 }
 
 /**
@@ -41,11 +71,7 @@ export function getRedirectUri(): string {
 
 async function createOAuthClient() {
   const { google } = await import("googleapis");
-  return new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    getRedirectUri()
-  );
+  return new google.auth.OAuth2(clientId, clientSecret, getRedirectUri());
 }
 
 export async function getAuthUrl(state: string): Promise<string> {

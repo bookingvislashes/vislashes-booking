@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.11.1",
+    date: "2026-08-16",
+    changes: [
+      {
+        kind: "fixed",
+        text: "A stray space copied along with the Google keys no longer breaks the calendar connection — they're trimmed before use.",
+      },
+      {
+        kind: "changed",
+        text: "If a Google key is wrong, Settings now tells you which one and why, instead of sending you to a Google error page that never mentions us.",
+      },
+    ],
+  },
+  {
     version: "1.11.0",
     date: "2026-08-15",
     changes: [

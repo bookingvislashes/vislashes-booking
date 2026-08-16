@@ -9,6 +9,8 @@ interface Status {
   connected: boolean;
   email?: string | null;
   connectedAt?: string | null;
+  /** Set when the credentials are present but cannot work — see the API. */
+  problem?: string | null;
 }
 
 // Google hands control back with ?google=<result>. Anything unmapped is
@@ -119,7 +121,24 @@ export function GoogleCalendarConnection() {
         </div>
       )}
 
-      {status?.configured && !status.connected && (
+      {status?.configured && !status.connected && status.problem && (
+        <div className="flex items-start gap-3">
+          <span
+            aria-hidden="true"
+            className="w-3 h-3 rounded-full bg-danger mt-1.5 shrink-0"
+          />
+          <div>
+            <p className="font-sans text-[14px] text-charcoal font-semibold">
+              Check the Google keys
+            </p>
+            <p className="font-sans text-[13px] text-muted mt-1 max-w-[46ch]">
+              {status.problem}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {status?.configured && !status.connected && !status.problem && (
         // A plain link, not fetch: this begins a full-page redirect out to
         // Google's consent screen and back.
         <a

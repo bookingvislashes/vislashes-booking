@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { getConnection, isGoogleConfigured } from "@/lib/google-calendar";
+import {
+  getConnection,
+  isGoogleConfigured,
+  googleConfigProblem,
+} from "@/lib/google-calendar";
 
 /**
  * Connection status for the Settings panel.
@@ -22,6 +26,13 @@ export async function GET() {
 
   if (!isGoogleConfigured()) {
     return NextResponse.json({ configured: false, connected: false });
+  }
+
+  // Configured but unusable. Reported here so Settings can say what is wrong,
+  // rather than the admin finding out from Google's own error page.
+  const problem = googleConfigProblem();
+  if (problem) {
+    return NextResponse.json({ configured: true, connected: false, problem });
   }
 
   try {
