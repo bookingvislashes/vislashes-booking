@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateTimeSlots } from "@/lib/availability";
+import { generateTimeSlots, to24Hour } from "@/lib/availability";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-
-/** Convert "10:00 AM" or "1:30 PM" to "10:00" or "13:30" */
-function to24Hour(time12: string): string {
-  const [timePart, period] = time12.split(" ");
-  let [h, m] = timePart.split(":").map(Number);
-  if (period === "PM" && h !== 12) h += 12;
-  if (period === "AM" && h === 12) h = 0;
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

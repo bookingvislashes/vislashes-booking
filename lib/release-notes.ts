@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.10.0",
+    date: "2026-08-15",
+    changes: [
+      {
+        kind: "added",
+        text: "Google Calendar. Connect it in Settings and every new appointment appears on your calendar by itself — including on your phone.",
+      },
+      {
+        kind: "added",
+        text: "Cancelling an appointment here takes it off your calendar too, so a slot you've freed up doesn't stay blocked.",
+      },
+      {
+        kind: "note",
+        text: "Run supabase/migrations/006_google_calendar.sql in Supabase before connecting, or the Connect button won't be able to save anything.",
+      },
+      {
+        kind: "note",
+        text: "Connecting also needs a Google key added to the site. Until it's there, Settings honestly says \"Not set up yet\" rather than offering a button that can't work.",
+      },
+    ],
+  },
+  {
     version: "1.9.2",
     date: "2026-08-15",
     changes: [

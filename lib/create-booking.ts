@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { sendConfirmationEmail } from "./email";
+import { createBookingEvent } from "./google-calendar";
 
 interface BookingFormData {
   serviceId: string;
@@ -190,6 +191,20 @@ export async function createBooking({
     // Log but don't fail the booking if email fails
     console.error("Failed to send confirmation email:", emailErr);
   }
+
+  // 7. Put it on her Google Calendar, if she has connected one. Same
+  // best-effort contract as the email above: createBookingEvent catches its
+  // own failures, because by this point the card has already been charged.
+  await createBookingEvent(supabase, {
+    bookingId: booking.id,
+    serviceName: service.name,
+    durationMinutes: service.duration_minutes,
+    clientName: fullName,
+    clientEmail: email,
+    clientPhone: formData.phone,
+    bookingDate: formData.bookingDate,
+    timeSlot: formData.timeSlot,
+  });
 
   return { bookingId: booking.id, clientId };
 }

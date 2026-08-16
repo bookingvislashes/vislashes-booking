@@ -23,6 +23,24 @@ interface AvailabilityRow {
   is_active: boolean;
 }
 
+/**
+ * "10:00 AM" or "1:30 PM" to "10:00" or "13:30".
+ *
+ * Lives here rather than beside its callers because both the availability
+ * route and the Google Calendar sync need it, and two copies of a 12-hour
+ * parser is exactly the kind of duplication that drifts into a scheduling bug.
+ */
+export function to24Hour(time12: string): string {
+  const [timePart, period] = time12.split(" ");
+  const [rawHours, minutes] = timePart.split(":").map(Number);
+  let hours = rawHours;
+  if (period === "PM" && hours !== 12) hours += 12;
+  if (period === "AM" && hours === 12) hours = 0;
+  return `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}`;
+}
+
 export function generateTimeSlots(
   date: string,
   serviceDurationMinutes: number,

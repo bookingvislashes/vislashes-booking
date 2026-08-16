@@ -106,6 +106,20 @@ export default function BookingsPage() {
       return;
     }
 
+    // A cancelled appointment left sitting on her Google Calendar is worse
+    // than no sync at all — she would keep the slot blocked for someone who
+    // is not coming. Fire-and-forget: the cancellation itself is already
+    // saved, and the calendar is not worth failing that over.
+    if (newStatus === "cancelled") {
+      fetch("/api/google/event", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId }),
+      }).catch((err) =>
+        console.error("Could not remove the calendar event:", err)
+      );
+    }
+
     // Visit history is recorded here rather than at booking time, so it counts
     // appointments actually kept. Booking-time counting meant a client who
     // booked and cancelled three times read as a three-visit regular, and
