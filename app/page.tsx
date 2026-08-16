@@ -6,6 +6,7 @@ import { ProductCards } from "@/components/home/ProductCards";
 import { ParallaxHero } from "@/components/home/ParallaxHero";
 import { FounderIntro } from "@/components/home/FounderIntro";
 import { HowToBook } from "@/components/home/HowToBook";
+import { Reveal } from "@/components/home/Reveal";
 import { PRODUCTS_ENABLED } from "@/lib/features";
 
 const featureSections = [
@@ -60,15 +61,18 @@ export default function HomePage() {
       {/* Founder intro, then How to Book — in the order they sit on the Figma
           Home Page: hero, founder, how-to-book, then the feature sections.
 
-          Nothing on this page fades in on scroll any more. Every section used
-          to be wrapped in an AnimateOnScroll that held it at opacity 0 until an
-          IntersectionObserver fired, and its photos were lazy on top of that —
-          so the download only began once the reveal did. In practice that was a
-          blank gap where the section should be, for seconds at a time. The
-          whole page is drawn once now, and stays drawn. */}
-      <FounderIntro />
+          Each section fades up as it is approached. See Reveal for why this is
+          safe now and was not before: every photo below is eager, small and
+          served straight from the CDN, so it has arrived long before its
+          section is reached. The animation moves content that is already there
+          rather than standing in front of a download. */}
+      <Reveal>
+        <FounderIntro />
+      </Reveal>
 
-      <HowToBook />
+      <Reveal>
+        <HowToBook />
+      </Reveal>
 
       {/* Product Cards Section — retail is off, see lib/features.ts */}
       {PRODUCTS_ENABLED && (
@@ -77,14 +81,12 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Feature Sections. Like the two above, these render with the page
-          rather than fading in on scroll — the reveal held them at opacity 0
-          until the observer fired, which read as a blank panel on the way
-          down. Their photos are eager, so the whole page is drawn once and
-          stays drawn. */}
-      {featureSections.map((section) => (
+      {/* Feature Sections. A short stagger so the three read as a sequence
+          rather than one block — 80ms, small enough that the last one is not
+          noticeably behind the first. */}
+      {featureSections.map((section, index) => (
+        <Reveal key={section.name} delay={index * 80}>
           <section
-            key={section.name}
             className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] mb-8 sm:mb-10 lg:mb-[96px]"
           >
             <div
@@ -172,9 +174,11 @@ export default function HomePage() {
               </div>
             </div>
           </section>
+        </Reveal>
       ))}
 
       {/* Stay Lashed In Section */}
+      <Reveal>
       <section id="contact" className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] pt-12 sm:pt-16 lg:pt-[100px] pb-10 sm:pb-14 lg:pb-[80px]">
         {/* Two-column layout */}
         <div className="relative flex flex-col lg:flex-row items-start gap-8 sm:gap-10 lg:gap-[60px]">
@@ -257,6 +261,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      </Reveal>
 
       <Footer />
     </div>

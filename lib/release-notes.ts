@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.14.0",
+    date: "2026-08-16",
+    changes: [
+      {
+        kind: "added",
+        text: "Home page sections now rise gently into place as you scroll down. The photos are already loaded before a section starts moving, so nothing sits blank waiting.",
+      },
+    ],
+  },
+  {
     version: "1.13.2",
     date: "2026-08-16",
     changes: [
