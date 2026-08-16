@@ -23,6 +23,53 @@ interface AvailabilityRow {
   is_active: boolean;
 }
 
+export interface DateOverride {
+  date: string;
+  is_open: boolean;
+  start_time: string | null;
+  end_time: string | null;
+}
+
+/**
+ * The working window for one date, or null when the salon is shut.
+ *
+ * A date override REPLACES the weekday window rather than trimming it, which
+ * is what lets a date open later, earlier, or at all on a weekday that is
+ * normally closed. `blocked_dates` still subtracts from whichever window wins,
+ * so a lunch break is a block, not an override.
+ *
+ * Every time is truncated to HH:mm here. Postgres `time` serialises as
+ * "09:00:00", and every comparison downstream is a lexicographic string
+ * compare — "12:00" < "12:00:00" is true, so an untruncated value silently
+ * shifts the window by a whole slot. Doing it once, here, means no caller can
+ * forget.
+ */
+export function resolveWindow(
+  date: string,
+  availabilityRows: AvailabilityRow[],
+  dateOverride?: DateOverride | null
+): TimeRange | null {
+  if (dateOverride && dateOverride.date === date) {
+    if (!dateOverride.is_open) return null;
+    if (!dateOverride.start_time || !dateOverride.end_time) return null;
+    return {
+      start: dateOverride.start_time.substring(0, 5),
+      end: dateOverride.end_time.substring(0, 5),
+    };
+  }
+
+  const dayOfWeek = new Date(date + "T00:00:00").getDay(); // 0=Sunday
+  const dayAvailability = availabilityRows.find(
+    (a) => a.day_of_week === dayOfWeek && a.is_active
+  );
+  if (!dayAvailability) return null;
+
+  return {
+    start: dayAvailability.start_time.substring(0, 5),
+    end: dayAvailability.end_time.substring(0, 5),
+  };
+}
+
 /**
  * "10:00 AM" or "1:30 PM" to "10:00" or "13:30".
  *
@@ -48,16 +95,17 @@ export function generateTimeSlots(
   blockedDates: BlockedDate[],
   existingBookings: Booking[],
   bufferMinutes: number,
-  advanceHours: number
+  advanceHours: number,
+  // Optional and last so the existing call sites keep working unchanged. A
+  // date with no override falls through to its weekday hours exactly as before.
+  dateOverride?: DateOverride | null
 ): string[] {
   const dateObj = new Date(date + "T00:00:00");
-  const dayOfWeek = dateObj.getDay(); // 0=Sunday
 
-  // 1. Find recurring availability for this day
-  const dayAvailability = availabilityRows.find(
-    (a) => a.day_of_week === dayOfWeek && a.is_active
-  );
-  if (!dayAvailability) return [];
+  // 1. Resolve the working window: a date override if one exists, otherwise
+  // the recurring weekday hours. Null means closed.
+  const window = resolveWindow(date, availabilityRows, dateOverride);
+  if (!window) return [];
 
   // 2. Check if entire day is blocked
   const fullDayBlock = blockedDates.find(
@@ -83,16 +131,8 @@ export function generateTimeSlots(
 
   // 5. Generate slots at 30-min intervals
   const slots: string[] = [];
-  const windowStart = parse(
-    dayAvailability.start_time.substring(0, 5),
-    "HH:mm",
-    dateObj
-  );
-  const windowEnd = parse(
-    dayAvailability.end_time.substring(0, 5),
-    "HH:mm",
-    dateObj
-  );
+  const windowStart = parse(window.start, "HH:mm", dateObj);
+  const windowEnd = parse(window.end, "HH:mm", dateObj);
   const minBookingTime = addHours(new Date(), advanceHours);
 
   let current = windowStart;
@@ -111,8 +151,6 @@ export function generateTimeSlots(
     }
 
     // Check: is the slot far enough in the future?
-    const slotDateTime = parse(slotStart, "HH:mm", new Date(date + "T00:00:00"));
-    // Reconstruct as a proper datetime
     const fullSlotDateTime = new Date(`${date}T${slotStart}:00`);
     if (isBefore(fullSlotDateTime, minBookingTime)) {
       current = addMinutes(current, 30);

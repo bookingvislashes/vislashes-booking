@@ -1,349 +1,339 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { createClient } from "@/lib/supabase/client";
+import { Modal } from "@/components/ui/modal";
+import { MonthGrid } from "@/components/admin/calendar/MonthGrid";
+import { DayEditor } from "@/components/admin/calendar/DayEditor";
+import { WeeklyHoursPanel } from "@/components/admin/calendar/WeeklyHoursPanel";
+import {
+  ScheduleDay,
+  addDays,
+  dayState,
+  fetchSchedule,
+  formatLongDate,
+  formatRange,
+  formatShortDate,
+  fromISO,
+  monthGridRange,
+  startOfWeek,
+  todayISO,
+  toISO,
+  type WeeklyHourRow,
+} from "@/lib/schedule";
 
-interface WeeklyHours {
-  id?: string;
-  day: string;
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-  isActive: boolean;
+type View = "month" | "week" | "day";
+
+const VIEWS: { key: View; label: string }[] = [
+  { key: "month", label: "Month" },
+  { key: "week", label: "Week" },
+  { key: "day", label: "Day" },
+];
+
+/** One day summarised, used by the week and day lists. */
+function DaySummary({
+  day,
+  onEdit,
+}: {
+  day: ScheduleDay;
+  onEdit: () => void;
+}) {
+  const state = dayState(day);
+
+  return (
+    <button
+      type="button"
+      onClick={onEdit}
+      className="w-full text-left bg-white rounded-surface p-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:bg-cream transition-colors"
+    >
+      <div className="flex items-baseline justify-between gap-3 mb-1">
+        <span className="font-sans text-[14px] font-bold text-dark-brown">
+          {formatShortDate(day.date)}
+        </span>
+        <span
+          className={`font-sans text-[12px] ${
+            state === "closed" ? "text-danger font-semibold" : "text-muted"
+          }`}
+        >
+          {day.window
+            ? formatRange(day.window.start, day.window.end)
+            : "Closed"}
+          {day.hasOverride && day.window ? " (just today)" : ""}
+        </span>
+      </div>
+
+      {day.bookings.length === 0 ? (
+        <p className="font-sans text-[13px] text-muted">
+          {state === "closed" ? "—" : "Nothing booked"}
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-0.5">
+          {day.bookings.map((b) => (
+            <li key={b.id} className="font-sans text-[13px] text-charcoal">
+              <strong>{b.timeSlot}</strong>
+              {b.client ? ` — ${b.client}` : ""}
+              {b.service ? (
+                <span className="text-muted"> · {b.service}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {day.blocks.length > 0 && (
+        <p className="font-sans text-[12px] text-danger mt-1">
+          {day.blocks.some((b) => b.start === null)
+            ? "Blocked all day"
+            : day.blocks
+                .map((b) => formatRange(b.start!, b.end!))
+                .join(", ") + " blocked"}
+        </p>
+      )}
+    </button>
+  );
 }
-
-interface BlockedDateRow {
-  id: string;
-  date: string;
-  reason: string | null;
-}
-
-const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export default function CalendarPage() {
-  const [hours, setHours] = useState<WeeklyHours[]>([]);
-  const [blockedDates, setBlockedDates] = useState<BlockedDateRow[]>([]);
-  const [newBlockedDate, setNewBlockedDate] = useState("");
-  const [newBlockedReason, setNewBlockedReason] = useState("");
-  const [loadingHours, setLoadingHours] = useState(true);
-  const [loadingBlocked, setLoadingBlocked] = useState(true);
-  const [savingHours, setSavingHours] = useState(false);
-  const [addingBlock, setAddingBlock] = useState(false);
-  const [hoursSaved, setHoursSaved] = useState(false);
-  // Kept apart on purpose: a load failure means there is nothing safe to save,
-  // while a save failure must leave the button available to retry.
-  const [hoursError, setHoursError] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [view, setView] = useState<View>("month");
+  const [anchor, setAnchor] = useState<string>(todayISO());
+  const [days, setDays] = useState<ScheduleDay[]>([]);
+  const [weeklyHours, setWeeklyHours] = useState<WeeklyHourRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  // The range currently on screen. Comparing it to the range we want is what
+  // tells us a fetch is outstanding, without setting any state synchronously
+  // inside the effect — that is the admin's set-state-in-effect lint rule.
+  const [loadedRange, setLoadedRange] = useState<string>("");
 
-  const supabase = createClient();
+  const anchorDate = fromISO(anchor);
 
-  // Fetch weekly hours from Supabase
-  const fetchHours = useCallback(async () => {
-    setLoadingHours(true);
-    const { data, error } = await supabase
-      .from("availability")
-      .select("*")
-      .order("day_of_week", { ascending: true });
-
-    if (error) {
-      // This used to substitute an invented Mon-Fri 09:00-17:00 week, which
-      // rendered indistinguishably from real data — and Save would then write
-      // that fiction over the salon's actual hours. Wrong opening hours drive
-      // wrong booking availability, so failing visibly is the only safe
-      // behaviour here.
-      console.error("Failed to fetch hours:", error);
-      setHoursError(error.message);
-      setHours([]);
-      setLoadingHours(false);
-      return;
-    } else {
-      setHoursError(null);
-      setHours(
-        dayNames.map((day, i) => {
-          const row = (data || []).find((r) => r.day_of_week === i);
-          return {
-            id: row?.id,
-            day,
-            dayOfWeek: i,
-            startTime: row?.start_time?.slice(0, 5) || "",
-            endTime: row?.end_time?.slice(0, 5) || "",
-            isActive: row?.is_active ?? false,
-          };
-        })
-      );
+  const { from, to } = useMemo(() => {
+    if (view === "month") {
+      return monthGridRange(anchorDate.getFullYear(), anchorDate.getMonth());
     }
-    setLoadingHours(false);
-  }, [supabase]);
-
-  // Fetch blocked dates from Supabase
-  const fetchBlockedDates = useCallback(async () => {
-    setLoadingBlocked(true);
-    const { data, error } = await supabase
-      .from("blocked_dates")
-      .select("*")
-      .gte("date", new Date().toISOString().split("T")[0])
-      .order("date", { ascending: true });
-
-    if (error) {
-      console.error("Failed to fetch blocked dates:", error);
-    } else {
-      setBlockedDates(data || []);
+    if (view === "week") {
+      const start = startOfWeek(anchor);
+      return { from: start, to: addDays(start, 6) };
     }
-    setLoadingBlocked(false);
-  }, [supabase]);
+    return { from: anchor, to: anchor };
+  }, [view, anchor, anchorDate]);
+
+  const rangeKey = `${from}..${to}`;
+  const loading = loadedRange !== rangeKey && !error;
+
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      try {
+        const result = await fetchSchedule(from, to, signal);
+        if (signal?.aborted) return;
+        setDays(result.days);
+        setWeeklyHours(result.weeklyHours);
+        setLoadedRange(`${from}..${to}`);
+        setError(null);
+      } catch (err) {
+        if (signal?.aborted) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setError("Couldn't load the schedule.");
+      }
+    },
+    [from, to]
+  );
 
   useEffect(() => {
-    fetchHours();
-    fetchBlockedDates();
-  }, [fetchHours, fetchBlockedDates]);
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
 
-  const updateHours = (index: number, field: keyof WeeklyHours, value: string | boolean) => {
-    setHours((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
-    setHoursSaved(false);
-  };
+  const refresh = useCallback(() => load(), [load]);
 
-  const saveHours = async () => {
-    setSavingHours(true);
-    for (const h of hours) {
-      const payload = {
-        day_of_week: h.dayOfWeek,
-        start_time: h.startTime || "09:00",
-        end_time: h.endTime || "17:00",
-        is_active: h.isActive,
-      };
-
-      // Every write's error was discarded and "✓ Saved" shown unconditionally,
-      // so a total failure looked exactly like a success.
-      const { error } = h.id
-        ? await supabase.from("availability").update(payload).eq("id", h.id)
-        : await supabase
-            .from("availability")
-            .upsert({ ...payload }, { onConflict: "day_of_week" });
-
-      if (error) {
-        setSaveError(error.message);
-        setHoursSaved(false);
-        setSavingHours(false);
-        return;
-      }
-    }
-    setSaveError(null);
-    setHoursSaved(true);
-    setSavingHours(false);
-    // Re-fetch to get IDs for any new rows
-    fetchHours();
-  };
-
-  const addBlockedDate = async () => {
-    if (!newBlockedDate) return;
-    setAddingBlock(true);
-
-    const { error } = await supabase.from("blocked_dates").insert({
-      date: newBlockedDate,
-      reason: newBlockedReason || null,
-    });
-
-    if (error) {
-      console.error("Failed to block date:", error);
+  const step = (direction: 1 | -1) => {
+    setSelected(null);
+    if (view === "month") {
+      const d = fromISO(anchor);
+      d.setDate(1);
+      d.setMonth(d.getMonth() + direction);
+      setAnchor(toISO(d));
+    } else if (view === "week") {
+      setAnchor(addDays(anchor, 7 * direction));
     } else {
-      setNewBlockedDate("");
-      setNewBlockedReason("");
-      fetchBlockedDates();
-    }
-    setAddingBlock(false);
-  };
-
-  const removeBlockedDate = async (id: string) => {
-    const { error } = await supabase.from("blocked_dates").delete().eq("id", id);
-    if (error) {
-      console.error("Failed to remove blocked date:", error);
-    } else {
-      setBlockedDates((prev) => prev.filter((b) => b.id !== id));
+      setAnchor(addDays(anchor, direction));
     }
   };
 
-  const formatBlockedDate = (date: string) => {
-    return new Date(date + "T00:00:00").toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  const selectedDay = selected
+    ? days.find((d) => d.date === selected) ?? null
+    : null;
+
+  // The day view edits in place; month and week open the same editor in a modal.
+  const dayViewDay =
+    view === "day" ? days.find((d) => d.date === anchor) ?? null : null;
+
+  const heading =
+    view === "month"
+      ? anchorDate.toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        })
+      : view === "week"
+        ? `Week of ${formatShortDate(startOfWeek(anchor))}`
+        : formatLongDate(anchor);
 
   return (
     <div>
-      <h1 className="font-display text-[28px] font-bold text-dark-brown mb-6">
-        Availability
+      <h1 className="font-display text-[28px] font-bold text-dark-brown mb-4">
+        Calendar
       </h1>
 
-      {/* Weekly Hours */}
-      <div className="bg-white rounded-surface p-4 sm:p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-8">
-        <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
-          Weekly Hours
-        </h2>
-
-        {loadingHours ? (
-          // Seven placeholder rows matching the real geometry, so the panel
-          // doesn't jump height when the data lands.
-          <div className="flex flex-col gap-3">
-            {dayNames.map((day) => (
-              <div key={day} className="flex items-center gap-3">
-                <div className="h-5 w-28 rounded-control bg-light-tan/70 animate-pulse shrink-0" />
-                <div className="h-control-sm flex-1 max-w-[220px] rounded-control bg-light-tan/50 animate-pulse" />
-              </div>
-            ))}
-          </div>
-        ) : hoursError ? (
-          <div className="py-6 text-center">
-            <p className="font-sans text-[16px] text-danger font-semibold">
-              Couldn&apos;t load your hours
-            </p>
-            <p className="font-sans text-[16px] text-muted mt-1 leading-[1.5]">
-              {hoursError}
-            </p>
-            <Button
-              variant="secondary"
+      <div className="bg-white rounded-surface p-4 sm:p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
+        {/* View switcher */}
+        <div
+          role="tablist"
+          aria-label="Calendar view"
+          className="inline-flex bg-cream rounded-control p-1 mb-4"
+        >
+          {VIEWS.map((v) => (
+            <button
+              key={v.key}
+              role="tab"
+              aria-selected={view === v.key}
               onClick={() => {
-                setHoursError(null);
-                fetchHours();
+                setView(v.key);
+                setSelected(null);
               }}
-              className="mt-3"
+              className={`font-sans text-[13px] font-semibold px-3 py-1.5 rounded-control transition-colors cursor-pointer ${
+                view === v.key
+                  ? "bg-deep-brown text-white"
+                  : "text-charcoal hover:text-deep-brown"
+              }`}
             >
-              Retry
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {hours.map((day, i) => (
-              <div key={day.day} className="flex items-center gap-3 flex-wrap">
-                <label className="flex items-center gap-2 w-28 cursor-pointer shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={day.isActive}
-                    onChange={(e) => updateHours(i, "isActive", e.target.checked)}
-                    className="accent-deep-brown w-4 h-4"
-                  />
-                  <span className="font-sans text-[16px] text-charcoal font-semibold">
-                    {day.day}
-                  </span>
-                </label>
-                {day.isActive && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="time"
-                      value={day.startTime}
-                      onChange={(e) => updateHours(i, "startTime", e.target.value)}
-                      className="bg-white border border-light-tan rounded-control px-2 py-1.5 text-[16px] font-sans focus:outline-none focus:border-deep-brown"
-                    />
-                    <span className="text-muted text-[16px]">to</span>
-                    <input
-                      type="time"
-                      value={day.endTime}
-                      onChange={(e) => updateHours(i, "endTime", e.target.value)}
-                      className="bg-white border border-light-tan rounded-control px-2 py-1.5 text-[16px] font-sans focus:outline-none focus:border-deep-brown"
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+              {v.label}
+            </button>
+          ))}
+        </div>
 
-        {/* Hidden while hours failed to load — there is nothing trustworthy to
-            save, and pressing it would overwrite real rows with an empty set. */}
-        {!hoursError && (
-          <div className="flex items-center gap-3 mt-4 flex-wrap">
-            <Button onClick={saveHours} disabled={savingHours || loadingHours}>
-              {savingHours ? "Saving..." : "Save Hours"}
-            </Button>
-            {hoursSaved && !saveError && (
-              <span className="text-success text-[16px] font-sans font-semibold">
-                ✓ Saved
-              </span>
-            )}
-            {saveError && (
-              <span
-                role="alert"
-                className="text-danger text-[16px] font-sans font-semibold"
+        {/* Period navigation */}
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => step(-1)}
+            aria-label="Previous"
+          >
+            ‹
+          </Button>
+          <div className="text-center min-w-0">
+            <p className="font-display text-[16px] font-bold text-dark-brown truncate">
+              {heading}
+            </p>
+            {anchor !== todayISO() && (
+              <button
+                onClick={() => {
+                  setAnchor(todayISO());
+                  setSelected(null);
+                }}
+                className="font-sans text-[12px] text-muted underline cursor-pointer"
               >
-                Couldn&apos;t save hours — {saveError}
-              </span>
+                Back to today
+              </button>
             )}
           </div>
-        )}
-      </div>
-
-      {/* Blocked Dates */}
-      <div className="bg-white rounded-surface p-4 sm:p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-        <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
-          Blocked Dates
-        </h2>
-        <p className="font-sans text-[16px] text-muted mb-4">
-          Block off days when you&apos;re unavailable. Clients won&apos;t be able to book on these dates.
-        </p>
-
-        <div className="flex flex-wrap gap-3 mb-4">
-          <Input
-            type="date"
-            value={newBlockedDate}
-            onChange={(e) => setNewBlockedDate(e.target.value)}
-            className="w-auto"
-            min={new Date().toISOString().split("T")[0]}
-          />
-          <Input
-            placeholder="Reason (optional)"
-            value={newBlockedReason}
-            onChange={(e) => setNewBlockedReason(e.target.value)}
-            className="w-auto flex-1 min-w-[140px]"
-          />
-          <Button size="sm" onClick={addBlockedDate} disabled={addingBlock || !newBlockedDate}>
-            {addingBlock ? "Adding..." : "Block Date"}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => step(1)}
+            aria-label="Next"
+          >
+            ›
           </Button>
         </div>
 
-        {loadingBlocked ? (
-          <p className="font-sans text-[16px] text-muted animate-pulse">
-            Loading...
-          </p>
-        ) : blockedDates.length === 0 ? (
-          <p className="font-sans text-[16px] text-muted">
-            No dates blocked
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {blockedDates.map((bd) => (
+        {error ? (
+          <div className="py-8 text-center">
+            <p className="font-sans text-[14px] text-danger font-semibold">
+              {error}
+            </p>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-3"
+              onClick={() => {
+                setError(null);
+                setLoadedRange("");
+              }}
+            >
+              Try again
+            </Button>
+          </div>
+        ) : loading && days.length === 0 ? (
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: 35 }).map((_, i) => (
               <div
-                key={bd.id}
-                className="flex items-center justify-between py-2.5 px-3 bg-cream rounded-control"
-              >
-                <div className="min-w-0">
-                  <span className="font-sans text-[16px] text-charcoal font-semibold">
-                    {formatBlockedDate(bd.date)}
-                  </span>
-                  {bd.reason && (
-                    <span className="font-sans text-[16px] text-muted ml-2">
-                      — {bd.reason}
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => removeBlockedDate(bd.id)}
-                  className="text-danger text-[18px] hover:text-red-700 cursor-pointer shrink-0 ml-2"
-                >
-                  &times;
-                </button>
-              </div>
+                key={i}
+                className="min-h-[52px] rounded-control bg-light-tan/50 animate-pulse"
+              />
             ))}
           </div>
+        ) : (
+          <div className={loading ? "opacity-60 transition-opacity" : ""}>
+            {view === "month" && (
+              <MonthGrid
+                days={days}
+                month={anchorDate.getMonth()}
+                year={anchorDate.getFullYear()}
+                selected={selected}
+                onSelect={setSelected}
+              />
+            )}
+
+            {view === "week" && (
+              <div className="flex flex-col gap-2">
+                {days.map((d) => (
+                  <DaySummary
+                    key={d.date}
+                    day={d}
+                    onEdit={() => setSelected(d.date)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {view === "day" &&
+              (dayViewDay ? (
+                <DayEditor day={dayViewDay} onChanged={refresh} />
+              ) : (
+                <p className="font-sans text-[14px] text-muted py-6 text-center">
+                  Nothing to show for this date.
+                </p>
+              ))}
+          </div>
+        )}
+
+        {view === "month" && (
+          <p className="font-sans text-[12px] text-muted mt-3">
+            Tap any day to set its hours, close it, or block part of it. A red
+            dot means part of that day is blocked.
+          </p>
         )}
       </div>
+
+      {/* Keyed on the saved rows so the panel remounts — and reseeds its draft —
+          only when the underlying hours actually change, not on every refresh. */}
+      <WeeklyHoursPanel
+        key={JSON.stringify(weeklyHours)}
+        rows={weeklyHours}
+        onSaved={refresh}
+      />
+
+      {/* Month and week edit through a dialog; the day view already shows the
+          editor in place, so opening a second copy would be confusing. */}
+      <Modal
+        isOpen={Boolean(selectedDay) && view !== "day"}
+        onClose={() => setSelected(null)}
+        title={selectedDay ? formatLongDate(selectedDay.date) : ""}
+      >
+        {selectedDay && <DayEditor day={selectedDay} onChanged={refresh} />}
+      </Modal>
     </div>
   );
 }

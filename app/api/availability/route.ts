@@ -96,6 +96,19 @@ export async function GET(req: NextRequest) {
       .select("date, start_time, end_time")
       .eq("date", date);
 
+    // Per-date hours override. Replaces this date's weekday window entirely,
+    // which is what allows a date to open later, earlier, or on a weekday that
+    // is normally closed.
+    //
+    // The error is deliberately ignored: until migration 008 is run the table
+    // does not exist, and the correct behaviour then is to fall through to the
+    // weekday hours exactly as before rather than fail the whole request.
+    const { data: dateOverride } = await supabase
+      .from("date_overrides")
+      .select("date, is_open, start_time, end_time")
+      .eq("date", date)
+      .maybeSingle();
+
     // Fetch existing bookings for this date (only confirmed ones block slots)
     const { data: existingBookings } = await supabase
       .from("bookings")
@@ -154,7 +167,15 @@ export async function GET(req: NextRequest) {
       blockedForSlots,
       bookingsForSlots,
       bufferMinutes,
-      advanceHours
+      advanceHours,
+      dateOverride
+        ? {
+            date: dateOverride.date as string,
+            is_open: dateOverride.is_open as boolean,
+            start_time: (dateOverride.start_time as string | null) ?? null,
+            end_time: (dateOverride.end_time as string | null) ?? null,
+          }
+        : null
     );
 
     return NextResponse.json({ slots });
