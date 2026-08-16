@@ -23,7 +23,7 @@ export function FounderIntro() {
     // 45px was measured against a mockup where the photo ended higher, and
     // read as almost no gap at all. Bottom padding stays as designed so the
     // spacing to How to Book is unchanged.
-    <section className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] pt-19 sm:pt-24 lg:pt-[120px] pb-12 sm:pb-14 lg:pb-[45px]">
+    <section id="about" className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] pt-19 sm:pt-24 lg:pt-[120px] pb-12 sm:pb-14 lg:pb-[45px]">
       <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-12 lg:gap-[77px]">
         {/* The design uses a tall rounded oval rather than a circle — the
             radius is half the width, not half the height. */}

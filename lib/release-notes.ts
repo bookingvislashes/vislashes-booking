@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.15.0",
+    date: "2026-08-16",
+    changes: [
+      {
+        kind: "added",
+        text: "A menu button on the website when it's viewed on a phone — Home, About, How to Book, Contact, your Instagram, and a Book Appointment button. There was no way to get around the site on a phone before.",
+      },
+    ],
+  },
+  {
     version: "1.14.0",
     date: "2026-08-16",
     changes: [

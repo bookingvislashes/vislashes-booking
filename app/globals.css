@@ -51,6 +51,10 @@
      once, whereas a menu opens in response to a tap and has to feel immediate. */
   --animate-fade-in: fade-in 180ms ease-out both;
   --animate-sheet-up: sheet-up 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* The public site's mobile menu drops from the top, so it is sheet-up's
+     mirror rather than a reuse of it. Same duration and curve, so the two
+     panels feel like one family. */
+  --animate-sheet-down: sheet-down 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes fade-in-up {
@@ -87,6 +91,15 @@
 @keyframes sheet-up {
   from {
     transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sheet-down {
+  from {
+    transform: translate3d(0, -100%, 0);
   }
   to {
     transform: translate3d(0, 0, 0);

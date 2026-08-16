@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/lib/cart-context";
 import { PRODUCTS_ENABLED } from "@/lib/features";
+import { MobileMenu } from "@/components/layout/MobileMenu";
 import { useRef, useEffect } from "react";
 
 export function Header() {
@@ -93,6 +94,12 @@ export function Header() {
           is no search on the site to reach. */}
       {/* The whole group is dropped rather than emptied while retail is off —
           an empty flex child still occupies a slot in the row. */}
+      {/* Phone navigation. Sits after the nav so it lands on the right-hand
+          edge, and replaces nothing on desktop — the nav above is `hidden
+          md:flex`, this is `md:hidden`, so exactly one of the two is ever
+          present. */}
+      <MobileMenu />
+
       {PRODUCTS_ENABLED && (
       <div className="flex items-center gap-4 sm:gap-[28px] shrink-0 ml-4 sm:ml-7">
         {/* Cart Icon — nothing can be added to it while retail is off, so an

@@ -35,7 +35,7 @@ const STEPS = [
 
 export function HowToBook() {
   return (
-    <section className="bg-cream">
+    <section id="how-to-book" className="bg-cream">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] py-16 sm:py-20 lg:py-[120px]">
         <div className="flex flex-col items-center gap-4 text-center mb-10 sm:mb-14">
           <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[64px] leading-[1.1] text-dark-brown text-balance">
