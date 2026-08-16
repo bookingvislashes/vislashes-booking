@@ -4,7 +4,6 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCards } from "@/components/home/ProductCards";
 import { ParallaxHero } from "@/components/home/ParallaxHero";
-import { AnimateOnScroll } from "@/components/home/AnimateOnScroll";
 import { FounderIntro } from "@/components/home/FounderIntro";
 import { HowToBook } from "@/components/home/HowToBook";
 import { PRODUCTS_ENABLED } from "@/lib/features";
@@ -61,16 +60,12 @@ export default function HomePage() {
       {/* Founder intro, then How to Book — in the order they sit on the Figma
           Home Page: hero, founder, how-to-book, then the feature sections.
 
-          Deliberately NOT wrapped in AnimateOnScroll. These two sit directly
-          under the hero, so they are reached almost immediately, and the reveal
-          was costing more than it added: the section held at opacity 0 until it
-          scrolled into view, and only then did its lazy photos begin
-          downloading. What that looked like in practice was a tall blank gap
-          where How to Book should be, for several seconds.
-
-          They now render with the page, like any ordinary section. The feature
-          panels further down keep the reveal — they are far enough away to have
-          loaded long before she arrives. */}
+          Nothing on this page fades in on scroll any more. Every section used
+          to be wrapped in an AnimateOnScroll that held it at opacity 0 until an
+          IntersectionObserver fired, and its photos were lazy on top of that —
+          so the download only began once the reveal did. In practice that was a
+          blank gap where the section should be, for seconds at a time. The
+          whole page is drawn once now, and stays drawn. */}
       <FounderIntro />
 
       <HowToBook />
@@ -82,10 +77,14 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Feature Sections */}
-      {featureSections.map((section, index) => (
-        <AnimateOnScroll key={section.name} delay={index * 100}>
+      {/* Feature Sections. Like the two above, these render with the page
+          rather than fading in on scroll — the reveal held them at opacity 0
+          until the observer fired, which read as a blank panel on the way
+          down. Their photos are eager, so the whole page is drawn once and
+          stays drawn. */}
+      {featureSections.map((section) => (
           <section
+            key={section.name}
             className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] mb-8 sm:mb-10 lg:mb-[96px]"
           >
             <div
@@ -125,13 +124,13 @@ export default function HomePage() {
                   alt={section.name}
                   fill
                   className="object-cover"
-                  // Eager, not lazy. These sit inside AnimateOnScroll, which
-                  // holds them at opacity 0 until they scroll into view — so
-                  // lazy loading only STARTED the download at the moment the
-                  // reveal began, and the section faded in as an empty
-                  // gradient while the photo was still on the wire. All three
-                  // together are about 0.9MB of 433x576 source, so fetching
-                  // them up front costs little.
+                  // Eager, not lazy. These used to fade in on scroll, and lazy
+                  // loading only STARTED the download at the moment the reveal
+                  // began — so the panel appeared as an empty gradient while
+                  // the photo was still on the wire. The reveal is gone now,
+                  // but the panels are still well below the fold, so they stay
+                  // eager: all three together are about 0.9MB of 433x576
+                  // source, which costs little up front.
                   //
                   // eager rather than priority on purpose: priority also emits
                   // a preload link, and three of those would compete with the
@@ -180,7 +179,6 @@ export default function HomePage() {
               </div>
             </div>
           </section>
-        </AnimateOnScroll>
       ))}
 
       {/* Stay Lashed In Section */}

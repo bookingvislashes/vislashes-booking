@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.13.1",
+    date: "2026-08-16",
+    changes: [
+      {
+        kind: "changed",
+        text: "The Connection, Passion and Chemistry panels are there the moment the home page opens. Nothing on the home page waits for you to scroll to it any more.",
+      },
+    ],
+  },
+  {
     version: "1.13.0",
     date: "2026-08-16",
     changes: [
