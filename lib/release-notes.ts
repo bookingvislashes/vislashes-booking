@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.13.0",
+    date: "2026-08-16",
+    changes: [
+      {
+        kind: "added",
+        text: "Each service can have its own photo on the booking page. Set it in Services — there's a Photo box with a preview so you can see it before saving.",
+      },
+      {
+        kind: "note",
+        text: "Run supabase/migrations/009_service_photos.sql in Supabase, or the Photo box won't save.",
+      },
+      {
+        kind: "note",
+        text: "The four lash photos need adding to the site first — until a service has a photo set, its card shows the plain tan block it always has.",
+      },
+    ],
+  },
+  {
     version: "1.12.3",
     date: "2026-08-16",
     changes: [

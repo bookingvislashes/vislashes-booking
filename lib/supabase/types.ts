@@ -8,6 +8,8 @@ export interface Service {
   deposit_amount: number;
   duration_minutes: number;
   description: string | null;
+  /** Photo on the booking page card. Site path or full URL; null shows the tan placeholder. */
+  image_url: string | null;
   is_active: boolean;
   sort_order: number;
   created_at: string;

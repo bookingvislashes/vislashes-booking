@@ -74,7 +74,7 @@ async function getServices() {
     const { data, error } = await supabase
       .from("services")
       .select(
-        "id, name, description, category, price, deposit_amount, duration_minutes"
+        "id, name, description, category, price, deposit_amount, duration_minutes, image_url"
       )
       .eq("is_active", true)
       .order("sort_order", { ascending: true });

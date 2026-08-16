@@ -1,7 +1,46 @@
 "use client";
 
+import Image from "next/image";
 import { UseFormReturn } from "react-hook-form";
 import { BookingFormData } from "@/lib/schemas";
+
+/**
+ * A service photo, from either a path inside the site or somewhere else.
+ *
+ * next/image optimises and serves a right-sized rendition, but it refuses any
+ * host that is not listed in next.config.ts and throws rather than degrading.
+ * Since this value is typed by hand in the admin, an address on some other
+ * host is a realistic thing to paste — so those fall back to a plain img,
+ * which shows the picture instead of breaking the booking page.
+ */
+function ServicePhoto({ src, alt }: { src: string; alt: string }) {
+  const isLocal = src.startsWith("/");
+
+  if (!isLocal) {
+    return (
+      /* eslint-disable-next-line @next/next/no-img-element */
+      <img
+        src={src}
+        alt={alt}
+        loading="eager"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      className="object-cover"
+      // The card is at most ~340px wide, and three sit side by side on desktop.
+      sizes="(max-width: 640px) 100vw, 340px"
+      quality={85}
+      loading="eager"
+    />
+  );
+}
 
 interface Service {
   id: string;
@@ -52,7 +91,13 @@ export function ServiceSelector({ form, services }: ServiceSelectorProps) {
             : "border-transparent hover:border-light-tan"
         }`}
       >
-        <div className="w-full h-24 bg-light-tan rounded-control mb-3" />
+        {/* The tan block is the fallback, not the design — a service with no
+            photo set still gets a card of the right shape rather than one that
+            collapses. Per the project's rule on missing values: render nothing
+            rather than a stand-in that looks like real content. */}
+        <div className="relative w-full h-24 bg-light-tan rounded-control mb-3 overflow-hidden">
+          {service.image_url && <ServicePhoto src={service.image_url} alt="" />}
+        </div>
         <h4 className="font-display text-[15px] font-bold text-dark-brown mb-1">
           {service.name}
         </h4>
