@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.17.0",
+    date: "2026-08-20",
+    changes: [
+      {
+        kind: "changed",
+        text: "Switched-off services move into a collapsed \"Archived\" list under your live ones, so old placeholders stop cluttering the page.",
+      },
+      {
+        kind: "fixed",
+        text: "When a service can't be deleted, it now names the appointment blocking it and what to do — instead of just refusing.",
+      },
+    ],
+  },
+  {
     version: "1.16.1",
     date: "2026-08-20",
     changes: [

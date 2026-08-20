@@ -70,6 +70,10 @@ export default function ServicesPage() {
   const [confirmDelete, setConfirmDelete] = useState<Service | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [reordering, setReordering] = useState(false);
+  // Archived services cannot always be deleted — anything ever booked has to
+  // stay so that appointment still says what it was for — so without somewhere
+  // to put them they pile up in the working list forever.
+  const [showArchived, setShowArchived] = useState(false);
 
   const supabase = createClient();
 
@@ -162,10 +166,19 @@ export default function ServicesPage() {
     // has ever been booked would either be rejected by the foreign key or
     // orphan that appointment's history. Checked up front so she gets an
     // explanation and a working alternative rather than a database error.
-    const { count, error: countError } = await supabase
+    // Rows, not just a count: "it's on 1 appointment" leaves her with no way
+    // to act on it. Naming who and when is the difference between a refusal
+    // and an instruction.
+    const {
+      data: blocking,
+      count,
+      error: countError,
+    } = await supabase
       .from("bookings")
-      .select("id", { count: "exact", head: true })
-      .eq("service_id", service.id);
+      .select("booking_date, client:clients(full_name)", { count: "exact" })
+      .eq("service_id", service.id)
+      .order("booking_date", { ascending: false })
+      .limit(3);
 
     if (countError) {
       setDeleting(false);
@@ -176,10 +189,19 @@ export default function ServicesPage() {
     if (count && count > 0) {
       setDeleting(false);
       setConfirmDelete(null);
+      const who = (blocking || [])
+        .map((b) => {
+          const client = Array.isArray(b.client) ? b.client[0] : b.client;
+          return `${client?.full_name || "Unknown"} on ${b.booking_date}`;
+        })
+        .join(", ");
+
       setError(
         `${service.name} can't be deleted — it's on ${count} ${
           count === 1 ? "appointment" : "appointments"
-        }. Switch it off instead to remove it from booking while keeping that history.`
+        }${who ? ` (${who}${count > 3 ? ", and more" : ""})` : ""}. ` +
+          `Deleting it would erase what those appointments were for. It's already switched off, so nobody can book it — ` +
+          `or delete those appointments first if they were only tests, and it will delete cleanly.`
       );
       return;
     }
@@ -200,6 +222,11 @@ export default function ServicesPage() {
     setLoading(true);
     fetchServices();
   };
+
+  // Split for display only; `services` stays the single ordered source that
+  // move() indexes into, so reordering is unaffected.
+  const activeServices = services.filter((s) => s.is_active);
+  const archivedServices = services.filter((s) => !s.is_active);
 
   const saveDraft = async () => {
     if (!draft) return;
@@ -309,7 +336,7 @@ export default function ServicesPage() {
               </div>
             ))}
           </div>
-        ) : services.length === 0 && !error ? (
+        ) : activeServices.length === 0 && archivedServices.length === 0 && !error ? (
           <div className="px-5 py-10 text-center">
             <p className="font-sans text-[16px] text-charcoal font-semibold">
               No services yet
@@ -319,7 +346,7 @@ export default function ServicesPage() {
             </p>
           </div>
         ) : (
-          services.map((service, index) => (
+          activeServices.map((service) => (
             <div
               key={service.id}
               className="flex items-center justify-between gap-2 sm:gap-3 px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
@@ -329,8 +356,8 @@ export default function ServicesPage() {
               <div className="flex flex-col shrink-0 -my-1">
                 <button
                   type="button"
-                  onClick={() => move(index, -1)}
-                  disabled={index === 0 || reordering}
+                  onClick={() => move(services.indexOf(service), -1)}
+                  disabled={services.indexOf(service) === 0 || reordering}
                   aria-label={`Move ${service.name} up`}
                   className="w-8 h-7 inline-flex items-center justify-center rounded-control text-muted hover:text-deep-brown hover:bg-cream disabled:opacity-25 disabled:hover:bg-transparent transition-colors active:scale-95"
                 >
@@ -340,8 +367,10 @@ export default function ServicesPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => move(index, 1)}
-                  disabled={index === services.length - 1 || reordering}
+                  onClick={() => move(services.indexOf(service), 1)}
+                  disabled={
+                    services.indexOf(service) === services.length - 1 || reordering
+                  }
                   aria-label={`Move ${service.name} down`}
                   className="w-8 h-7 inline-flex items-center justify-center rounded-control text-muted hover:text-deep-brown hover:bg-cream disabled:opacity-25 disabled:hover:bg-transparent transition-colors active:scale-95"
                 >
@@ -423,6 +452,84 @@ export default function ServicesPage() {
           ))
         )}
       </div>
+
+      {/* Archived. Switched off and out of the way, but still reachable —
+          some of these cannot be deleted at all, because an appointment still
+          refers to them and that record has to keep meaning something. */}
+      {archivedServices.length > 0 && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setShowArchived((open) => !open)}
+            aria-expanded={showArchived}
+            className="flex items-center gap-2 font-sans text-[13px] text-muted font-semibold"
+          >
+            <span
+              aria-hidden="true"
+              className={`transition-transform duration-200 ${
+                showArchived ? "rotate-90" : ""
+              }`}
+            >
+              &rsaquo;
+            </span>
+            Archived ({archivedServices.length})
+          </button>
+
+          {showArchived && (
+            <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden mt-2">
+              {archivedServices.map((service) => (
+                <div
+                  key={service.id}
+                  className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormError(null);
+                      setDraft(toDraft(service));
+                    }}
+                    className="flex-1 min-w-0 text-left"
+                  >
+                    <span className="block font-sans text-[16px] font-semibold text-muted truncate">
+                      {service.name}
+                    </span>
+                    <span className="block font-sans text-[12px] text-muted mt-0.5">
+                      Hidden from clients &middot; ${Number(service.price).toFixed(2)}
+                    </span>
+                  </button>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    {/* Turning it back on is the counterpart to archiving it,
+                        and is the only route back for a seasonal service. */}
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={false}
+                      aria-label={`Switch ${service.name} back on`}
+                      onClick={() => toggleActive(service)}
+                      className="relative w-10 h-5 rounded-full bg-muted/30 transition-[background-color,transform] duration-150 active:scale-[0.94] before:absolute before:content-[''] before:-inset-x-1 before:-inset-y-3"
+                    >
+                      <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ease-out translate-x-0" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(service)}
+                      aria-label={`Delete ${service.name}`}
+                      className="w-11 h-11 -mr-2 inline-flex items-center justify-center rounded-control text-muted hover:text-danger hover:bg-danger/10 transition-colors active:scale-95"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6" />
+                        <path d="M10 11v6M14 11v6" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <Modal
         isOpen={draft !== null}
