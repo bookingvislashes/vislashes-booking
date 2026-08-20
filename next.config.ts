@@ -23,11 +23,30 @@ const builtAt = new Intl.DateTimeFormat("en-US", {
   timeZoneName: "short",
 }).format(new Date());
 
+// Hostname of the Supabase project, for the image allow-list below. Parsed
+// defensively: an unset or malformed URL must not crash the build.
+const supabaseHost = (() => {
+  const raw =
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  try {
+    return raw ? new URL(raw).hostname : "";
+  } catch {
+    return "";
+  }
+})();
+
 const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_BUILD_ID: `${displayVersion} · ${builtAt}`,
   },
   images: {
+    // Service photos are uploaded to Supabase Storage, so next/image has to be
+    // told that host is allowed or every card throws at runtime. Derived from
+    // the configured project URL rather than hardcoded, so a project change
+    // does not silently break every photo.
+    remotePatterns: supabaseHost
+      ? [{ protocol: "https" as const, hostname: supabaseHost, pathname: "/storage/v1/object/public/**" }]
+      : [],
     // AVIF is not on by default (Next only ships image/webp). At a given
     // quality AVIF keeps noticeably more detail than WebP, which matters
     // because our source photos are already being upscaled to fit their slots.

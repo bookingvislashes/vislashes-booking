@@ -20,9 +20,15 @@ import {
 interface CalendarPickerProps {
   form: UseFormReturn<BookingFormData>;
   serviceId: string;
+  /** Lengthens the appointment, so it changes which start times fit. */
+  hasRemoval: boolean;
 }
 
-export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
+export function CalendarPicker({
+  form,
+  serviceId,
+  hasRemoval,
+}: CalendarPickerProps) {
   // Opens on the month of the date already chosen. This component remounts on
   // every step change, so booking in October and pressing Back landed on the
   // current month with the selection highlighted off-screen — and clicking any
@@ -41,7 +47,9 @@ export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
     setLoadingSlots(true);
     try {
       const res = await fetch(
-        `/api/availability?date=${date}&serviceId=${serviceId}`
+        `/api/availability?date=${date}&serviceId=${serviceId}${
+          hasRemoval ? "&removal=1" : ""
+        }`
       );
       const data = await res.json();
       setTimeSlots(data.slots || []);
@@ -50,7 +58,7 @@ export function CalendarPicker({ form, serviceId }: CalendarPickerProps) {
     } finally {
       setLoadingSlots(false);
     }
-  }, [serviceId]);
+  }, [serviceId, hasRemoval]);
 
   useEffect(() => {
     if (selectedDate) {

@@ -25,6 +25,7 @@ interface BookingFormData {
   termsAccepted: boolean;
   signatureData: string;
   paymentMethod: string;
+  hasRemoval?: boolean;
 }
 
 interface CreateBookingOptions {
@@ -33,6 +34,9 @@ interface CreateBookingOptions {
   depositPaid: boolean;
   depositAmount?: number;
   squarePaymentId?: string;
+  /** Resolved server-side from settings — never sent by the browser. */
+  removalPrice?: number;
+  removalMinutes?: number;
 }
 
 export async function createBooking({
@@ -41,6 +45,8 @@ export async function createBooking({
   depositPaid,
   depositAmount,
   squarePaymentId,
+  removalPrice = 0,
+  removalMinutes = 0,
 }: CreateBookingOptions) {
   // 1. Upsert client (find by email or create new)
   //
@@ -91,20 +97,61 @@ export async function createBooking({
       throw new Error(`Failed to update client: ${updateError.message}`);
     }
   } else {
-    const { data: newClient, error: clientError } = await supabase
-      .from("clients")
-      .insert({
-        full_name: fullName,
-        email,
-        phone: formData.phone,
-      })
-      .select("id")
-      .single();
+    // Before creating anyone, look for an imported record with the same phone
+    // and no email. 47 of the clients brought over from Acuity have no email
+    // address on file, so matching on email alone would file a returning
+    // regular as brand new — splitting her history and, worse, leaving her
+    // failing the returning-client check that unlocks refills.
+    const digits = (value: string) => value.replace(/[^0-9]/g, "").slice(-10);
+    const phoneDigits = digits(formData.phone || "");
+    let adoptedId: string | null = null;
 
-    if (clientError || !newClient) {
-      throw new Error(`Failed to create client: ${clientError?.message}`);
+    if (phoneDigits.length === 10) {
+      const { data: emailless } = await supabase
+        .from("clients")
+        .select("id, phone")
+        .is("email", null)
+        .not("phone", "is", null)
+        .limit(2000);
+
+      adoptedId =
+        (emailless || []).find((c) => digits(c.phone || "") === phoneDigits)
+          ?.id ?? null;
     }
-    clientId = newClient.id;
+
+    if (adoptedId) {
+      // Fill in the email we now have, so every later visit matches on it
+      // directly and this phone scan is never needed for her again.
+      const { error: adoptError } = await supabase
+        .from("clients")
+        .update({
+          full_name: fullName,
+          email,
+          phone: formData.phone,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", adoptedId);
+
+      if (adoptError) {
+        throw new Error(`Failed to update client: ${adoptError.message}`);
+      }
+      clientId = adoptedId;
+    } else {
+      const { data: newClient, error: clientError } = await supabase
+        .from("clients")
+        .insert({
+          full_name: fullName,
+          email,
+          phone: formData.phone,
+        })
+        .select("id")
+        .single();
+
+      if (clientError || !newClient) {
+        throw new Error(`Failed to create client: ${clientError?.message}`);
+      }
+      clientId = newClient.id;
+    }
   }
 
   // 2. Get service details for email
@@ -131,6 +178,7 @@ export async function createBooking({
       deposit_paid: depositPaid,
       deposit_amount: depositAmount ?? service.deposit_amount,
       square_payment_id: squarePaymentId ?? null,
+      has_removal: Boolean(formData.hasRemoval),
     })
     .select("id")
     .single();
@@ -175,16 +223,24 @@ export async function createBooking({
     return `${m} min`;
   };
 
+  const removalAdded = Boolean(formData.hasRemoval);
+  const appointmentMinutes =
+    service.duration_minutes + (removalAdded ? removalMinutes : 0);
+  const appointmentTotal =
+    Number(service.price) + (removalAdded ? removalPrice : 0);
+
   try {
     await sendConfirmationEmail({
       clientName: formData.fullName,
       clientEmail: formData.email,
-      serviceName: service.name,
+      serviceName: removalAdded
+        ? `${service.name} + lash removal`
+        : service.name,
       bookingDate: formData.bookingDate,
       timeSlot: formData.timeSlot,
-      duration: formatDuration(service.duration_minutes),
+      duration: formatDuration(appointmentMinutes),
       depositAmount: service.deposit_amount,
-      totalPrice: service.price,
+      totalPrice: appointmentTotal,
       paymentMethod: formData.paymentMethod,
     });
   } catch (emailErr) {
@@ -197,8 +253,10 @@ export async function createBooking({
   // own failures, because by this point the card has already been charged.
   await createBookingEvent(supabase, {
     bookingId: booking.id,
-    serviceName: service.name,
-    durationMinutes: service.duration_minutes,
+    serviceName: removalAdded
+      ? `${service.name} + lash removal`
+      : service.name,
+    durationMinutes: appointmentMinutes,
     clientName: fullName,
     clientEmail: email,
     clientPhone: formData.phone,

@@ -3,6 +3,10 @@ import { z } from "zod";
 export const bookingSchema = z.object({
   // Step 1
   serviceId: z.string().min(1, "Please select a service"),
+  // Lash removal, taken alongside a set rather than booked on its own. The
+  // amount and length are read from settings on the server — never from here,
+  // for the same reason the deposit is not client-supplied.
+  hasRemoval: z.boolean().default(false),
 
   // Step 2
   bookingDate: z.string().min(1, "Please select a date"),

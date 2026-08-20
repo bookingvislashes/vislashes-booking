@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import type { Client } from "@/lib/supabase/types";
+import { ClientImport } from "@/components/admin/ClientImport";
 
 function initials(name: string) {
   return (
@@ -74,6 +75,8 @@ export default function ClientsPage() {
       <h1 className="font-display text-[28px] font-bold text-dark-brown mb-6">
         Clients
       </h1>
+
+      <ClientImport />
 
       {/* Search. focus:outline-none removed — it was overriding the brand focus
           ring that globals.css deliberately restores. */}

@@ -27,11 +27,17 @@ interface Service {
 
 interface BookingFlowProps {
   services: Service[];
+  removalPrice: number;
+  removalMinutes: number;
 }
 
 const TOTAL_STEPS = 7;
 
-export function BookingFlow({ services }: BookingFlowProps) {
+export function BookingFlow({
+  services,
+  removalPrice,
+  removalMinutes,
+}: BookingFlowProps) {
   const [currentStep, setCurrentStep] = useState(1);
 
   const form = useForm<BookingFormData>({
@@ -80,12 +86,20 @@ export function BookingFlow({ services }: BookingFlowProps) {
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        return <ServiceSelector form={form} services={services} />;
+        return (
+          <ServiceSelector
+            form={form}
+            services={services}
+            removalPrice={removalPrice}
+            removalMinutes={removalMinutes}
+          />
+        );
       case 2:
         return (
           <CalendarPicker
             form={form}
             serviceId={form.watch("serviceId")}
+            hasRemoval={form.watch("hasRemoval")}
           />
         );
       case 3:

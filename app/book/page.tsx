@@ -30,6 +30,7 @@ const fallbackServices = [
     deposit_amount: 25.0,
     duration_minutes: 70,
     image_url: null,
+    image_focus_y: 50,
   },
   {
     id: "svc-wispy",
@@ -41,6 +42,7 @@ const fallbackServices = [
     deposit_amount: 25.0,
     duration_minutes: 80,
     image_url: null,
+    image_focus_y: 50,
   },
   {
     id: "svc-hybrid",
@@ -52,6 +54,7 @@ const fallbackServices = [
     deposit_amount: 25.0,
     duration_minutes: 90,
     image_url: null,
+    image_focus_y: 50,
   },
   {
     id: "svc-lash-lift",
@@ -63,6 +66,7 @@ const fallbackServices = [
     deposit_amount: 25.0,
     duration_minutes: 60,
     image_url: null,
+    image_focus_y: 50,
   },
 ];
 
@@ -74,7 +78,7 @@ async function getServices() {
     const { data, error } = await supabase
       .from("services")
       .select(
-        "id, name, description, category, price, deposit_amount, duration_minutes, image_url"
+        "id, name, description, category, price, deposit_amount, duration_minutes, image_url, image_focus_y"
       )
       .eq("is_active", true)
       .order("sort_order", { ascending: true });
@@ -87,21 +91,57 @@ async function getServices() {
       ...s,
       price: Number(s.price),
       deposit_amount: Number(s.deposit_amount),
-      image_url: null,
+      // image_url used to be hardcoded null here, which is why every card
+      // rendered a flat tan block no matter what was stored.
+      image_url: s.image_url ?? null,
+      image_focus_y: s.image_focus_y ?? 50,
     }));
   } catch {
     return fallbackServices;
   }
 }
 
+/**
+ * Removal price and length live in settings so they can be changed without a
+ * developer. Read here and passed down rather than looked up in the browser,
+ * so the figure a customer is shown comes from the same place the server
+ * charges from.
+ */
+async function getRemoval() {
+  const fallback = { price: 25, minutes: 30 };
+  if (!isSupabaseConfigured()) return fallback;
+
+  try {
+    const supabase = await createPublicClient();
+    const { data } = await supabase
+      .from("settings")
+      .select("key, value")
+      .in("key", ["removal_price", "removal_duration_minutes"]);
+
+    const map = Object.fromEntries((data || []).map((r) => [r.key, r.value]));
+    const price = Number(map.removal_price);
+    const minutes = Number(map.removal_duration_minutes);
+    return {
+      price: Number.isFinite(price) ? price : fallback.price,
+      minutes: Number.isFinite(minutes) ? minutes : fallback.minutes,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
 export default async function BookPage() {
-  const services = await getServices();
+  const [services, removal] = await Promise.all([getServices(), getRemoval()]);
 
   return (
     <div className="min-h-[100dvh] bg-cream">
       <Header />
       <main className="max-w-[640px] mx-auto px-6 py-8">
-        <BookingFlow services={services} />
+        <BookingFlow
+          services={services}
+          removalPrice={removal.price}
+          removalMinutes={removal.minutes}
+        />
       </main>
     </div>
   );

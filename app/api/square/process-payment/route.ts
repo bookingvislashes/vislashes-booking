@@ -75,6 +75,21 @@ export async function POST(req: NextRequest) {
 
     const depositAmount = Number(service.deposit_amount);
 
+    // Removal price and length come from settings, never from the request —
+    // the same rule the deposit follows. The deposit itself is unchanged by a
+    // removal: it secures the slot, and the removal is part of the balance
+    // settled at the appointment.
+    const { data: removalSettings } = await supabase
+      .from("settings")
+      .select("key, value")
+      .in("key", ["removal_price", "removal_duration_minutes"]);
+
+    const removalMap = Object.fromEntries(
+      (removalSettings || []).map((r) => [r.key, r.value])
+    );
+    const removalPrice = Number(removalMap.removal_price ?? 25) || 0;
+    const removalMinutes = Number(removalMap.removal_duration_minutes ?? 30) || 0;
+
     const { payment } = await square.payments.create({
       sourceId: data.sourceId,
       idempotencyKey: data.attemptId,
@@ -119,6 +134,8 @@ export async function POST(req: NextRequest) {
         depositPaid: true,
         depositAmount,
         squarePaymentId: payment.id,
+        removalPrice,
+        removalMinutes,
       });
 
       // Best-effort: notifyAdmins swallows its own errors internally, so this

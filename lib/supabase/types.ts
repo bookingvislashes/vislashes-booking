@@ -10,6 +10,8 @@ export interface Service {
   description: string | null;
   /** Photo on the booking page card. Site path or full URL; null shows the tan placeholder. */
   image_url: string | null;
+  /** Vertical crop centre as a percentage, so the card lands on the eyes. */
+  image_focus_y: number;
   is_active: boolean;
   sort_order: number;
   created_at: string;

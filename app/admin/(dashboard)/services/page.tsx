@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { createClient } from "@/lib/supabase/client";
 import type { Service } from "@/lib/supabase/types";
+import { ServicePhotoField } from "@/components/admin/ServicePhotoField";
 
 type Draft = {
   id?: string;
@@ -15,7 +16,8 @@ type Draft = {
   deposit_amount: string;
   duration_minutes: string;
   description: string;
-  image_url: string;
+  image_url: string | null;
+  image_focus_y: number;
 };
 
 const CATEGORY_LABELS: Record<Draft["category"], string> = {
@@ -31,7 +33,8 @@ const emptyDraft: Draft = {
   deposit_amount: "",
   duration_minutes: "",
   description: "",
-  image_url: "",
+  image_url: null,
+  image_focus_y: 50,
 };
 
 function toDraft(service: Service): Draft {
@@ -43,7 +46,8 @@ function toDraft(service: Service): Draft {
     deposit_amount: String(service.deposit_amount),
     duration_minutes: String(service.duration_minutes),
     description: service.description ?? "",
-    image_url: service.image_url ?? "",
+    image_url: service.image_url ?? null,
+    image_focus_y: service.image_focus_y ?? 50,
   };
 }
 
@@ -227,7 +231,8 @@ export default function ServicesPage() {
       deposit_amount: deposit,
       duration_minutes: duration,
       description: draft.description.trim() || null,
-      image_url: draft.image_url.trim() || null,
+      image_url: draft.image_url,
+      image_focus_y: draft.image_focus_y,
     };
 
     const { error: writeError } = draft.id
@@ -426,6 +431,14 @@ export default function ServicesPage() {
       >
         {draft && (
           <div className="flex flex-col gap-4">
+            <ServicePhotoField
+              imageUrl={draft.image_url}
+              focusY={draft.image_focus_y}
+              onChange={({ imageUrl, focusY }) =>
+                setDraft({ ...draft, image_url: imageUrl, image_focus_y: focusY })
+              }
+            />
+
             <Input
               id="service-name"
               label="Name"
@@ -497,42 +510,6 @@ export default function ServicesPage() {
                 setDraft({ ...draft, description: e.target.value })
               }
             />
-
-            <div>
-              <Input
-                id="service-photo"
-                label="Photo (optional)"
-                placeholder="/images/services/classic-set.jpg"
-                value={draft.image_url}
-                onChange={(e) =>
-                  setDraft({ ...draft, image_url: e.target.value })
-                }
-              />
-              <p className="font-sans text-[13px] text-muted mt-1 leading-[1.45]">
-                Shown on the booking page. Leave it blank for a plain tan
-                block.
-              </p>
-              {/* A live preview, because the field takes a typed-in address and
-                  a typo is otherwise invisible until a client hits the booking
-                  page. A plain img on purpose: this has to render whatever was
-                  entered, including a host next/image would refuse. */}
-              {draft.image_url.trim() && (
-                <div className="mt-2 w-full max-w-[220px] h-24 rounded-control overflow-hidden bg-light-tan relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={draft.image_url.trim()}
-                    alt="Preview of this service's photo"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                    onLoad={(e) => {
-                      e.currentTarget.style.display = "";
-                    }}
-                  />
-                </div>
-              )}
-            </div>
 
             {formError && (
               <p role="alert" className="font-sans text-[16px] text-danger font-semibold">

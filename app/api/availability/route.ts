@@ -7,6 +7,10 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date");
   const serviceId = searchParams.get("serviceId");
+  // A removal is done in the same appointment, so it lengthens it. Without
+  // this the slot generator would size the visit as a set alone and offer a
+  // start time that runs the removal straight into the next client.
+  const withRemoval = searchParams.get("removal") === "1";
 
   if (!date || !serviceId) {
     return NextResponse.json(
@@ -112,7 +116,7 @@ export async function GET(req: NextRequest) {
     // Fetch existing bookings for this date (only confirmed ones block slots)
     const { data: existingBookings } = await supabase
       .from("bookings")
-      .select("time_slot, service_id, services(duration_minutes)")
+      .select("time_slot, service_id, has_removal, services(duration_minutes)")
       .eq("booking_date", date)
       .eq("status", "confirmed");
 
@@ -120,12 +124,20 @@ export async function GET(req: NextRequest) {
     const { data: settings } = await supabase
       .from("settings")
       .select("key, value")
-      .in("key", ["buffer_minutes", "advance_booking_hours"]);
+      .in("key", [
+        "buffer_minutes",
+        "advance_booking_hours",
+        "removal_duration_minutes",
+      ]);
 
     const settingsMap = Object.fromEntries(
       (settings || []).map((s) => [s.key, s.value])
     );
     const bufferMinutes = parseInt(settingsMap.buffer_minutes || "15", 10);
+    const removalMinutes = parseInt(
+      settingsMap.removal_duration_minutes || "30",
+      10
+    );
     const advanceHours = parseInt(
       settingsMap.advance_booking_hours || "24",
       10
@@ -148,9 +160,12 @@ export async function GET(req: NextRequest) {
     // Map bookings to { start_time, end_time } time ranges
     // Convert "10:00 AM" time_slot + duration into HH:mm start/end
     const bookingsForSlots = (existingBookings || []).map((b) => {
-      const dur =
+      const bookedDuration =
         (b.services as unknown as { duration_minutes: number })
           ?.duration_minutes || serviceDuration;
+      // Their removal lengthened their appointment when they booked it, so it
+      // has to block the same longer window here.
+      const dur = bookedDuration + (b.has_removal ? removalMinutes : 0);
       const start24 = to24Hour(b.time_slot);
       const [h, m] = start24.split(":").map(Number);
       const endMins = h * 60 + m + dur;
@@ -160,9 +175,12 @@ export async function GET(req: NextRequest) {
       return { start_time: start24, end_time: end24 };
     });
 
+    const totalDuration =
+      serviceDuration + (withRemoval ? removalMinutes : 0);
+
     const slots = generateTimeSlots(
       date,
-      serviceDuration,
+      totalDuration,
       availability || [],
       blockedForSlots,
       bookingsForSlots,

@@ -31,6 +31,40 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.16.0",
+    date: "2026-08-20",
+    changes: [
+      {
+        kind: "added",
+        text: "Refills are back, at your Acuity prices. They sit locked for new clients — tapping one explains you don't refill another tech's work and points them to a full set instead.",
+      },
+      {
+        kind: "added",
+        text: "Returning clients unlock refills themselves by entering the phone number they booked with. Email works too.",
+      },
+      {
+        kind: "added",
+        text: "Lash removal, $25, addable to any set. It adds 30 minutes to the appointment, so the calendar blocks the right amount of time automatically.",
+      },
+      {
+        kind: "added",
+        text: "Photos on the service cards. Add one per service in Services, then slide it until only the eyes show.",
+      },
+      {
+        kind: "added",
+        text: "Import your Acuity client list from Clients. Running it twice updates people instead of duplicating them.",
+      },
+      {
+        kind: "changed",
+        text: "Lash Lift now sits with the full sets instead of under its own heading.",
+      },
+      {
+        kind: "note",
+        text: "Run supabase/migrations/010_refills_removal_import.sql — refills, removals and the client import all need it.",
+      },
+    ],
+  },
+  {
     version: "1.15.0",
     date: "2026-08-16",
     changes: [
