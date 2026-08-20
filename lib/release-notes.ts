@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.18.0",
+    date: "2026-08-20",
+    changes: [
+      {
+        kind: "added",
+        text: "Deleting a service that still has appointments on it now shows you exactly who and when, right in Services — and, if they're only tests, deletes them along with the service. No more asking for a SQL script.",
+      },
+      {
+        kind: "added",
+        text: "New Migrations page (in the sidebar, or under More on your phone) runs database updates with a tap instead of pasting SQL into Supabase.",
+      },
+      {
+        kind: "note",
+        text: "The Migrations page needs a database connection to work — add SUPABASE_DB_URL in Vercel (Supabase dashboard → Project Settings → Database → Connection string → URI) and redeploy. Until then it'll tell you it's not connected.",
+      },
+    ],
+  },
+  {
     version: "1.17.0",
     date: "2026-08-20",
     changes: [

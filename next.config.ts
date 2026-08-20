@@ -39,6 +39,14 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_BUILD_ID: `${displayVersion} · ${builtAt}`,
   },
+  // The Migrations admin page reads supabase/migrations/*.sql at request
+  // time via fs, not through an import Next can trace — without this the
+  // files exist locally and in git but ship empty in the deployed function,
+  // so the page would 500 in production while working fine in dev.
+  outputFileTracingIncludes: {
+    "/api/admin/migrations": ["./supabase/migrations/**"],
+    "/api/admin/migrations/run": ["./supabase/migrations/**"],
+  },
   images: {
     // Service photos are uploaded to Supabase Storage, so next/image has to be
     // told that host is allowed or every card throws at runtime. Derived from

@@ -69,6 +69,11 @@ export default function ServicesPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Service | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [blockedDelete, setBlockedDelete] = useState<{
+    service: Service;
+    count: number;
+    appointments: { date: string; time: string; client: string }[];
+  } | null>(null);
   const [reordering, setReordering] = useState(false);
   // Archived services cannot always be deleted — anything ever booked has to
   // stay so that appointment still says what it was for — so without somewhere
@@ -158,69 +163,49 @@ export default function ServicesPage() {
     fetchServices();
   };
 
-  const deleteService = async (service: Service) => {
+  // Runs through /api/admin/delete-service rather than the browser client:
+  // bookings has no delete policy for the authenticated role (only
+  // select/update), so clearing blocking appointments needs the service
+  // role. `deleteBookings` is only ever true on the second call, after she's
+  // seen who's attached and confirmed they're tests.
+  const deleteService = async (service: Service, deleteBookings = false) => {
     setDeleting(true);
     setError(null);
 
-    // bookings.service_id references services(id), so deleting a service that
-    // has ever been booked would either be rejected by the foreign key or
-    // orphan that appointment's history. Checked up front so she gets an
-    // explanation and a working alternative rather than a database error.
-    // Rows, not just a count: "it's on 1 appointment" leaves her with no way
-    // to act on it. Naming who and when is the difference between a refusal
-    // and an instruction.
-    const {
-      data: blocking,
-      count,
-      error: countError,
-    } = await supabase
-      .from("bookings")
-      .select("booking_date, client:clients(full_name)", { count: "exact" })
-      .eq("service_id", service.id)
-      .order("booking_date", { ascending: false })
-      .limit(3);
+    try {
+      const res = await fetch("/api/admin/delete-service", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serviceId: service.id, deleteBookings }),
+      });
+      const data = await res.json();
 
-    if (countError) {
-      setDeleting(false);
-      setError(`Couldn't check bookings for ${service.name}: ${countError.message}`);
-      return;
-    }
+      if (!res.ok) {
+        setError(data.error || `Couldn't delete ${service.name}.`);
+        setConfirmDelete(null);
+        setBlockedDelete(null);
+        return;
+      }
 
-    if (count && count > 0) {
-      setDeleting(false);
+      if (data.blocked) {
+        setConfirmDelete(null);
+        setBlockedDelete({
+          service,
+          count: data.count,
+          appointments: data.appointments || [],
+        });
+        return;
+      }
+
       setConfirmDelete(null);
-      const who = (blocking || [])
-        .map((b) => {
-          const client = Array.isArray(b.client) ? b.client[0] : b.client;
-          return `${client?.full_name || "Unknown"} on ${b.booking_date}`;
-        })
-        .join(", ");
-
-      setError(
-        `${service.name} can't be deleted — it's on ${count} ${
-          count === 1 ? "appointment" : "appointments"
-        }${who ? ` (${who}${count > 3 ? ", and more" : ""})` : ""}. ` +
-          `Deleting it would erase what those appointments were for. It's already switched off, so nobody can book it — ` +
-          `or delete those appointments first if they were only tests, and it will delete cleanly.`
-      );
-      return;
+      setBlockedDelete(null);
+      setLoading(true);
+      fetchServices();
+    } catch {
+      setError(`Couldn't delete ${service.name}: network error.`);
+    } finally {
+      setDeleting(false);
     }
-
-    const { error: deleteError } = await supabase
-      .from("services")
-      .delete()
-      .eq("id", service.id);
-
-    setDeleting(false);
-    setConfirmDelete(null);
-
-    if (deleteError) {
-      setError(`Couldn't delete ${service.name}: ${deleteError.message}`);
-      return;
-    }
-
-    setLoading(true);
-    fetchServices();
   };
 
   // Split for display only; `services` stays the single ordered source that
@@ -649,9 +634,9 @@ export default function ServicesPage() {
           <div>
             <p className="font-sans text-[16px] text-charcoal leading-[1.5]">
               <span className="font-semibold">{confirmDelete.name}</span> will
-              be removed for good. If it has ever been booked it can&apos;t be
-              deleted — switch it off instead, which hides it from clients but
-              keeps those appointments intact.
+              be removed for good. If it has ever been booked, you&apos;ll be
+              shown those appointments next and asked to confirm before
+              anything is deleted.
             </p>
             <div className="flex gap-3 mt-5">
               <Button
@@ -664,6 +649,54 @@ export default function ServicesPage() {
               <Button
                 variant="ghost"
                 onClick={() => setConfirmDelete(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={blockedDelete !== null}
+        onClose={() => setBlockedDelete(null)}
+        title="This service has appointments"
+      >
+        {blockedDelete && (
+          <div>
+            <p className="font-sans text-[16px] text-charcoal leading-[1.5]">
+              <span className="font-semibold">{blockedDelete.service.name}</span>{" "}
+              is on {blockedDelete.count}{" "}
+              {blockedDelete.count === 1 ? "appointment" : "appointments"}:
+            </p>
+            <ul className="mt-3 space-y-1 font-sans text-[15px] text-charcoal/80">
+              {blockedDelete.appointments.map((a, i) => (
+                <li key={i}>
+                  {a.client} — {a.date} at {a.time}
+                </li>
+              ))}
+              {blockedDelete.count > blockedDelete.appointments.length && (
+                <li>and {blockedDelete.count - blockedDelete.appointments.length} more</li>
+              )}
+            </ul>
+            <p className="font-sans text-[15px] text-charcoal/80 leading-[1.5] mt-3">
+              If these are real bookings, switch the service off instead —
+              that hides it from clients but keeps its history. If they were
+              only tests, deleting the service will remove these appointments
+              (and their intake forms and signed agreements) with them.
+            </p>
+            <div className="flex gap-3 mt-5">
+              <Button
+                variant="danger"
+                onClick={() => deleteService(blockedDelete.service, true)}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "These are tests — delete them and the service"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setBlockedDelete(null)}
                 disabled={deleting}
               >
                 Cancel

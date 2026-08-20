@@ -27,6 +27,20 @@ export const supabaseSecretKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || "";
 
 /**
+ * Direct Postgres connection string (Supabase dashboard → Project Settings →
+ * Database → Connection string → URI), used only by the admin Migrations
+ * page to run schema changes. Everything else in the app goes through
+ * PostgREST with the anon/service-role keys above, which can't run DDL —
+ * this is the one thing that needs an actual database credential.
+ */
+export const supabaseDbUrl =
+  process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL_NON_POOLING || "";
+
+export function isMigrationsConfigured(): boolean {
+  return Boolean(supabaseDbUrl);
+}
+
+/**
  * False while the project is unconfigured, which is what keeps the site in its
  * demo mode instead of throwing. "placeholder" is what .env.local.example ships.
  */

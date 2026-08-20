@@ -95,6 +95,14 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
           <circle cx="19" cy="12" r="1.5" />
         </svg>
       );
+    case "database":
+      return (
+        <svg {...props}>
+          <ellipse cx="12" cy="5" rx="8" ry="3" />
+          <path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5" />
+          <path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -109,6 +117,7 @@ const navItems = [
   { label: "Services", href: "/admin/services", icon: "tag" },
   { label: "Payments", href: "/admin/payments", icon: "receipt" },
   { label: "Settings", href: "/admin/settings", icon: "settings" },
+  { label: "Migrations", href: "/admin/migrations", icon: "database" },
   { label: "What's New", href: "/admin/whats-new", icon: "sparkle" },
 ];
 
