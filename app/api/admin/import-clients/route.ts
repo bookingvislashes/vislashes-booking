@@ -89,6 +89,17 @@ export async function POST(req: NextRequest) {
   let created = 0;
   let updated = 0;
   let skipped = 0;
+  // Counted apart from `skipped`. Lumping database failures in with rows that
+  // genuinely had no name, email or phone reported a cause this code had not
+  // checked — and hid the real one, which was a migration that had not been
+  // run. The first message is kept and returned so the admin sees it.
+  let failed = 0;
+  let firstError: string | null = null;
+
+  const recordFailure = (message: string | undefined) => {
+    failed += 1;
+    if (!firstError && message) firstError = message;
+  };
 
   for (const row of rows) {
     const fullName = `${row.firstName} ${row.lastName}`.trim();
@@ -146,7 +157,7 @@ export async function POST(req: NextRequest) {
         .update(payload)
         .eq("id", match);
       if (error) {
-        skipped += 1;
+        recordFailure(error.message);
         continue;
       }
       updated += 1;
@@ -163,7 +174,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (error || !inserted) {
-        skipped += 1;
+        recordFailure(error?.message);
         continue;
       }
       created += 1;
@@ -175,5 +186,18 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ created, updated, skipped, total: rows.length });
+  if (firstError) {
+    console.error(
+      `Client import: ${failed} of ${rows.length} rows failed. First error: ${firstError}`
+    );
+  }
+
+  return NextResponse.json({
+    created,
+    updated,
+    skipped,
+    failed,
+    error: firstError,
+    total: rows.length,
+  });
 }

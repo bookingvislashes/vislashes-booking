@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.16.1",
+    date: "2026-08-20",
+    changes: [
+      {
+        kind: "fixed",
+        text: "The client import said rows were \"skipped for having no name, email or phone\" even when the real problem was something else entirely. It now shows what actually went wrong.",
+      },
+    ],
+  },
+  {
     version: "1.16.0",
     date: "2026-08-20",
     changes: [

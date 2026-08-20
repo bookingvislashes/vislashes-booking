@@ -7,6 +7,8 @@ interface ImportResult {
   created: number;
   updated: number;
   skipped: number;
+  failed: number;
+  error: string | null;
   total: number;
 }
 
@@ -170,16 +172,53 @@ export function ClientImport() {
 
       {result && (
         <div className="mt-4">
-          <p className="font-sans text-[14px] text-success font-semibold">
-            Imported {result.created + result.updated} of {result.total}
-          </p>
-          <p className="font-sans text-[13px] text-muted mt-1 leading-[1.5]">
-            {result.created} added, {result.updated} already here and updated
-            {result.skipped > 0
-              ? `, ${result.skipped} skipped for having no name, email or phone`
-              : ""}
-            .
-          </p>
+          {result.created + result.updated > 0 && (
+            <p className="font-sans text-[14px] text-success font-semibold">
+              Imported {result.created + result.updated} of {result.total}
+            </p>
+          )}
+
+          {/* A database failure is reported as one, with the message, rather
+              than as a row that was missing details. */}
+          {result.failed > 0 && (
+            <div role="alert">
+              <p className="font-sans text-[14px] text-danger font-semibold">
+                {result.failed} of {result.total} couldn&apos;t be saved
+              </p>
+              {result.error && (
+                <p className="font-sans text-[13px] text-muted mt-1 leading-[1.5]">
+                  {result.error}
+                </p>
+              )}
+              {/* The overwhelmingly likely cause, named directly, because the
+                  raw Postgres message will not mean anything on its own. */}
+              {result.error &&
+                /column|does not exist|null value|violates/i.test(
+                  result.error
+                ) && (
+                  <p className="font-sans text-[13px] text-charcoal mt-2 leading-[1.5] max-w-[52ch]">
+                    This usually means{" "}
+                    <span className="font-semibold">
+                      010_refills_removal_import.sql
+                    </span>{" "}
+                    hasn&apos;t been run in Supabase yet. Run it, then import
+                    again — nothing was half-saved.
+                  </p>
+                )}
+            </div>
+          )}
+
+          {result.skipped > 0 && (
+            <p className="font-sans text-[13px] text-muted mt-2 leading-[1.5]">
+              {result.skipped} skipped for having no name, email or phone.
+            </p>
+          )}
+
+          {result.created + result.updated > 0 && (
+            <p className="font-sans text-[13px] text-muted mt-1 leading-[1.5]">
+              {result.created} added, {result.updated} already here and updated.
+            </p>
+          )}
         </div>
       )}
 
