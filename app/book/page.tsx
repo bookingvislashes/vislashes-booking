@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Header } from "@/components/layout/Header";
 import { BookingFlow } from "@/components/booking/BookingFlow";
 import { createPublicClient } from "@/lib/supabase/server";
@@ -83,7 +84,19 @@ async function getServices() {
       .eq("is_active", true)
       .order("sort_order", { ascending: true });
 
-    if (error || !data?.length) return fallbackServices;
+    // This used to fall back silently on any error or empty result, which is
+    // exactly how a missing `grant select ... to anon` (see migration 011)
+    // went unnoticed for two weeks: the real fetch failed on every single
+    // request, the page quietly rendered the demo menu instead, and it
+    // looked fine right up until a customer tried to pick a time.
+    if (error) {
+      console.error("getServices: real fetch failed, serving fallback menu:", error);
+      return fallbackServices;
+    }
+    if (!data?.length) {
+      console.error("getServices: no active services returned, serving fallback menu");
+      return fallbackServices;
+    }
 
     // Postgres `numeric` arrives as a string over PostgREST; the booking flow
     // does arithmetic on price and deposit, so coerce before handing it on.
@@ -96,7 +109,8 @@ async function getServices() {
       image_url: s.image_url ?? null,
       image_focus_y: s.image_focus_y ?? 50,
     }));
-  } catch {
+  } catch (err) {
+    console.error("getServices: threw, serving fallback menu:", err);
     return fallbackServices;
   }
 }
@@ -113,10 +127,14 @@ async function getRemoval() {
 
   try {
     const supabase = await createPublicClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("settings")
       .select("key, value")
       .in("key", ["removal_price", "removal_duration_minutes"]);
+
+    if (error) {
+      console.error("getRemoval: fetch failed, serving fallback:", error);
+    }
 
     const map = Object.fromEntries((data || []).map((r) => [r.key, r.value]));
     const price = Number(map.removal_price);
@@ -137,11 +155,16 @@ export default async function BookPage() {
     <div className="min-h-[100dvh] bg-cream">
       <Header />
       <main className="max-w-[640px] mx-auto px-6 py-8">
-        <BookingFlow
-          services={services}
-          removalPrice={removal.price}
-          removalMinutes={removal.minutes}
-        />
+        {/* BookingFlow reads ?service= via useSearchParams to preselect a set
+            and jump straight to the calendar. That hook requires a Suspense
+            boundary or Next can't statically prerender this page. */}
+        <Suspense fallback={null}>
+          <BookingFlow
+            services={services}
+            removalPrice={removal.price}
+            removalMinutes={removal.minutes}
+          />
+        </Suspense>
       </main>
     </div>
   );

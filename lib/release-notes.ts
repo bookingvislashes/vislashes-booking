@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.20.0",
+    date: "2026-08-27",
+    changes: [
+      {
+        kind: "note",
+        text: "Fixed a serious bug: your booking site has been showing every visitor a hardcoded demo menu instead of your real services, because anonymous visitors were never actually allowed to read the services table — only your logged-in admin session was. That's why the calendar showed no time slots on any day, and it likely means no real payment could complete since at least August 14th. Run the new migration (Migrations page, or the SQL in supabase/migrations/011_public_read_grants.sql) right away to fix it — this is the single most important thing in this update.",
+      },
+      {
+        kind: "added",
+        text: "Tapping \"Book [Set Name]\" on the home page now takes you straight into the booking flow with that set already chosen and the calendar open — no need to pick it again.",
+      },
+      {
+        kind: "changed",
+        text: "Service cards on the home page now show the plain price instead of \"Starting at $X\".",
+      },
+      {
+        kind: "changed",
+        text: "Footer social icons now link to your real Instagram, Facebook, and TikTok. Removed the placeholder Behance and Twitter icons, which never went anywhere.",
+      },
+    ],
+  },
+  {
     version: "1.19.0",
     date: "2026-08-27",
     changes: [

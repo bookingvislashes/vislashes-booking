@@ -53,18 +53,23 @@ const sectionVisuals = [
 // in app/book/page.tsx.
 const fallbackFeaturedServices = [
   {
+    // Matches the fallback ids in app/book/page.tsx, so the "Book" button
+    // still preselects the right set when Supabase isn't configured.
+    id: "svc-classic",
     name: "Classic Set",
     price: 85,
     description:
       "Wake up to naturally defined lashes every day. Clean, flutter-worthy, and never overdone. Perfect for first-timers or anyone wanting effortless polish without the drama. One extension per natural lash — your eyes, enhanced.",
   },
   {
+    id: "svc-wispy",
     name: "Wispy Set",
     price: 100,
     description:
       "Feathery, dimensional, and a little bit editorial. The \"I woke up like this\" lash — fluffy enough to be noticed, soft enough to be effortless. If you want lashes that photograph beautifully, this is your style.",
   },
   {
+    id: "svc-hybrid",
     name: "Hybrid Set",
     price: 110,
     description:
@@ -79,17 +84,22 @@ async function getFeaturedServices() {
     const supabase = await createPublicClient();
     const { data, error } = await supabase
       .from("services")
-      .select("name, price, description")
+      .select("id, name, price, description")
       .eq("category", "full_set")
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .limit(3);
 
-    if (error || !data?.length) return fallbackFeaturedServices;
+    if (error) {
+      console.error("getFeaturedServices: real fetch failed, serving fallback:", error);
+      return fallbackFeaturedServices;
+    }
+    if (!data?.length) return fallbackFeaturedServices;
 
     // Postgres `numeric` arrives as a string over PostgREST.
     return data.map((s) => ({ ...s, price: Number(s.price) }));
-  } catch {
+  } catch (err) {
+    console.error("getFeaturedServices: threw, serving fallback:", err);
     return fallbackFeaturedServices;
   }
 }
@@ -110,8 +120,9 @@ export default async function HomePage() {
   const featuredServices = await getFeaturedServices();
   const featureSections = featuredServices.map((service, i) => ({
     ...sectionVisuals[i],
+    id: service.id,
     name: service.name,
-    label: `Starting at ${formatPrice(service.price)}`,
+    label: formatPrice(service.price),
     description: leadSentence(service.description),
     buttonText: `Book ${service.name}`,
   }));
@@ -240,7 +251,7 @@ export default async function HomePage() {
                 <p className="font-sans font-light text-[15px] sm:text-[16px] lg:text-[18px] text-white leading-[1.445] max-w-[320px] sm:max-w-[340px] lg:max-w-[360px] mt-2 mb-4 lg:mb-5">
                   {section.description}
                 </p>
-                <CtaLink href="/book" variant="onImage">
+                <CtaLink href={`/book?service=${section.id}`} variant="onImage">
                   {section.buttonText}
                 </CtaLink>
               </div>
@@ -267,30 +278,24 @@ export default async function HomePage() {
                 Follow us on social media for the latest news!
               </p>
               <div className="flex items-center gap-8 sm:gap-10 lg:gap-[40px]">
-                {/* Facebook */}
-                <a href="#" aria-label="Facebook" className="text-charcoal hover:text-brand-brown transition-colors">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
-                  </svg>
-                </a>
                 {/* Instagram */}
-                <a href="https://instagram.com/vislashesbooking" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-charcoal hover:text-brand-brown transition-colors">
+                <a href="https://www.instagram.com/vislashesbooking" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-charcoal hover:text-brand-brown transition-colors">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="2" width="20" height="20" rx="5" />
                     <circle cx="12" cy="12" r="5" />
                     <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
                   </svg>
                 </a>
-                {/* Twitter / X */}
-                <a href="#" aria-label="Twitter" className="text-charcoal hover:text-brand-brown transition-colors">
+                {/* Facebook */}
+                <a href="https://www.facebook.com/profile.php?id=100090403301732" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-charcoal hover:text-brand-brown transition-colors">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z" />
+                    <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
                   </svg>
                 </a>
-                {/* Behance */}
-                <a href="#" aria-label="Behance" className="text-charcoal hover:text-brand-brown transition-colors">
+                {/* TikTok */}
+                <a href="https://www.tiktok.com/@vislashes" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-charcoal hover:text-brand-brown transition-colors">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22 7h-7V5h7v2zm1.726 10c-.442 1.297-2.029 3-5.101 3-3.074 0-5.564-1.729-5.564-5.675 0-3.91 2.325-5.92 5.466-5.92 3.082 0 4.964 1.782 5.375 4.426.078.506.109 1.188.095 2.14H15.97c.13 3.211 3.483 3.312 4.588 2.029h3.168zm-7.686-4h4.965c-.105-1.547-1.136-2.219-2.477-2.219-1.466 0-2.277.768-2.488 2.219zm-9.574 6.988H0V5.021h6.953c5.476.081 5.58 5.444 2.72 6.906 3.461 1.26 3.577 8.061-3.207 8.061zM3 11h3.584c2.508 0 2.906-3-.312-3H3v3zm3.391 3H3v3.016h3.341c3.055 0 2.868-3.016.05-3.016z" />
+                    <path d="M16.5 2h-3.2v13.6c0 1.5-1.2 2.75-2.75 2.75a2.75 2.75 0 01-2.75-2.75 2.75 2.75 0 012.75-2.75c.3 0 .6.05.87.14V9.7a6 6 0 00-.87-.06 5.95 5.95 0 00-5.95 5.95A5.95 5.95 0 0010.55 21.5a5.95 5.95 0 005.95-5.95V8.6a8.2 8.2 0 004.6 1.4V6.75c-1.9 0-3.55-1.15-4.25-2.8A5.3 5.3 0 0116.5 2z" />
                   </svg>
                 </a>
               </div>

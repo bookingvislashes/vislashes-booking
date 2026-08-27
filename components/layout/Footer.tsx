@@ -13,7 +13,7 @@ export function Footer() {
           </svg>
           {/* Handle */}
           <Link
-            href="https://instagram.com/vislashesbooking"
+            href="https://www.instagram.com/vislashesbooking"
             target="_blank"
             rel="noopener noreferrer"
             className="font-sans font-medium text-[18px] text-instagram tracking-[0.25px] uppercase hover:text-white transition-colors"

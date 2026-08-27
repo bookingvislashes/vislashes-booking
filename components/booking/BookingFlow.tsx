@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { bookingSchema, BookingFormData, stepFields } from "@/lib/schemas";
@@ -39,6 +40,7 @@ export function BookingFlow({
   removalMinutes,
 }: BookingFlowProps) {
   const [currentStep, setCurrentStep] = useState(1);
+  const searchParams = useSearchParams();
 
   const form = useForm<BookingFormData>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,6 +71,22 @@ export function BookingFlow({
     },
     mode: "onChange",
   });
+
+  // A homepage "Book [Set]" button links here as /book?service=<id> so a
+  // visitor who already knows what they want doesn't have to pick it again —
+  // land straight on the calendar with that set already chosen. Silently a
+  // no-op for a stale or deactivated service id, or no param at all.
+  useEffect(() => {
+    const preselected = searchParams.get("service");
+    if (!preselected) return;
+    const match = services.find((s) => s.id === preselected);
+    if (!match) return;
+    form.setValue("serviceId", match.id, { shouldValidate: true });
+    setCurrentStep(2);
+    // Intentionally once, on mount: this is a one-time entry point, not a
+    // sync that should fight her subsequent picks as she moves through steps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const goNext = async () => {
     const fields = stepFields[currentStep];
