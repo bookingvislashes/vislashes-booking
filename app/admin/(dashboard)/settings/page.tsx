@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { PushNotifications } from "@/components/admin/PushNotifications";
 import { GoogleCalendarConnection } from "@/components/admin/GoogleCalendarConnection";
+import { HowToBookPhotos } from "@/components/admin/HowToBookPhotos";
 
 // Keys as they exist in the settings table. buffer_minutes and
 // advance_booking_hours are the two the slot generator actually reads
@@ -368,6 +369,8 @@ export default function SettingsPage() {
       <PushNotifications />
 
       <DepositSection />
+
+      <HowToBookPhotos />
 
       <form onSubmit={handleSave}>
         <div className="bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">

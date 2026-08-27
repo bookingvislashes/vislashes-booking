@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.21.0",
+    date: "2026-08-27",
+    changes: [
+      {
+        kind: "added",
+        text: "Settings now has a \"How to Book Photos\" section — upload your own photo for each of the three How to Book steps on the home page, right from your phone. Leave a step alone to keep its current photo.",
+      },
+      {
+        kind: "added",
+        text: "Added a \"What Clients Say\" section to the home page with real client messages and reviews.",
+      },
+    ],
+  },
+  {
     version: "1.20.0",
     date: "2026-08-27",
     changes: [

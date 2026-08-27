@@ -1,39 +1,16 @@
 import Image from "next/image";
 import { hasAsset } from "@/lib/has-asset";
+import { STEPS } from "@/lib/how-to-book-steps";
 
-/**
- * How to Book — Figma node 513:121 on the Home Page.
- *
- * The deposit figure in step 2 is stated in the design as $25, which matches
- * the services table. It is intentionally NOT read from the database here:
- * this is marketing copy on a static page, and a per-service deposit has no
- * single value to quote. If the deposit changes, this line changes with it.
- */
-const STEPS = [
-  {
-    number: "1",
-    title: "Choose Your Look",
-    body: "Pick from classic, hybrid, or volume lash sets tailored to your eye shape and desired fullness.",
-    image: "/images/howtobook-choose.webp",
-    alt: "Close-up of finished lash extensions",
-  },
-  {
-    number: "2",
-    title: "Book & Deposit",
-    body: "Secure your private studio session with a $25 deposit - just you and your lash artist, no salon chaos.",
-    image: "/images/howtobook-deposit.webp",
-    alt: "The private lash studio",
-  },
-  {
-    number: "3",
-    title: "Confirm & Arrive",
-    body: "Check your email for appointment details, studio address, and pre-care tips for lasting results.",
-    image: "/images/howtobook-arrive.webp",
-    alt: "Client being prepared for a lash appointment",
-  },
-] as const;
+// How to Book — Figma node 513:121 on the Home Page. Step content lives in
+// lib/how-to-book-steps.ts — see that file for why it isn't declared here.
 
-export function HowToBook() {
+interface HowToBookProps {
+  /** Admin-uploaded replacement for a step's photo, keyed by step number. Falls back to the default file when a step has none. */
+  photoOverrides?: Partial<Record<(typeof STEPS)[number]["number"], string>>;
+}
+
+export function HowToBook({ photoOverrides }: HowToBookProps = {}) {
   return (
     <section id="how-to-book" className="bg-cream">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] py-16 sm:py-20 lg:py-[120px]">
@@ -51,7 +28,9 @@ export function HowToBook() {
             row — the same reason the product grid goes straight to 3 at md. */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-[24px]">
           {STEPS.map((step) => {
-            const imageReady = hasAsset(step.image);
+            const override = photoOverrides?.[step.number];
+            const src = override || step.image;
+            const imageReady = Boolean(override) || hasAsset(step.image);
 
             return (
               <div
@@ -78,12 +57,16 @@ export function HowToBook() {
                 <div className="relative w-full h-[220px] mt-auto rounded-surface overflow-hidden bg-light-tan">
                   {imageReady && (
                     <Image
-                      src={step.image}
+                      src={src}
                       alt={step.alt}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 336px"
                       loading="eager"
+                      // Default files are small, unoptimised static WebPs (see
+                      // below); an admin-uploaded photo comes from Supabase
+                      // Storage and goes through the normal optimiser instead.
+                      unoptimized={!override}
                       // These were 1.2MB PNGs — photographs in a lossless
                       // format — and are now 42-52KB WebP at the same 1248x832.
                       //
@@ -95,7 +78,6 @@ export function HowToBook() {
                       // from the CDN as an immutable static asset — the same
                       // bytes every time, fast on the first request as well as
                       // the hundredth.
-                      unoptimized
                     />
                   )}
                 </div>

@@ -6,6 +6,7 @@ import { ProductCards } from "@/components/home/ProductCards";
 import { ParallaxHero } from "@/components/home/ParallaxHero";
 import { FounderIntro } from "@/components/home/FounderIntro";
 import { HowToBook } from "@/components/home/HowToBook";
+import { Testimonials } from "@/components/home/Testimonials";
 import { Reveal } from "@/components/home/Reveal";
 import { PRODUCTS_ENABLED } from "@/lib/features";
 import { createPublicClient } from "@/lib/supabase/server";
@@ -108,6 +109,40 @@ function formatPrice(price: number) {
   return Number.isInteger(price) ? `$${price}` : `$${price.toFixed(2)}`;
 }
 
+const HOW_TO_BOOK_PHOTO_KEYS = {
+  how_to_book_photo_1: "1",
+  how_to_book_photo_2: "2",
+  how_to_book_photo_3: "3",
+} as const;
+
+async function getHowToBookPhotos() {
+  const empty: Partial<Record<"1" | "2" | "3", string>> = {};
+  if (!isSupabaseConfigured()) return empty;
+
+  try {
+    const supabase = await createPublicClient();
+    const { data, error } = await supabase
+      .from("settings")
+      .select("key, value")
+      .in("key", Object.keys(HOW_TO_BOOK_PHOTO_KEYS));
+
+    if (error) {
+      console.error("getHowToBookPhotos: fetch failed, using defaults:", error);
+      return empty;
+    }
+
+    const result = { ...empty };
+    for (const row of data || []) {
+      const step = HOW_TO_BOOK_PHOTO_KEYS[row.key as keyof typeof HOW_TO_BOOK_PHOTO_KEYS];
+      if (step && row.value) result[step] = row.value;
+    }
+    return result;
+  } catch (err) {
+    console.error("getHowToBookPhotos: threw, using defaults:", err);
+    return empty;
+  }
+}
+
 // The DB description is a full paragraph, written for the booking page's
 // service cards — too long for a banner. The first sentence is real copy she
 // already wrote for this exact service, just excerpted rather than replaced.
@@ -117,7 +152,10 @@ function leadSentence(description: string) {
 }
 
 export default async function HomePage() {
-  const featuredServices = await getFeaturedServices();
+  const [featuredServices, howToBookPhotos] = await Promise.all([
+    getFeaturedServices(),
+    getHowToBookPhotos(),
+  ]);
   const featureSections = featuredServices.map((service, i) => ({
     ...sectionVisuals[i],
     id: service.id,
@@ -147,7 +185,7 @@ export default async function HomePage() {
       </Reveal>
 
       <Reveal>
-        <HowToBook />
+        <HowToBook photoOverrides={howToBookPhotos} />
       </Reveal>
 
       {/* Product Cards Section — retail is off, see lib/features.ts */}
@@ -259,6 +297,10 @@ export default async function HomePage() {
           </section>
         </Reveal>
       ))}
+
+      <Reveal>
+        <Testimonials />
+      </Reveal>
 
       {/* Stay Lashed In Section */}
       <Reveal>
