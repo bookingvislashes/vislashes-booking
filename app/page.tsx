@@ -205,10 +205,6 @@ export default async function HomePage() {
             <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[56px] leading-[1.1] text-dark-brown text-balance">
               Find Your Signature Set
             </h2>
-            <p className="font-sans font-light text-[16px] sm:text-[18px] text-charcoal leading-[1.45] max-w-[560px] mx-auto mt-3">
-              Every set is tailored to your eye shape and desired fullness at
-              your appointment — here&apos;s where most clients start.
-            </p>
           </div>
         </Reveal>
       )}
@@ -316,9 +312,6 @@ export default async function HomePage() {
 
             {/* Social Media */}
             <div className="flex flex-col gap-[14px] mb-8 sm:mb-10 lg:mb-[40px]">
-              <p className="font-sans text-[14px] text-charcoal leading-[24px]">
-                Follow us on social media for the latest news!
-              </p>
               <div className="flex items-center gap-8 sm:gap-10 lg:gap-[40px]">
                 {/* Instagram */}
                 <a href="https://www.instagram.com/vislashesbooking" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-charcoal hover:text-brand-brown transition-colors">

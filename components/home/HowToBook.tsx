@@ -18,10 +18,6 @@ export function HowToBook({ photoOverrides }: HowToBookProps = {}) {
           <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[64px] leading-[1.1] text-dark-brown text-balance">
             How to Book Your Lash Appointment
           </h2>
-          <p className="font-sans font-light text-[16px] sm:text-[18px] text-charcoal leading-[1.45] max-w-[760px]">
-            A seamless, private experience from selection to studio arrival —
-            designed for calm, confident beauty.
-          </p>
         </div>
 
         {/* Three cards, so a 2-column tablet grid would orphan one on its own

@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.22.0",
+    date: "2026-08-27",
+    changes: [
+      {
+        kind: "changed",
+        text: "Trimmed the wording across the home page — your intro, How to Book, and the Signature Sets — so it reads at a glance instead of asking someone to stop and read a paragraph. No facts changed, just fewer words between them.",
+      },
+    ],
+  },
+  {
     version: "1.21.0",
     date: "2026-08-27",
     changes: [

@@ -8,9 +8,10 @@ const PORTRAIT = "/images/vianney-portrait.webp";
 /**
  * Founder intro — Figma node 516:123 on the Home Page.
  *
- * Copy is taken verbatim from the design. It states the studio location and
- * what is included in a service, so it is business fact rather than filler and
- * is not paraphrased.
+ * Trimmed from three paragraphs to one on request — every fact from the
+ * original design survives (private home studio, Saint Cloud FL, one-on-one,
+ * no rushing, the complimentary lash bath), just without three sentences of
+ * connective tissue between them.
  */
 export function FounderIntro() {
   const portraitReady = hasAsset(PORTRAIT);
@@ -45,18 +46,14 @@ export function FounderIntro() {
           )}
         </div>
 
-        <div className="max-w-[380px] flex flex-col gap-4 text-center sm:text-left">
+        <div className="max-w-[380px] flex flex-col gap-3 text-center sm:text-left">
           <p className="font-sans text-[16px] sm:text-[18px] text-charcoal leading-[1.445]">
             Hi, I&apos;m Vianney — certified lash tech and founder of VISLashes.
           </p>
           <p className="font-sans text-[16px] sm:text-[18px] text-charcoal leading-[1.445]">
-            I work out of my private home studio in Saint Cloud, FL, and every
-            appointment is just the two of us — no distractions, no rushing, no
-            salon chaos.
-          </p>
-          <p className="font-sans text-[16px] sm:text-[18px] text-charcoal leading-[1.445]">
-            Every service includes a complimentary lash bath to keep your
-            extensions healthy and full between appointments.
+            Every appointment is just the two of us in my private home studio
+            in Saint Cloud, FL — no rushing, no salon chaos, and a
+            complimentary lash bath included every time.
           </p>
         </div>
       </div>
