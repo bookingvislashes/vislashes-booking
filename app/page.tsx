@@ -8,14 +8,22 @@ import { FounderIntro } from "@/components/home/FounderIntro";
 import { HowToBook } from "@/components/home/HowToBook";
 import { Reveal } from "@/components/home/Reveal";
 import { PRODUCTS_ENABLED } from "@/lib/features";
+import { createPublicClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 
-const featureSections = [
+// Re-read the menu at most once a minute, same as /book — so a price change
+// made in Services shows up here without waiting on a redeploy.
+export const revalidate = 60;
+
+// These three boxes used to be retail banners ("Connection" / "Passion" /
+// "Chemistry") from when the studio also sold lash products — same copy
+// three times over, and a "Shop" button that pointed at a shop this site no
+// longer has. Now that the site is booking-only, they carry the three
+// full-set services instead: real name, real starting price, and a Book
+// button that actually goes somewhere. The photos, gradient and layout are
+// unchanged — those were never the problem.
+const sectionVisuals = [
   {
-    label: "Embrace",
-    name: "Connection",
-    description:
-      "Elevate your look with 'Connection' – designed for the bold and confident.",
-    buttonText: "Shop Connection",
     gradient: "linear-gradient(270deg, #A4846A 3.5%, rgba(180,149,124,0.39) 124%)",
     imageSrc: "/images/connection-photo.webp",
     imagePosition: "right" as const,
@@ -24,11 +32,6 @@ const featureSections = [
     flipImage: true,
   },
   {
-    label: "Ignite",
-    name: "Passion",
-    description:
-      "Elevate your look with 'Passion' – designed for the bold and confident.",
-    buttonText: "Shop Passion",
     gradient: "linear-gradient(271deg, #9D7859 8%, #E0C7B3 102%)",
     imageSrc: "/images/passion-photo.webp",
     imagePosition: "left" as const,
@@ -37,11 +40,6 @@ const featureSections = [
     flipImage: true,
   },
   {
-    label: "Unlock",
-    name: "Chemistry",
-    description:
-      "Elevate your look with 'Chemistry' – designed for the bold and confident.",
-    buttonText: "Shop Chemistry",
     gradient: "linear-gradient(95deg, #B4957C 7%, #3F2D1F 96%)",
     imageSrc: "/images/chemistry-photo.webp",
     imagePosition: "right" as const,
@@ -50,7 +48,74 @@ const featureSections = [
   },
 ];
 
-export default function HomePage() {
+// Matches the three full sets seeded by supabase/migrations/004_real_service_menu.sql,
+// used only while Supabase is unconfigured — same reasoning as the fallback
+// in app/book/page.tsx.
+const fallbackFeaturedServices = [
+  {
+    name: "Classic Set",
+    price: 85,
+    description:
+      "Wake up to naturally defined lashes every day. Clean, flutter-worthy, and never overdone. Perfect for first-timers or anyone wanting effortless polish without the drama. One extension per natural lash — your eyes, enhanced.",
+  },
+  {
+    name: "Wispy Set",
+    price: 100,
+    description:
+      "Feathery, dimensional, and a little bit editorial. The \"I woke up like this\" lash — fluffy enough to be noticed, soft enough to be effortless. If you want lashes that photograph beautifully, this is your style.",
+  },
+  {
+    name: "Hybrid Set",
+    price: 110,
+    description:
+      "Our most-requested style. Fuller than Classic, softer than full Volume — the sweet spot. Half classic extensions, half wispy fans, all gorgeous. Looks just as good in real life as it does in photos.",
+  },
+];
+
+async function getFeaturedServices() {
+  if (!isSupabaseConfigured()) return fallbackFeaturedServices;
+
+  try {
+    const supabase = await createPublicClient();
+    const { data, error } = await supabase
+      .from("services")
+      .select("name, price, description")
+      .eq("category", "full_set")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .limit(3);
+
+    if (error || !data?.length) return fallbackFeaturedServices;
+
+    // Postgres `numeric` arrives as a string over PostgREST.
+    return data.map((s) => ({ ...s, price: Number(s.price) }));
+  } catch {
+    return fallbackFeaturedServices;
+  }
+}
+
+function formatPrice(price: number) {
+  return Number.isInteger(price) ? `$${price}` : `$${price.toFixed(2)}`;
+}
+
+// The DB description is a full paragraph, written for the booking page's
+// service cards — too long for a banner. The first sentence is real copy she
+// already wrote for this exact service, just excerpted rather than replaced.
+function leadSentence(description: string) {
+  const match = description.match(/^[^.]+\./);
+  return match ? match[0] : description;
+}
+
+export default async function HomePage() {
+  const featuredServices = await getFeaturedServices();
+  const featureSections = featuredServices.map((service, i) => ({
+    ...sectionVisuals[i],
+    name: service.name,
+    label: `Starting at ${formatPrice(service.price)}`,
+    description: leadSentence(service.description),
+    buttonText: `Book ${service.name}`,
+  }));
+
   return (
     <div className="min-h-[100dvh] bg-cream">
       <Header />
@@ -81,9 +146,23 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Feature Sections. A short stagger so the three read as a sequence
-          rather than one block — 80ms, small enough that the last one is not
-          noticeably behind the first. */}
+      {/* Signature Sets. A short intro so the three don't just start cold —
+          then a short stagger so they read as a sequence rather than one
+          block, 80ms, small enough that the last one is not noticeably
+          behind the first. */}
+      {featureSections.length > 0 && (
+        <Reveal>
+          <div className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] text-center mb-8 sm:mb-10 lg:mb-[56px]">
+            <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[56px] leading-[1.1] text-dark-brown text-balance">
+              Find Your Signature Set
+            </h2>
+            <p className="font-sans font-light text-[16px] sm:text-[18px] text-charcoal leading-[1.45] max-w-[560px] mx-auto mt-3">
+              Every set is tailored to your eye shape and desired fullness at
+              your appointment — here&apos;s where most clients start.
+            </p>
+          </div>
+        </Reveal>
+      )}
       {featureSections.map((section, index) => (
         <Reveal key={section.name} delay={index * 80}>
           <section
@@ -161,15 +240,8 @@ export default function HomePage() {
                 <p className="font-sans font-light text-[15px] sm:text-[16px] lg:text-[18px] text-white leading-[1.445] max-w-[320px] sm:max-w-[340px] lg:max-w-[360px] mt-2 mb-4 lg:mb-5">
                   {section.description}
                 </p>
-                {/* These pointed at #connection / #passion / #chemistry —
-                    anchors that were never rendered anywhere on the page, so
-                    the buttons scrolled nowhere even while retail was on. With
-                    products archived, booking is the live action. */}
-                <CtaLink
-                  href={PRODUCTS_ENABLED ? "#products" : "/book"}
-                  variant="onImage"
-                >
-                  {PRODUCTS_ENABLED ? section.buttonText : "Book Appointment"}
+                <CtaLink href="/book" variant="onImage">
+                  {section.buttonText}
                 </CtaLink>
               </div>
             </div>

@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.19.0",
+    date: "2026-08-27",
+    changes: [
+      {
+        kind: "changed",
+        text: "The three home page banners that used to say \"Connection / Passion / Chemistry\" (leftover from selling lash products) now show your actual Classic, Wispy, and Hybrid sets — real name, real starting price, and a Book button for that set. Same photos, layout stays as-is; edit a set's price in Services and the home page picks it up within a minute.",
+      },
+    ],
+  },
+  {
     version: "1.18.0",
     date: "2026-08-20",
     changes: [
