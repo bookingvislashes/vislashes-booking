@@ -31,7 +31,7 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: "1.23.0",
+    version: "1.24.2",
     date: "2026-08-30",
     changes: [
       {
@@ -48,11 +48,41 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       },
       {
         kind: "changed",
-        text: "The Facebook review on the home page now shows a first name only, matching the others.",
+        text: "Removed the last name from the Facebook reviewer's testimonial — shown by first name only now, like the others.",
       },
       {
         kind: "note",
         text: "Also removed a leftover archived service (Premium Wispy Glam) and its two cancelled test bookings — this was requested earlier but never finished.",
+      },
+    ],
+  },
+  {
+    version: "1.24.1",
+    date: "2026-08-27",
+    changes: [
+      {
+        kind: "changed",
+        text: "Reviews no longer say which app or site they came from — just the client's name.",
+      },
+    ],
+  },
+  {
+    version: "1.24.0",
+    date: "2026-08-27",
+    changes: [
+      {
+        kind: "changed",
+        text: "\"What Clients Say\" is redesigned. Each review now sits on its own line with the client's name beside it, set larger and in the same font as your headings, instead of four small boxes. The short ones no longer look like something failed to load.",
+      },
+    ],
+  },
+  {
+    version: "1.23.0",
+    date: "2026-08-27",
+    changes: [
+      {
+        kind: "changed",
+        text: "The top of the home page matches the new design: your headline sits on the left with the photo beside it, rather than the words sitting on top of the photo.",
       },
     ],
   },
