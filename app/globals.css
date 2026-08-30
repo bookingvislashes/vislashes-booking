@@ -55,6 +55,10 @@
      mirror rather than a reuse of it. Same duration and curve, so the two
      panels feel like one family. */
   --animate-sheet-down: sheet-down 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* The refill gate on /book fades out the instant a phone number matches, so
+     the reveal that follows (fade-in-up) doesn't feel like the old content
+     was simply swapped out. */
+  --animate-fade-out: fade-out 200ms ease-in both;
 }
 
 @keyframes fade-in-up {
@@ -85,6 +89,15 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 

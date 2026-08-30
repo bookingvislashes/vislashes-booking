@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.25.0",
+    date: "2026-08-30",
+    changes: [
+      {
+        kind: "changed",
+        text: "Redesigned how refills work on the booking page. Instead of grayed-out cards you had to tap to find out why they wouldn't respond, there's now a plain \"Need a refill?\" question — the same size as the page's main heading — with the explanation right underneath and a phone number box. The moment a returning client's number matches, that box fades away and her refills appear in its place, ready to book.",
+      },
+      {
+        kind: "changed",
+        text: "Classic, Wispy, Hybrid, and Lash Lift now sit in one row instead of three-plus-one on tablet and desktop. On a phone they still stack one at a time, full-width and easy to read — most of her clients book from their phone.",
+      },
+    ],
+  },
+  {
     version: "1.24.2",
     date: "2026-08-30",
     changes: [

@@ -89,11 +89,15 @@ export function ServiceSelector({
   const selectedId = form.watch("serviceId");
   const hasRemoval = form.watch("hasRemoval");
 
-  // Refills stay locked until someone identifies themselves as a returning
-  // client. Session state only — this is a nudge to the right service, not a
-  // security boundary, and the booking itself is validated server-side.
+  // Refills stay hidden behind a phone/email check until someone identifies
+  // themselves as a returning client. Session state only — this is a nudge to
+  // the right service, not a security boundary, and the booking itself is
+  // validated server-side.
   const [refillsUnlocked, setRefillsUnlocked] = useState(false);
-  const [showRefillNote, setShowRefillNote] = useState(false);
+  // True for the moment between a successful check and the cards actually
+  // swapping in — just long enough for the gate to fade out first, so the
+  // reveal doesn't read as content being yanked away.
+  const [unlocking, setUnlocking] = useState(false);
   const [contact, setContact] = useState("");
   const [checking, setChecking] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -132,8 +136,13 @@ export function ServiceSelector({
       });
       const data = await res.json();
       if (data.known) {
-        setRefillsUnlocked(true);
-        setShowRefillNote(false);
+        // Fade the gate out, then swap to the cards once it's gone — matches
+        // --animate-fade-out's 200ms.
+        setUnlocking(true);
+        setTimeout(() => {
+          setRefillsUnlocked(true);
+          setUnlocking(false);
+        }, 200);
       } else {
         setNotFound(true);
       }
@@ -144,31 +153,17 @@ export function ServiceSelector({
     }
   };
 
-  const ServiceCard = ({
-    service,
-    locked = false,
-  }: {
-    service: Service;
-    locked?: boolean;
-  }) => {
+  const ServiceCard = ({ service }: { service: Service }) => {
     const isSelected = selectedId === service.id;
     return (
       <button
         type="button"
         aria-pressed={isSelected}
-        onClick={() => {
-          if (locked) {
-            setShowRefillNote(true);
-            return;
-          }
-          form.setValue("serviceId", service.id, { shouldValidate: true });
-        }}
-        className={`relative flex flex-col h-full text-left bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] border-2 transition-[border-color,box-shadow,opacity] duration-200 motion-reduce:transition-none ${
-          locked
-            ? "border-transparent opacity-60"
-            : isSelected
-              ? "border-deep-brown shadow-[0_2px_8px_rgba(139,111,71,0.2)]"
-              : "border-transparent hover:border-light-tan"
+        onClick={() => form.setValue("serviceId", service.id, { shouldValidate: true })}
+        className={`relative flex flex-col h-full text-left bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] border-2 transition-[border-color,box-shadow] duration-200 motion-reduce:transition-none ${
+          isSelected
+            ? "border-deep-brown shadow-[0_2px_8px_rgba(139,111,71,0.2)]"
+            : "border-transparent hover:border-light-tan"
         }`}
       >
         {/* The tan block is the fallback, not the design — a service with no
@@ -217,7 +212,7 @@ export function ServiceSelector({
           <p className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider mb-3">
             Full Sets
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6">
             {bookableNow.map((s) => (
               <ServiceCard key={s.id} service={s} />
             ))}
@@ -262,115 +257,81 @@ export function ServiceSelector({
         </button>
       )}
 
-      {refills.length > 0 && (
-        <>
-          <div className="flex items-baseline gap-2 mb-3 flex-wrap">
-            <p className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider">
-              Refills
+      {/* Refills sit behind a phone check rather than a locked, grayed-out
+          row: the goal here is that anyone — including someone who has never
+          used a website like this — can read what's in front of them and act
+          on it without guessing why a card won't respond to a tap. Everything
+          she needs to decide is on the page already; nothing is behind a
+          modal or a "why can't I" link to go find. */}
+      {refills.length > 0 && !refillsUnlocked && (
+        <div className={unlocking ? "animate-fade-out" : ""}>
+          <h2 className="font-display text-[24px] font-bold text-dark-brown mb-1">
+            Need a refill?
+          </h2>
+          <p className="font-sans text-[15px] text-charcoal leading-[1.55] mb-3">
+            I only refill lashes I applied myself — I can&apos;t vouch for
+            what&apos;s underneath someone else&apos;s work, and a refill over
+            it doesn&apos;t hold.
+          </p>
+          <p className="font-sans text-[15px] text-charcoal leading-[1.55] mb-5">
+            New to me? Book a full set above instead. If you&apos;re wearing
+            extensions right now, add a removal and I&apos;ll take them off
+            first — same appointment.
+          </p>
+
+          <div className="bg-white rounded-surface p-4 border-2 border-light-tan mb-6">
+            <p className="font-sans text-[15px] font-semibold text-dark-brown mb-1">
+              Booked with me before?
             </p>
-            {!refillsUnlocked && (
-              <span className="font-sans text-[11px] text-muted">
-                — returning VIS Lashes clients
-              </span>
+            {/* Phone leads because it is what the salon actually holds: 157 of
+                her 159 clients have one, against 112 with an email, and some
+                of those were filled in with her own address. */}
+            <p className="font-sans text-[13px] text-muted mb-3">
+              Enter the phone number you booked with and your refills will
+              show up here. Email works too.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                inputMode="tel"
+                autoComplete="tel"
+                value={contact}
+                onChange={(e) => {
+                  setContact(e.target.value);
+                  setNotFound(false);
+                }}
+                placeholder="Phone number"
+                className="flex-1 min-w-0 h-control box-border px-3 rounded-control border border-light-tan bg-white font-sans text-[16px] text-charcoal placeholder:text-muted focus:border-deep-brown transition-colors"
+              />
+              <button
+                type="button"
+                onClick={checkReturning}
+                disabled={checking || !contact.trim()}
+                className="h-control box-border px-5 shrink-0 rounded-control border-2 border-brand-brown text-text-brown font-sans font-semibold text-[15px] disabled:opacity-50"
+              >
+                {checking ? "..." : "Check"}
+              </button>
+            </div>
+            {notFound && (
+              <p role="alert" className="font-sans text-[13px] text-danger mt-2">
+                I couldn&apos;t find that. Try the email you booked with
+                instead — or book a full set above and we&apos;ll sort it out
+                at your appointment.
+              </p>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2">
-            {refills.map((s) => (
-              <ServiceCard key={s.id} service={s} locked={!refillsUnlocked} />
-            ))}
-          </div>
-          {!refillsUnlocked && (
-            <button
-              type="button"
-              onClick={() => setShowRefillNote(true)}
-              className="font-sans text-[13px] text-deep-brown font-semibold underline mb-6"
-            >
-              Why can&apos;t I pick a refill?
-            </button>
-          )}
-        </>
+        </div>
       )}
 
-      {/* The explainer. Deliberately not an error: someone who lands here is a
-          new client holding money, and the answer to "you can't book this" has
-          to be "here is what to book instead". */}
-      {showRefillNote && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={() => setShowRefillNote(false)}
-            className="absolute inset-0 bg-dark-brown/40"
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="About refills"
-            className="relative bg-white rounded-t-surface sm:rounded-surface w-full sm:max-w-md p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6"
-          >
-            <h3 className="font-display text-[20px] font-bold text-dark-brown mb-2">
-              Refills are for my own work
-            </h3>
-            <p className="font-sans text-[15px] text-charcoal leading-[1.55] mb-3">
-              I only refill lashes I applied myself — I can&apos;t vouch for
-              what&apos;s underneath someone else&apos;s work, and a refill over
-              it doesn&apos;t hold.
-            </p>
-            <p className="font-sans text-[15px] text-charcoal leading-[1.55] mb-5">
-              New to me? Book a full set instead. If you&apos;re wearing
-              extensions right now, add a removal and I&apos;ll take them off
-              first — same appointment.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => setShowRefillNote(false)}
-              className="w-full h-control box-border inline-flex items-center justify-center rounded-control bg-text-brown text-white font-sans font-semibold text-[15px] mb-4"
-            >
-              Book a full set
-            </button>
-
-            <div className="border-t border-light-tan pt-4">
-              <p className="font-sans text-[13px] font-semibold text-dark-brown mb-2">
-                Booked with me before?
-              </p>
-              {/* Phone leads because it is what the salon actually holds:
-                  157 of her 159 clients have one, against 112 with an email,
-                  and some of those were filled in with her own address. */}
-              <p className="font-sans text-[12px] text-muted mb-2">
-                Enter the phone number you booked with and I&apos;ll unlock
-                refills. Email works too.
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  value={contact}
-                  onChange={(e) => {
-                    setContact(e.target.value);
-                    setNotFound(false);
-                  }}
-                  placeholder="Phone number"
-                  className="flex-1 min-w-0 h-control box-border px-3 rounded-control border border-light-tan bg-white font-sans text-[16px] text-charcoal placeholder:text-muted focus:border-deep-brown transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={checkReturning}
-                  disabled={checking || !contact.trim()}
-                  className="h-control box-border px-4 shrink-0 rounded-control border-2 border-brand-brown text-text-brown font-sans font-semibold text-[14px] disabled:opacity-50"
-                >
-                  {checking ? "..." : "Check"}
-                </button>
-              </div>
-              {notFound && (
-                <p role="alert" className="font-sans text-[12px] text-danger mt-2">
-                  I couldn&apos;t find that. Try the email you booked with
-                  instead — or book a full set and we&apos;ll sort it out at
-                  your appointment.
-                </p>
-              )}
-            </div>
+      {refills.length > 0 && refillsUnlocked && (
+        <div className="animate-fade-in-up">
+          <p className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider mb-3">
+            Refills
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+            {refills.map((s) => (
+              <ServiceCard key={s.id} service={s} />
+            ))}
           </div>
         </div>
       )}
