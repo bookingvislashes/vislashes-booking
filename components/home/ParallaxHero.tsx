@@ -5,6 +5,22 @@ import { useRef, useEffect } from "react";
 import { CtaLink } from "@/components/ui/CtaLink";
 import { PRODUCTS_ENABLED } from "@/lib/features";
 
+/**
+ * Hero — Figma node 484:183 on the Home Page.
+ *
+ * Two columns: the headline and its CTA on the left, a large landscape photo
+ * filling the right. The headline runs wide enough to cross the photo's left
+ * edge, and `mix-blend-difference` is what makes that work — white text
+ * differenced against the cream page reads as near-black, and against the dark
+ * photo it stays light. It is one heading that changes colour where it
+ * overlaps, not two pieces of text.
+ *
+ * That blend is fragile in one specific way: an element only blends with the
+ * backdrop inside its own stacking context. If the wrapper around the heading
+ * took a z-index it would become that context, the heading would blend against
+ * nothing, and white-on-cream would go invisible. So the wrapper is `relative`
+ * with no z-index, and the heading and the photo take z-10 and z-0 themselves.
+ */
 export function ParallaxHero() {
   const sectionRef = useRef<HTMLElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
@@ -38,68 +54,54 @@ export function ParallaxHero() {
   return (
     <section
       ref={sectionRef}
-      className="relative max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] pt-6 sm:pt-10 lg:pt-[53px] pb-12 sm:pb-16 lg:pb-[80px] overflow-hidden"
+      className="relative max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] pt-10 sm:pt-14 lg:pt-[101px] pb-14 sm:pb-20 lg:pb-[150px]"
     >
-      <div className="flex flex-col lg:flex-row items-start lg:justify-between lg:min-h-[720px]">
-        {/* Left: Headline + CTA — h1 must NOT be in a stacking context for blend to work */}
-        <div className="relative max-w-full lg:max-w-[562px] pt-2 sm:pt-4 lg:pt-[3px]">
-          {/* Heavier and larger on phones only. At 48px in the regular weight
-              a display serif's thin strokes were losing the fight with the
-              photo underneath it through mix-blend-difference; the desktop
-              sizes keep the lighter setting, which has room to breathe. */}
-          <h1
-            className="relative z-10 font-display font-bold sm:font-normal text-[60px] sm:text-[72px] lg:text-[98px] leading-[0.92] sm:leading-[0.95] tracking-[-0.5px] sm:tracking-normal text-white mix-blend-difference animate-fade-in-up"
-          >
+      {/* min-h reserves the photo's height at lg, where the photo is taken out
+          of flow. Without it the section would collapse to the text and the
+          photo would hang over whatever follows. */}
+      <div className="relative lg:min-h-[603px]">
+        {/* Headline and CTA. First in the DOM so they stack above the photo on
+            a phone, which is the reading order the design implies. */}
+        <div className="relative lg:max-w-[594px]">
+          <h1 className="relative z-10 font-display font-bold sm:font-normal text-[52px] sm:text-[72px] lg:text-[98px] leading-[0.95] tracking-[-0.5px] sm:tracking-normal text-white mix-blend-difference animate-fade-in-up">
             Unlock Mesmerizing Beauty
           </h1>
+
+          {/* The design's CTA is "Shop Our Collection", pointing at retail.
+              Retail is off (lib/features.ts), #products does not render, and
+              the rest of the site already resolves that same conflict by
+              falling back to booking — see the feature panels. Copying the
+              label verbatim would ship a button that scrolls nowhere. */}
           <CtaLink
-            href="/book"
-            className="relative z-10 mt-4 sm:mt-5 lg:mt-[24px] animate-fade-in-up [animation-delay:200ms]"
+            href={PRODUCTS_ENABLED ? "#products" : "/book"}
+            className="relative z-10 mt-4 sm:mt-5 lg:mt-[16px] animate-fade-in-up [animation-delay:200ms]"
           >
-            Book an Appointment
+            {PRODUCTS_ENABLED ? "Shop Our Collection" : "Book an Appointment"}
           </CtaLink>
         </div>
 
-        {/* Center: Hero Photo — moves slower on scroll (parallax) */}
-        <div className="relative lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:top-[134px] w-full sm:w-[360px] lg:w-[509px] h-[420px] sm:h-[500px] lg:h-[677px] z-0 mt-6 lg:mt-0 mx-auto lg:mx-0">
-          <div
-            ref={imageRef}
-            className="absolute inset-0 will-change-transform"
-          >
+        {/* Photo. In flow beneath the text on a phone; pinned to the right at
+            lg, where the heading crosses it. overflow-hidden clips the parallax
+            shift so the photo's own edges stay put. */}
+        <div className="relative z-0 w-full h-[280px] sm:h-[380px] mt-8 lg:mt-0 lg:absolute lg:top-[45px] lg:right-0 lg:w-[65%] lg:h-[603px] overflow-hidden">
+          <div ref={imageRef} className="absolute inset-0 will-change-transform">
             <Image
-              src="/images/hero-photo.jpg"
+              src="/images/hero-photo.webp"
               alt="Beautiful lash models"
               fill
               className="object-cover"
               priority
-              // Deliberately overstated. `sizes` can only describe WIDTH, but
-              // this box is portrait (509x677) and the source is landscape
-              // (1200x901), so under object-cover the binding dimension is
-              // height. Declaring the true 509px makes the browser pick the
-              // 1080w candidate, which is only 811px tall and has to be scaled
-              // up 1.67x. Asking for 600px selects the 1200w candidate — the
-              // full source, 901px tall — cutting the upscale to 1.50x.
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 420px, 600px"
-              quality={90}
+              // Finally shown in the orientation it was shot in. The old hero
+              // cropped this 1200x901 landscape into a 509x677 portrait box and
+              // scaled it up by half; here it is close to its native ratio.
+              sizes="(max-width: 1024px) 100vw, 780px"
+              // 34KB, and served straight from the CDN like the rest of the
+              // page — this is the LCP image, so a cold /_next/image transform
+              // is the last thing it should be waiting on.
+              unoptimized
             />
           </div>
         </div>
-
-        {/* Right: retail prompt. Hidden with the rest of the shop — it invited
-            customers to "take lashes home" and pointed at #products, a section
-            that no longer renders, so the button scrolled nowhere. */}
-        {PRODUCTS_ENABLED && (
-          <div
-            className="relative z-10 text-left lg:text-right pt-6 sm:pt-10 lg:pt-[268px] animate-fade-in-up [animation-delay:300ms]"
-          >
-            <p className="font-sans font-light italic text-[14px] sm:text-[16px] text-dark-brown mb-3">
-              Looking for lashes to take home?
-            </p>
-            <CtaLink href="#products" variant="outline">
-              Shop Our Collection
-            </CtaLink>
-          </div>
-        )}
       </div>
     </section>
   );

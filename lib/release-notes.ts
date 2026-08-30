@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.23.0",
+    date: "2026-08-27",
+    changes: [
+      {
+        kind: "changed",
+        text: "The top of the home page matches the new design: your headline sits on the left with the photo beside it, rather than the words sitting on top of the photo.",
+      },
+    ],
+  },
+  {
     version: "1.22.0",
     date: "2026-08-27",
     changes: [
