@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.24.1",
+    date: "2026-08-27",
+    changes: [
+      {
+        kind: "changed",
+        text: "Reviews no longer say which app or site they came from — just the client's name.",
+      },
+    ],
+  },
+  {
     version: "1.24.0",
     date: "2026-08-27",
     changes: [

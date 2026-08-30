@@ -1,9 +1,13 @@
 /**
  * Real client messages and reviews (Instagram DMs, texts, a Facebook
  * review) as she received them — light spelling/grammar cleanup only, no
- * added sentiment. First names only for the ones that came from a private
- * DM or text; the Facebook review carries a full name because it's already
- * public under one.
+ * added sentiment.
+ *
+ * First names only for the ones that came from a private DM or text. The one
+ * public review carries a full name because it was already published under
+ * one. Where a quote came from is recorded here and deliberately NOT shown on
+ * the page — naming the platform adds nothing for a reader and drags another
+ * company's brand into the middle of hers.
  */
 const TESTIMONIALS = [
   {
@@ -23,7 +27,6 @@ const TESTIMONIALS = [
   {
     quote: "Great experience! Beautiful work!",
     name: "Charlene Castro",
-    source: "Facebook review",
   },
 ] as const;
 
@@ -63,15 +66,8 @@ export function Testimonials() {
             {/* Attribution sits in the left column on a wide screen, but below
                 the quote on a phone, where a name arriving before the words it
                 belongs to reads backwards. */}
-            <figcaption className="order-2 sm:order-none">
-              <span className="block font-sans text-[15px] font-semibold text-dark-brown">
-                {t.name}
-              </span>
-              {"source" in t && (
-                <span className="block font-sans text-[13px] text-muted mt-0.5">
-                  {t.source}
-                </span>
-              )}
+            <figcaption className="order-2 sm:order-none font-sans text-[15px] font-semibold text-dark-brown">
+              {t.name}
             </figcaption>
 
             <blockquote className="order-1 sm:order-none font-display text-[22px] sm:text-[26px] lg:text-[30px] leading-[1.4] text-dark-brown text-pretty">
