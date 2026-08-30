@@ -154,7 +154,10 @@ export default async function BookPage() {
   return (
     <div className="min-h-[100dvh] bg-cream">
       <Header />
-      <main className="max-w-[640px] mx-auto px-6 py-8">
+      {/* No max-width here — BookingFlow sets its own, wider on the service
+          step (four cards need the room) than on the narrower form steps
+          that follow it. */}
+      <main className="px-6 py-8">
         {/* BookingFlow reads ?service= via useSearchParams to preselect a set
             and jump straight to the calendar. That hook requires a Suspense
             boundary or Next can't statically prerender this page. */}

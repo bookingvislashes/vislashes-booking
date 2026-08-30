@@ -116,6 +116,12 @@ export function ServiceSelector({
   const removalOffered =
     selected && (selected.category === "full_set" || selected.category === "lift");
 
+  // Every price on the menu is a whole dollar amount, and "$85.00" reads as
+  // slower and more official than "$85" for no real information gained —
+  // rounds rather than truncates so a price that ever did carry cents still
+  // shows something sensible instead of quietly shorting it.
+  const formatPrice = (price: number) => `$${Math.round(price)}`;
+
   const formatDuration = (mins: number) => {
     const hrs = Math.floor(mins / 60);
     const m = mins % 60;
@@ -188,7 +194,7 @@ export function ServiceSelector({
         )}
         <div className="flex items-center justify-between mt-auto pt-1">
           <span className="font-sans text-[15px] font-semibold text-deep-brown">
-            ${service.price.toFixed(2)}
+            {formatPrice(service.price)}
           </span>
           <span className="font-sans text-[11px] text-muted">
             {formatDuration(service.duration_minutes)}

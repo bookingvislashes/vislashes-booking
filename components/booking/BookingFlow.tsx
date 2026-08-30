@@ -144,7 +144,14 @@ export function BookingFlow({
   };
 
   return (
-    <div>
+    // Wider on the service step — four full-set cards plus the refill
+    // gate need the room, and cramming them into the 640px width every
+    // other step uses (forms, signature, payment) made them look pushed
+    // together. Every other step keeps the narrower width those are
+    // actually designed for.
+    <div
+      className={`mx-auto ${currentStep === 1 ? "max-w-[900px]" : "max-w-[640px]"}`}
+    >
       <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
 
       <div className="transition-opacity duration-150">{renderStep()}</div>

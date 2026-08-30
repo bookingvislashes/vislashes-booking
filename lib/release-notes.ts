@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.25.1",
+    date: "2026-08-30",
+    changes: [
+      {
+        kind: "changed",
+        text: "Widened the service-selection step so the four full sets have real room to breathe instead of looking pushed together. Every step after it keeps its narrower, form-friendly width.",
+      },
+      {
+        kind: "changed",
+        text: "Prices on the service cards now show as whole dollars ($85) instead of with cents ($85.00) — nothing you sell needs the extra digits.",
+      },
+    ],
+  },
+  {
     version: "1.25.0",
     date: "2026-08-30",
     changes: [
