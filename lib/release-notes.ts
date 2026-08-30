@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.24.0",
+    date: "2026-08-27",
+    changes: [
+      {
+        kind: "changed",
+        text: "\"What Clients Say\" is redesigned. Each review now sits on its own line with the client's name beside it, set larger and in the same font as your headings, instead of four small boxes. The short ones no longer look like something failed to load.",
+      },
+    ],
+  },
+  {
     version: "1.23.0",
     date: "2026-08-27",
     changes: [
