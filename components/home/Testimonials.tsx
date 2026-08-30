@@ -1,9 +1,9 @@
 /**
  * Real client messages and reviews (Instagram DMs, texts, a Facebook
  * review) as she received them — light spelling/grammar cleanup only, no
- * added sentiment. First names only for the ones that came from a private
- * DM or text; the Facebook review carries a full name because it's already
- * public under one.
+ * added sentiment. First names only, at her request — including for the
+ * Facebook review, which is public under a full name but is shown here
+ * the same way as the others.
  */
 const TESTIMONIALS = [
   {
@@ -22,7 +22,7 @@ const TESTIMONIALS = [
   },
   {
     quote: "Great experience! Beautiful work!",
-    name: "Charlene Castro",
+    name: "Charlene",
     source: "Facebook review",
   },
 ] as const;

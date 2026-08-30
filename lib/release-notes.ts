@@ -31,6 +31,32 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.23.0",
+    date: "2026-08-30",
+    changes: [
+      {
+        kind: "note",
+        text: "Found and fixed the real cause of the missing time slots and missing refills: the database column your service photos were supposed to live in (image_url) had never actually been created, so every real menu lookup was silently failing and falling back to old placeholder data with fake IDs — which is also why the calendar showed no times on any date, even ones you'd marked open. I applied the missing database changes directly (migrations 008, 009, and 010, which had only partly run). No further action needed from you — verified live that your Classic, Wispy, Hybrid, Lash Lift, and all three refills now load with real data, and a real date now returns real times.",
+      },
+      {
+        kind: "changed",
+        text: "Refill service cards now say directly that they're for returning clients whose lashes were applied here, instead of that only living in a small note above the section.",
+      },
+      {
+        kind: "changed",
+        text: "Shortened the Classic, Wispy, Hybrid, and Lash Lift descriptions on the booking page to one clear sentence each, so nothing gets cut off mid-thought on the card.",
+      },
+      {
+        kind: "changed",
+        text: "The Facebook review on the home page now shows a first name only, matching the others.",
+      },
+      {
+        kind: "note",
+        text: "Also removed a leftover archived service (Premium Wispy Glam) and its two cancelled test bookings — this was requested earlier but never finished.",
+      },
+    ],
+  },
+  {
     version: "1.22.0",
     date: "2026-08-27",
     changes: [
