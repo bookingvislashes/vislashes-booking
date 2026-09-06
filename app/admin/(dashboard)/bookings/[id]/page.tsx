@@ -64,6 +64,12 @@ export default function BookingDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Set for the one moment it matters: she has just marked the appointment
+  // complete and the client is still standing in front of her.
+  const [rewardEarned, setRewardEarned] = useState<{
+    amount: number;
+    visitNumber: number;
+  } | null>(null);
 
   // Reschedule
   const [rescheduling, setRescheduling] = useState(false);
@@ -134,48 +140,9 @@ export default function BookingDetailPage() {
     };
   }, [newDate, booking?.service?.id]);
 
-  const setStatus = async (status: "completed" | "no_show") => {
-    if (!booking) return;
-    setBusy(true);
-    setActionError(null);
-
-    const { error } = await supabase
-      .from("bookings")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", booking.id);
-
-    if (error) {
-      setActionError(error.message);
-      setBusy(false);
-      return;
-    }
-
-    // Visit history counts appointments actually kept, so it is recorded here
-    // rather than when the booking was made.
-    if (status === "completed" && booking.client?.id) {
-      const { data: c } = await supabase
-        .from("clients")
-        .select("visit_count")
-        .eq("id", booking.client.id)
-        .maybeSingle();
-
-      const { error: visitError } = await supabase
-        .from("clients")
-        .update({
-          visit_count: (c?.visit_count ?? 0) + 1,
-          last_visit_date: booking.booking_date,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", booking.client.id);
-
-      if (visitError) console.error("Failed to record visit:", visitError);
-    }
-
-    setBusy(false);
-    fetchBooking();
-  };
-
-  const runAction = async (body: Record<string, unknown>) => {
+  const runAction = async (
+    body: Record<string, unknown>
+  ): Promise<Record<string, unknown> | null> => {
     setBusy(true);
     setActionError(null);
     try {
@@ -187,15 +154,42 @@ export default function BookingDetailPage() {
       const data = await res.json();
       if (!res.ok) {
         setActionError(data.message || data.error || "Something went wrong.");
-        return false;
+        return null;
       }
-      return true;
+      return data;
     } catch {
       setActionError("Something went wrong.");
-      return false;
+      return null;
     } finally {
       setBusy(false);
     }
+  };
+
+  /**
+   * Closing the appointment out. This used to write the status and the
+   * client's visit count straight from here; it goes through the server now
+   * because completing an appointment is what earns a loyalty reward, and a
+   * reward is money off a bill.
+   */
+  const setStatus = async (status: "completed" | "no_show") => {
+    if (!booking) return;
+    setRewardEarned(null);
+
+    const result = await runAction({
+      action: "close-out",
+      bookingId: booking.id,
+      status,
+    });
+
+    if (!result) return;
+
+    const reward = result.rewardEarned as
+      | { amount: number; visitNumber: number }
+      | null
+      | undefined;
+    if (reward) setRewardEarned(reward);
+
+    fetchBooking();
   };
 
   if (loading) {
@@ -263,6 +257,21 @@ export default function BookingDetailPage() {
         </p>
       )}
 
+      {rewardEarned && (
+        // Shown the instant she marks the appointment complete, because that
+        // is the one moment the client is still in front of her to be told.
+        <p
+          role="status"
+          className="font-sans text-[16px] text-charcoal bg-white rounded-surface border border-light-tan px-4 py-3 mb-4"
+        >
+          <span className="font-semibold text-dark-brown">
+            That was visit {rewardEarned.visitNumber}.
+          </span>{" "}
+          ${Number(rewardEarned.amount).toFixed(2)} comes off her next full set
+          or refill — it&apos;ll be on the appointment as soon as she books.
+        </p>
+      )}
+
       <div className="bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col gap-5 font-sans mb-6">
         <Section title="Client">
           {/* Tappable on a phone: reaching the client is the single most
@@ -303,6 +312,21 @@ export default function BookingDetailPage() {
             </span>
           </p>
         </Section>
+
+        {Number(booking.loyalty_discount ?? 0) > 0 && (
+          // The number she has to have in her head when she checks this
+          // client out, and the reason for it, so she can say it out loud.
+          <Section title="Loyalty reward">
+            <p className="text-[16px] text-success font-semibold">
+              &minus;${Number(booking.loyalty_discount).toFixed(2)} off this set
+            </p>
+            {booking.loyalty_note && (
+              <p className="text-[12px] text-muted mt-1">
+                {booking.loyalty_note}
+              </p>
+            )}
+          </Section>
+        )}
 
         {(booking.notes ||
           booking.booking_source ||

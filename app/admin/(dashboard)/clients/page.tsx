@@ -34,22 +34,62 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  // Read from Settings rather than assumed, so the list agrees with whatever
+  // she has the program set to.
+  const [loyalty, setLoyalty] = useState({ rewardAmount: 15, visitsRequired: 5 });
+  /** Clients holding an unspent reward. */
+  const [waiting, setWaiting] = useState<Set<string>>(new Set());
 
   const supabase = createClient();
 
   const fetchClients = useCallback(async () => {
-    const { data, error: queryError } = await supabase
-      .from("clients")
-      .select("*")
-      .order("last_visit_date", { ascending: false, nullsFirst: false });
+    const [clientsRes, settingsRes, rewardsRes] = await Promise.all([
+      supabase
+        .from("clients")
+        .select("*")
+        .order("last_visit_date", { ascending: false, nullsFirst: false }),
+      supabase
+        .from("settings")
+        .select("key, value")
+        .in("key", ["loyalty_reward_amount", "loyalty_visits_required"]),
+      // Who has one banked and unspent. Allowed to fail without taking the
+      // page with it — before migration 019 is run this table does not exist,
+      // and a client list is worth more than a loyalty badge.
+      supabase
+        .from("loyalty_rewards")
+        .select("client_id")
+        .is("redeemed_at", null),
+    ]);
 
-    if (queryError) {
-      setError(queryError.message);
+    if (clientsRes.error) {
+      setError(clientsRes.error.message);
       setLoading(false);
       return;
     }
+
+    const settings = Object.fromEntries(
+      (settingsRes.data || []).map((row) => [
+        row.key as string,
+        row.value as string,
+      ])
+    );
+    const amount = Number(settings.loyalty_reward_amount);
+    const required = Number(settings.loyalty_visits_required);
+
+    setLoyalty({
+      rewardAmount: Number.isFinite(amount) && amount >= 0 ? amount : 15,
+      visitsRequired:
+        Number.isFinite(required) && required >= 1 ? Math.floor(required) : 5,
+    });
+
+    setWaiting(
+      new Set(
+        (rewardsRes.data || []).map((row) => row.client_id as string)
+      )
+    );
+
     setError(null);
-    setClients((data || []) as Client[]);
+    setClients((clientsRes.data || []) as Client[]);
     setLoading(false);
   }, [supabase]);
 
@@ -166,6 +206,19 @@ export default function ClientsPage() {
                 <p className="font-sans text-[12px] text-muted whitespace-nowrap">
                   {formatLastVisit(client.last_visit_date)}
                 </p>
+                {loyalty.rewardAmount > 0 &&
+                  (waiting.has(client.id) ? (
+                    // The one she wants to spot before the client walks in.
+                    <p className="font-sans text-[12px] font-semibold text-success whitespace-nowrap mt-0.5">
+                      ${loyalty.rewardAmount} off waiting
+                    </p>
+                  ) : (
+                    <p className="font-sans text-[12px] text-muted whitespace-nowrap mt-0.5 tabular-nums">
+                      {Number(client.loyalty_visits ?? 0) % loyalty.visitsRequired}{" "}
+                      of {loyalty.visitsRequired} toward ${loyalty.rewardAmount}{" "}
+                      off
+                    </p>
+                  ))}
               </div>
             </div>
           ))

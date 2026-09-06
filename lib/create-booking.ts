@@ -1,6 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { sendConfirmationEmail } from "./email";
 import { syncBookingEvent } from "./google-calendar";
+import { claimReward } from "./loyalty";
 
 interface BookingFormData {
   serviceId: string;
@@ -187,6 +188,17 @@ export async function createBooking({
     throw new Error(`Failed to create booking: ${bookingError?.message}`);
   }
 
+  // 3b. Spend a loyalty reward on it, if they have one waiting.
+  //
+  // Deliberately not thrown from: by this point on the card path the deposit
+  // has already been captured, and an unspent reward simply waits for the
+  // next booking. claimReward swallows its own failures for that reason.
+  const loyalty = await claimReward(supabase, {
+    bookingId: booking.id,
+    clientId,
+    serviceCategory: service.category,
+  });
+
   // 4. Create intake form
   await supabase.from("intake_forms").insert({
     booking_id: booking.id,
@@ -242,6 +254,8 @@ export async function createBooking({
       depositAmount: service.deposit_amount,
       totalPrice: appointmentTotal,
       paymentMethod: formData.paymentMethod,
+      loyaltyDiscount: loyalty?.amount,
+      loyaltyVisitNumber: loyalty?.visitNumber,
     });
   } catch (emailErr) {
     // Log but don't fail the booking if email fails
@@ -257,5 +271,5 @@ export async function createBooking({
   // — the details that make the entry worth opening on a phone.
   await syncBookingEvent(supabase, booking.id);
 
-  return { bookingId: booking.id, clientId };
+  return { bookingId: booking.id, clientId, loyalty };
 }

@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
     .from("bookings")
     .select(
       `id, has_removal, deposit_paid, deposit_amount, checkout_ref,
+       loyalty_discount, loyalty_note,
        clients(full_name, square_customer_id),
        services(name, price)`
     )
@@ -116,18 +117,37 @@ export async function POST(req: NextRequest) {
       ? Number(booking.deposit_amount)
       : 0;
 
+  // A loyalty reward already attached to this appointment. Read from the
+  // booking, like every other figure here, and never from the browser — this
+  // is a discount, and a discount that arrives from a form is a discount
+  // anybody can grant themselves.
+  const loyaltyDiscount = Math.max(0, Number(booking.loyalty_discount ?? 0));
+
   const appointmentTotal = Number(service.price) + removalPrice;
-  const balance = Math.max(0, appointmentTotal - deposit - collected);
+  const gross = Math.max(0, appointmentTotal - deposit - collected);
+  // Clamped against the gross rather than subtracted blindly, so a $15 reward
+  // on a balance of $10 takes $10 off and not $15 — the salon does not hand
+  // back change on a discount.
+  const loyaltyApplied = Math.min(loyaltyDiscount, gross);
 
   // ── The extras ──────────────────────────────────────────────────────────
   const lines: { name: string; amountCents: number }[] = [];
 
-  if (balance > 0) {
+  if (gross > 0) {
     lines.push({
       name: booking.has_removal
         ? `${service.name} + removal`
         : service.name,
-      amountCents: Math.round(balance * 100),
+      amountCents: Math.round(gross * 100),
+    });
+  }
+
+  // Its own line, negative, so the sheet she is looking at shows the client
+  // the same arithmetic the client is expecting: the set, then the $15 off.
+  if (loyaltyApplied > 0) {
+    lines.push({
+      name: (booking.loyalty_note as string | null) ?? "Loyalty reward",
+      amountCents: -Math.round(loyaltyApplied * 100),
     });
   }
 

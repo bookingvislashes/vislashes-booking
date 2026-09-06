@@ -31,6 +31,40 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.35.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "Loyalty is live: every fifth appointment you mark complete earns that client $15 off their next full set or refill. A lash lift counts as a visit, but the $15 can only be spent on a set.",
+      },
+      {
+        kind: "added",
+        text: "Clients see how close they are on the confirmation page after booking — a bar of five with their place on it, and on the fifth it turns into \"$15 off your next set\" with confetti.",
+      },
+      {
+        kind: "added",
+        text: "The next set they book has the $15 already taken off, everywhere you look at it: Today, the appointment, your Google Calendar entry and their confirmation email. It says which visit earned it, so you can tell her while she's in the chair.",
+      },
+      {
+        kind: "added",
+        text: "Check out already knows. The Square app opens with the discount applied, so you never have to do that subtraction in your head.",
+      },
+      {
+        kind: "added",
+        text: "Clients shows everyone's progress — \"3 of 5 toward $15 off\", or \"$15 off waiting\" for the ones holding a reward.",
+      },
+      {
+        kind: "note",
+        text: "Run migration 019 in Migrations before this does anything. Until you do, everything works exactly as it did — no bar, no discounts.",
+      },
+      {
+        kind: "note",
+        text: "Everyone starts at zero, including your regulars. Backdating years of Acuity visits would have handed out several $15 rewards on day one, and that's your call to make, not mine. Settings → Loyalty is where you change the $15 or the 5 — set the reward to 0 to switch the whole thing off.",
+      },
+    ],
+  },
+  {
     version: "1.34.3",
     date: "2026-09-06",
     changes: [

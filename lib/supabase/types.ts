@@ -41,9 +41,27 @@ export interface Client {
   email: string;
   phone: string;
   visit_count: number;
+  /**
+   * Completed appointments toward the current run of five (migration 019).
+   * Separate from visit_count, which carries years of imported Acuity history
+   * — deriving rewards from that would have backdated them.
+   */
+  loyalty_visits: number;
   last_visit_date: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** A $15 earned every fifth visit, and where it was spent (migration 019). */
+export interface LoyaltyReward {
+  id: string;
+  client_id: string;
+  /** 5, 10, 15 — the visit that earned it. */
+  earned_visit_number: number;
+  amount: number;
+  earned_at: string;
+  redeemed_at: string | null;
+  redeemed_booking_id: string | null;
 }
 
 export interface Booking {
@@ -81,6 +99,10 @@ export interface Booking {
   booked_by: "client" | "admin";
   /** "Instagram DM", "Text" — where the appointment came from (017). */
   booking_source: string | null;
+  /** A loyalty reward already taken off this appointment, in dollars (019). */
+  loyalty_discount: number;
+  /** "Loyalty · 5th visit" — what to call that discount on a balance (019). */
+  loyalty_note: string | null;
   created_at: string;
   updated_at: string;
 }

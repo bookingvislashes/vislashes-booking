@@ -12,28 +12,70 @@ import { HowToBookPhotos } from "@/components/admin/HowToBookPhotos";
 // Keys as they exist in the settings table. buffer_minutes and
 // advance_booking_hours are the two the slot generator actually reads
 // (app/api/availability/route.ts) — the rest are stored for reference.
+//
+// `group` decides which card on this page a field appears in, rather than the
+// input type doing it by accident: the loyalty numbers below are numbers and
+// have nothing to do with scheduling.
 const FIELDS = [
   {
     key: "buffer_minutes",
     label: "Buffer time between appointments (minutes)",
     type: "number",
+    group: "scheduling",
     fallback: "15",
   },
   {
     key: "advance_booking_hours",
     label: "Minimum advance booking time (hours)",
     type: "number",
+    group: "scheduling",
     fallback: "24",
   },
   {
     key: "max_advance_days",
     label: "Maximum advance booking (days)",
     type: "number",
+    group: "scheduling",
     fallback: "60",
   },
-  { key: "business_name", label: "Business Name", type: "text", fallback: "VIS Lashes" },
-  { key: "business_email", label: "Business Email", type: "email", fallback: "" },
-  { key: "business_phone", label: "Business Phone", type: "tel", fallback: "" },
+  // The loyalty program. Set the reward to 0 to turn it off: no rewards are
+  // earned, none come off a bill, and the progress bar disappears from the
+  // client's confirmation page.
+  {
+    key: "loyalty_reward_amount",
+    label: "Loyalty reward ($ off a full set or refill)",
+    type: "number",
+    group: "loyalty",
+    fallback: "15",
+  },
+  {
+    key: "loyalty_visits_required",
+    label: "Visits needed to earn one",
+    type: "number",
+    group: "loyalty",
+    fallback: "5",
+  },
+  {
+    key: "business_name",
+    label: "Business Name",
+    type: "text",
+    group: "business",
+    fallback: "VIS Lashes",
+  },
+  {
+    key: "business_email",
+    label: "Business Email",
+    type: "email",
+    group: "business",
+    fallback: "",
+  },
+  {
+    key: "business_phone",
+    label: "Business Phone",
+    type: "tel",
+    group: "business",
+    fallback: "",
+  },
   // Shown on the client's confirmation page. Both are left blank rather than
   // guessed — the confirmation simply omits whichever is empty, so a wrong
   // address is never displayed to someone about to drive to it.
@@ -41,12 +83,14 @@ const FIELDS = [
     key: "business_address",
     label: "Studio Address (shown on confirmations)",
     type: "text",
+    group: "business",
     fallback: "",
   },
   {
     key: "lash_artist",
     label: "Lash Artist (shown on confirmations)",
     type: "text",
+    group: "business",
     fallback: "",
   },
 ] as const;
@@ -358,8 +402,9 @@ export default function SettingsPage() {
     );
   }
 
-  const scheduling = FIELDS.filter((f) => f.type === "number");
-  const business = FIELDS.filter((f) => f.type !== "number");
+  const scheduling = FIELDS.filter((f) => f.group === "scheduling");
+  const loyalty = FIELDS.filter((f) => f.group === "loyalty");
+  const business = FIELDS.filter((f) => f.group === "business");
 
   return (
     <div>
@@ -380,6 +425,35 @@ export default function SettingsPage() {
           </h2>
           <div className="flex flex-col gap-4 max-w-sm">
             {scheduling.map((field) => (
+              <Input
+                key={field.key}
+                id={field.key}
+                label={field.label}
+                type="number"
+                inputMode="numeric"
+                value={values[field.key] ?? ""}
+                onChange={(e) =>
+                  setValues((v) => ({ ...v, [field.key]: e.target.value }))
+                }
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-surface p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6">
+          <h2 className="font-display text-[18px] font-bold text-dark-brown mb-4">
+            Loyalty
+          </h2>
+          <p className="font-sans text-[14px] text-muted leading-[1.5] mb-4 max-w-sm">
+            Every fifth appointment you mark complete earns your client $15 off
+            their next full set or refill. It comes off automatically the next
+            time they book, and shows on the appointment so you know before
+            they sit down. A lash lift counts as a visit but isn&apos;t what the
+            discount can be spent on. Set the reward to 0 to turn the whole
+            thing off.
+          </p>
+          <div className="flex flex-col gap-4 max-w-sm">
+            {loyalty.map((field) => (
               <Input
                 key={field.key}
                 id={field.key}

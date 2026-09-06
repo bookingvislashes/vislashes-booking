@@ -4,6 +4,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { syncBookingEvent } from "@/lib/google-calendar";
 import { sendConfirmationEmail } from "@/lib/email";
 import { notifyAdmins } from "@/lib/push";
+import { claimReward } from "@/lib/loyalty";
 
 /**
  * Appointments the salon books herself.
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
   // can edit.
   const { data: service, error: serviceError } = await admin
     .from("services")
-    .select("id, name, price, deposit_amount, duration_minutes")
+    .select("id, name, category, price, deposit_amount, duration_minutes")
     .eq("id", input.serviceId)
     .maybeSingle();
 
@@ -243,6 +244,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Every branch above either found a client or created one. Saying so here
+  // once means the rest of the route — the booking, the reward, the email —
+  // stops carrying a nullable id around.
+  if (!clientId) {
+    return NextResponse.json(
+      { error: "Could not save that client." },
+      { status: 500 }
+    );
+  }
+
   // ── The slot ────────────────────────────────────────────────────────────
   // Normalised to the exact casing and spacing everything else stores, so
   // "10:00am" typed on a phone keyboard still collides with an existing
@@ -298,6 +309,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // A regular she books in herself gets her reward exactly as one who booked
+  // online would. Best-effort: the appointment is saved either way, and an
+  // unspent reward waits for the next booking.
+  const loyalty = await claimReward(admin, {
+    bookingId: booking.id,
+    clientId,
+    serviceCategory: service.category,
+  });
+
   // ── Everything that happens because it exists ───────────────────────────
   // Both best-effort, and in that order. The appointment is saved either way,
   // and neither an email Resend refused nor a calendar Google could not reach
@@ -327,6 +347,8 @@ export async function POST(req: NextRequest) {
         depositMethodLabel: input.depositPaid
           ? METHOD_LABELS[input.depositMethod]
           : undefined,
+        loyaltyDiscount: loyalty?.amount,
+        loyaltyVisitNumber: loyalty?.visitNumber,
       });
       emailed = true;
     } catch (err) {

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getLoyaltyStatus, type LoyaltyStatus } from "@/lib/loyalty";
+import LoyaltyProgress from "@/components/booking/LoyaltyProgress";
 
 interface ConfirmationPageProps {
   params: Promise<{ bookingId: string }>;
@@ -8,6 +10,7 @@ interface ConfirmationPageProps {
 
 interface BookingRow {
   id: string;
+  client_id: string | null;
   booking_date: string;
   time_slot: string;
   status: string;
@@ -67,6 +70,7 @@ export default async function ConfirmationPage({ params }: ConfirmationPageProps
 
   let booking: BookingRow | null = null;
   let settings: Record<string, string> = {};
+  let loyalty: LoyaltyStatus | null = null;
 
   // Read with the service client: RLS restricts booking reads to signed-in
   // staff, and the person who just booked is a guest. The booking id is a
@@ -80,7 +84,7 @@ export default async function ConfirmationPage({ params }: ConfirmationPageProps
         supabase
           .from("bookings")
           .select(
-            "id, booking_date, time_slot, status, payment_method, deposit_paid, deposit_amount, client:clients(full_name, email), service:services(name, price, duration_minutes)"
+            "id, client_id, booking_date, time_slot, status, payment_method, deposit_paid, deposit_amount, client:clients(full_name, email), service:services(name, price, duration_minutes)"
           )
           .eq("id", bookingId)
           .maybeSingle(),
@@ -102,6 +106,18 @@ export default async function ConfirmationPage({ params }: ConfirmationPageProps
       settings = Object.fromEntries(
         (settingsRes.data || []).map((s) => [s.key as string, s.value as string])
       );
+
+      // Read after the booking rather than alongside it: it needs the row,
+      // and it is allowed to come back null for any reason at all — the
+      // program being off, or migration 019 not having been run yet — without
+      // costing this page its receipt.
+      if (booking) {
+        loyalty = await getLoyaltyStatus(supabase, {
+          id: booking.id,
+          clientId: booking.client_id,
+          status: booking.status,
+        });
+      }
     } catch (error) {
       // The booking itself succeeded — this page only reads it back. Falling
       // through to the reference-only view is better than an error screen for
@@ -116,12 +132,23 @@ export default async function ConfirmationPage({ params }: ConfirmationPageProps
       ? "Due at your appointment"
       : null;
 
-  const balance =
-    booking?.service && booking.deposit_paid
-      ? `$${(Number(booking.service.price) - Number(booking.deposit_amount ?? 0)).toFixed(2)}`
-      : booking?.service
-        ? `$${Number(booking.service.price).toFixed(2)}`
-        : null;
+  // Clamped to what is actually owed, the same way Today and the checkout
+  // route clamp it, so the client is never shown one balance here and a
+  // different one in the chair.
+  const gross = booking?.service
+    ? Math.max(
+        0,
+        Number(booking.service.price) -
+          (booking.deposit_paid ? Number(booking.deposit_amount ?? 0) : 0)
+      )
+    : null;
+
+  const loyaltyOff =
+    gross !== null && loyalty?.applied
+      ? Math.min(loyalty.applied.amount, gross)
+      : 0;
+
+  const balance = gross !== null ? `$${(gross - loyaltyOff).toFixed(2)}` : null;
 
   return (
     <div className="min-h-[100dvh] bg-cream flex items-center justify-center px-6 py-12">
@@ -150,6 +177,18 @@ export default async function ConfirmationPage({ params }: ConfirmationPageProps
           </p>
         </div>
 
+        {loyalty && (
+          <LoyaltyProgress
+            visitsRequired={loyalty.visitsRequired}
+            completedInCycle={loyalty.completedInCycle}
+            position={loyalty.position}
+            pending={loyalty.pending}
+            completesCycle={loyalty.completesCycle}
+            rewardAmount={loyalty.rewardAmount}
+            applied={loyalty.applied}
+          />
+        )}
+
         {booking ? (
           <div className="bg-white rounded-surface p-5 sm:p-6 shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-6 text-left">
             <h2 className="font-display text-[18px] font-bold text-dark-brown mb-1">
@@ -176,6 +215,10 @@ export default async function ConfirmationPage({ params }: ConfirmationPageProps
               <Row label="Studio" value={settings.business_address} />
               <Row label="Questions" value={settings.business_phone} />
               <Row label="Deposit" value={deposit} emphasis />
+              <Row
+                label={loyalty?.applied?.note ?? "Loyalty reward"}
+                value={loyaltyOff > 0 ? `−$${loyaltyOff.toFixed(2)}` : null}
+              />
               <Row label="Balance at appointment" value={balance} />
             </dl>
 

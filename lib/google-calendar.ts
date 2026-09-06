@@ -308,6 +308,8 @@ interface BookingRow {
   booking_source: string | null;
   booked_by: string | null;
   google_event_id: string | null;
+  loyalty_discount: number | string | null;
+  loyalty_note: string | null;
   clients: {
     full_name: string;
     email: string | null;
@@ -401,7 +403,14 @@ function buildDescription(
   // names how it arrived: "$25.00 paid (Zelle)" is the difference between a
   // deposit she can account for and one she has to go looking for.
   const deposit = booking.deposit_paid ? totals.depositAmount : 0;
-  const balance = Math.max(0, totals.appointmentTotal - deposit);
+  const gross = Math.max(0, totals.appointmentTotal - deposit);
+  // Clamped to what is owed, the same way Today and the checkout route clamp
+  // it, so the three never print three different balances for one client.
+  const loyalty = Math.min(
+    Math.max(0, Number(booking.loyalty_discount ?? 0)),
+    gross
+  );
+  const balance = gross - loyalty;
   const methodLabel =
     METHOD_LABELS[booking.payment_method] || booking.payment_method;
 
@@ -412,6 +421,11 @@ function buildDescription(
     paymentLines.push("Deposit: none — paying cash at the appointment");
   } else {
     paymentLines.push(`Deposit: not paid (${methodLabel})`);
+  }
+  if (loyalty > 0) {
+    paymentLines.push(
+      `${booking.loyalty_note ?? "Loyalty reward"}: −${money(loyalty)}`
+    );
   }
   paymentLines.push(`Balance due today: ${money(balance)}`);
   sections.push(`PAYMENT\n${paymentLines.join("\n")}`);
@@ -500,7 +514,7 @@ export async function syncBookingEvent(
       .select(
         `id, booking_date, time_slot, status, payment_method, deposit_paid,
          deposit_amount, has_removal, notes, booking_source, booked_by,
-         google_event_id,
+         google_event_id, loyalty_discount, loyalty_note,
          clients(full_name, email, phone, visit_count),
          services(name, price, duration_minutes),
          intake_forms(has_had_extensions, is_special_occasion, occasion_details,

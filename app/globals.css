@@ -63,6 +63,73 @@
      the reveal that follows (fade-in-up) doesn't feel like the old content
      was simply swapped out. */
   --animate-fade-out: fade-out 200ms ease-in both;
+
+  /* ── Loyalty, on the confirmation page ────────────────────────────────
+     One family, all of it slower and softer than the admin's animations:
+     this is the one screen a client lands on after paying, and it should
+     feel like the salon rather than like software.
+
+     `loyalty-segment` fills each segment of the 1–5 bar in turn — the
+     component staggers the delay per segment, so the bar draws itself left
+     to right instead of appearing already finished. `loyalty-glow` is the
+     breathing ring on the segment they are standing on. `loyalty-reward`
+     is the card that replaces the bar on the fifth. `confetti-fall` drifts
+     one piece down past it; every piece gets its own delay, duration and
+     sideways drift from the component. */
+  --animate-loyalty-segment: loyalty-segment 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-loyalty-glow: loyalty-glow 2.6s ease-in-out infinite;
+  --animate-loyalty-reward: loyalty-reward 620ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+@keyframes loyalty-segment {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes loyalty-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(139, 111, 71, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(139, 111, 71, 0);
+  }
+}
+
+@keyframes loyalty-reward {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* --drift and --spin are set per piece, inline. Falls the full height of the
+   card and fades out at the bottom rather than piling up at the edge. */
+@keyframes confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -10%, 0) rotate(0deg);
+  }
+  12% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift, 0px), 260px, 0) rotate(var(--spin, 540deg));
+  }
 }
 
 @keyframes hero-drift {

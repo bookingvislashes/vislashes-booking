@@ -50,6 +50,10 @@ interface Appointment {
   client_phone: string | null;
   service_name: string;
   price: number;
+  /** A loyalty reward already taken off this appointment. */
+  loyalty_discount: number;
+  /** "Loyalty · 5th visit" — what to call it on the balance. */
+  loyalty_note: string | null;
 }
 
 /** One sellable line from her Square library. */
@@ -102,7 +106,7 @@ export default function TodayPage() {
       supabase
         .from("bookings")
         .select(
-          "id, time_slot, status, deposit_paid, deposit_amount, has_removal, client_id, client:clients(full_name, phone), service:services(name, price)"
+          "id, time_slot, status, deposit_paid, deposit_amount, has_removal, loyalty_discount, loyalty_note, client_id, client:clients(full_name, phone), service:services(name, price)"
         )
         .eq("booking_date", today)
         .in("status", ["confirmed", "completed"])
@@ -129,6 +133,8 @@ export default function TodayPage() {
       deposit_paid: boolean;
       deposit_amount: string | number | null;
       has_removal: boolean;
+      loyalty_discount: string | number | null;
+      loyalty_note: string | null;
       client_id: string | null;
       client:
         | { full_name: string; phone: string | null }
@@ -150,6 +156,8 @@ export default function TodayPage() {
         deposit_paid: b.deposit_paid,
         deposit_amount: b.deposit_amount,
         has_removal: b.has_removal,
+        loyalty_discount: Number(b.loyalty_discount ?? 0),
+        loyalty_note: b.loyalty_note,
         client_id: b.client_id,
         client_name: client?.full_name ?? "Unknown client",
         client_phone: client?.phone ?? null,
@@ -208,7 +216,8 @@ export default function TodayPage() {
     return appt.price + (appt.has_removal ? removalPrice : 0);
   }
 
-  function balanceFor(appt: Appointment) {
+  /** What is left before the loyalty reward comes off. */
+  function grossFor(appt: Appointment) {
     const collected = (paymentsByBooking.get(appt.id) ?? []).reduce(
       (sum, p) => sum + Number(p.service_amount ?? 0),
       0
@@ -216,6 +225,19 @@ export default function TodayPage() {
     const deposit =
       appt.deposit_paid && appt.deposit_amount ? Number(appt.deposit_amount) : 0;
     return Math.max(0, totalFor(appt) - deposit - collected);
+  }
+
+  /**
+   * The reward, never more than what is actually owed — a $15 reward on a $10
+   * balance takes $10 off, not $15. The same clamp the checkout route applies,
+   * so this screen and the amount handed to Square agree.
+   */
+  function loyaltyFor(appt: Appointment) {
+    return Math.min(Math.max(0, appt.loyalty_discount), grossFor(appt));
+  }
+
+  function balanceFor(appt: Appointment) {
+    return grossFor(appt) - loyaltyFor(appt);
   }
 
   function tipsFor(appt: Appointment) {
@@ -400,6 +422,8 @@ export default function TodayPage() {
 
       <div className="flex flex-col gap-3">
         {appointments.map((appt) => {
+          const gross = grossFor(appt);
+          const loyalty = loyaltyFor(appt);
           const balance = balanceFor(appt);
           const tips = tipsFor(appt);
           const isOpen = openFor === appt.id;
@@ -454,6 +478,19 @@ export default function TodayPage() {
                       Paid in full
                     </p>
                   )}
+                  {loyalty > 0 && (
+                    // Said on the card itself, not just inside the checkout
+                    // sheet — this is the line she reads out to the client
+                    // while they are sitting in front of her.
+                    <p className="font-sans text-[13px] font-semibold text-success tabular-nums">
+                      &minus;{money(loyalty)}{" "}
+                      {appt.loyalty_note ? (
+                        <span className="font-normal text-muted">
+                          {appt.loyalty_note}
+                        </span>
+                      ) : null}
+                    </p>
+                  )}
                   {tips > 0 && (
                     <p className="font-sans text-[13px] text-muted tabular-nums">
                       +{money(tips)} tip
@@ -505,9 +542,19 @@ export default function TodayPage() {
                         {appt.has_removal ? " + removal" : ""}
                       </dt>
                       <dd className="text-charcoal tabular-nums">
-                        {money(balance)}
+                        {money(gross)}
                       </dd>
                     </div>
+                    {loyalty > 0 && (
+                      <div className="flex justify-between py-0.5">
+                        <dt className="text-success">
+                          {appt.loyalty_note ?? "Loyalty reward"}
+                        </dt>
+                        <dd className="text-success tabular-nums">
+                          &minus;{money(loyalty)}
+                        </dd>
+                      </div>
+                    )}
                     {Object.entries(cart).map(([id, qty]) => {
                       const item = addOns.find((a) => a.id === id);
                       if (!item) return null;

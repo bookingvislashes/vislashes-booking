@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { ordinal } from "./loyalty";
 
 let _resend: Resend | null = null;
 function getResend(): Resend {
@@ -31,15 +32,28 @@ interface BookingEmailData {
   depositPaid?: boolean;
   /** "Zelle", "Apple Cash" — named so the client can recognise her own payment. */
   depositMethodLabel?: string;
+  /**
+   * A loyalty reward spent on this appointment, in dollars. Comes off the
+   * balance printed below, because the balance is the number the client
+   * turns up expecting to pay.
+   */
+  loyaltyDiscount?: number;
+  /** The visit that earned it — 5, 10, 15. Printed as "5th visit". */
+  loyaltyVisitNumber?: number;
 }
+
 
 export async function sendConfirmationEmail(data: BookingEmailData) {
   const isCash = data.paymentMethod === "cash";
   const depositPaid = data.depositPaid ?? !isCash;
   const depositHeld = depositPaid ? data.depositAmount : 0;
+  const loyaltyDiscount = Math.max(0, Number(data.loyaltyDiscount ?? 0));
   // Floored at zero. A deposit larger than the service price would otherwise
   // print a negative balance as though the salon owed the client money.
-  const remainingBalance = Math.max(0, data.totalPrice - depositHeld);
+  const remainingBalance = Math.max(
+    0,
+    data.totalPrice - depositHeld - loyaltyDiscount
+  );
 
   const depositLine = depositPaid
     ? `$${data.depositAmount.toFixed(2)} paid${
@@ -73,6 +87,20 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
               <p style="margin:0;font-size:16px;color:#3D2B1F;font-weight:600;">
                 ${depositLine}
               </p>
+              ${
+                loyaltyDiscount > 0
+                  ? `<p style="margin:16px 0 8px;font-size:13px;color:#9A9A9A;">LOYALTY REWARD</p>
+              <p style="margin:0;font-size:16px;color:#4A7C59;font-weight:600;">&minus;$${loyaltyDiscount.toFixed(
+                2
+              )} off this set${
+                      data.loyaltyVisitNumber
+                        ? ` &middot; earned on your ${ordinal(
+                            data.loyaltyVisitNumber
+                          )} visit`
+                        : ""
+                    }</p>`
+                  : ""
+              }
               ${remainingBalance > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:#9A9A9A;">Remaining balance: $${remainingBalance.toFixed(2)} due at appointment</p>` : ""}
             </div>
             <h3 style="color:#3D2B1F;font-size:16px;margin-bottom:8px;">What to Expect</h3>
