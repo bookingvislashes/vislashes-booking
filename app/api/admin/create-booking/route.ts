@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { syncBookingEvent } from "@/lib/google-calendar";
 import { sendConfirmationEmail } from "@/lib/email";
+import { notifyAdmins } from "@/lib/push";
 
 /**
  * Appointments the salon books herself.
@@ -332,6 +333,19 @@ export async function POST(req: NextRequest) {
       console.error("Admin booking: confirmation email failed:", err);
     }
   }
+
+  // The same alert a client's own booking sends. Worth having even though
+  // she is the one who just pressed the button: it is the receipt that the
+  // appointment landed, it reaches the phone when she booked from somewhere
+  // else, and it means every appointment in the business announces itself the
+  // same way rather than only the ones that came with a card.
+  await notifyAdmins(admin, {
+    title: "Appointment booked",
+    body: `${client?.full_name || "Client"} · ${service.name} · ${
+      input.bookingDate
+    } at ${normalisedSlot}`,
+    url: `/admin/bookings/${booking.id}`,
+  });
 
   // From here the appointment is indistinguishable from one a client made
   // herself: the same calendar entry, and the same two reminder emails on the

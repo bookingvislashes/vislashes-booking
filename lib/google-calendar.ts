@@ -208,6 +208,41 @@ async function getCalendarClient(supabase: SupabaseClient) {
   };
 }
 
+/**
+ * The name of the calendar appointments are actually being written to —
+ * "VISLashes", say — so Settings can state it rather than leaving her to
+ * infer it from which Google account she thinks she connected.
+ *
+ * It comes out of an events *list* call, which is a slightly odd way to ask
+ * and the only one available: naming a calendar properly means reading the
+ * Calendars resource, and that needs a broader Google permission than this
+ * app asks for. The events list response happens to carry the calendar's own
+ * title in `summary`, so one request for a single event answers it inside the
+ * permission already granted. Asking her to re-approve a wider scope just to
+ * print a name would be a poor trade.
+ *
+ * Returns null when not connected, or when Google is unreachable — the panel
+ * says so rather than inventing a name.
+ */
+export async function getCalendarSummary(
+  supabase: SupabaseClient
+): Promise<string | null> {
+  try {
+    const client = await getCalendarClient(supabase);
+    if (!client) return null;
+
+    const res = await client.calendar.events.list({
+      calendarId: client.calendarId,
+      maxResults: 1,
+    });
+
+    return res.data.summary ?? null;
+  } catch (err) {
+    console.error("Google Calendar: could not read the calendar name:", err);
+    return null;
+  }
+}
+
 /** Adds `minutes` to an "HH:mm" string, returning "HH:mm". */
 function addMinutesTo24Hour(time24: string, minutes: number): string {
   const [h, m] = time24.split(":").map(Number);

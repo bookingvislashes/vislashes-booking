@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.34.1",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "Settings now tells you which calendar your appointments actually go to, by name — so you can see it's VISLashes and not a personal one, without having to guess from the account.",
+      },
+      {
+        kind: "fixed",
+        text: "Booking a client in yourself now sends you the same phone alert a client's own booking does. Before, only bookings that came with a card notified you.",
+      },
+    ],
+  },
+  {
     version: "1.34.0",
     date: "2026-09-06",
     changes: [
