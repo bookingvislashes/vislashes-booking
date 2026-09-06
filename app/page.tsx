@@ -16,37 +16,21 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 // made in Services shows up here without waiting on a redeploy.
 export const revalidate = 60;
 
-// These three boxes used to be retail banners ("Connection" / "Passion" /
-// "Chemistry") from when the studio also sold lash products — same copy
-// three times over, and a "Shop" button that pointed at a shop this site no
-// longer has. Now that the site is booking-only, they carry the three
-// full-set services instead: real name, real starting price, and a Book
-// button that actually goes somewhere. The photos, gradient and layout are
-// unchanged — those were never the problem.
-const sectionVisuals = [
-  {
-    gradient: "linear-gradient(270deg, #A4846A 3.5%, rgba(180,149,124,0.39) 124%)",
-    imageSrc: "/images/connection-photo.webp",
-    imagePosition: "right" as const,
-    imageWidth: "50%",
-    imageEdgeOffset: "-8%",
-    flipImage: true,
-  },
-  {
-    gradient: "linear-gradient(271deg, #9D7859 8%, #E0C7B3 102%)",
-    imageSrc: "/images/passion-photo.webp",
-    imagePosition: "left" as const,
-    imageWidth: "42.5%",
-    imageEdgeOffset: "-5%",
-    flipImage: true,
-  },
-  {
-    gradient: "linear-gradient(95deg, #B4957C 7%, #3F2D1F 96%)",
-    imageSrc: "/images/chemistry-photo.webp",
-    imagePosition: "right" as const,
-    imageWidth: "46%",
-    imageEdgeOffset: "-10%",
-  },
+// Signature Set rows — three real full-set services with a circular photo on
+// alternating sides (Figma: row 1 image left, row 2 right, row 3 left). Name,
+// price and description all come from `featuredServices` below; only the
+// photo and its side are fixed here.
+//
+// Row 2 uses the real Wispy Set service photo rather than the historical
+// passion-photo.webp — that photo is the same photograph now used full-bleed
+// in the hero, so keeping it here would put the same face on the page twice.
+// Unlike the other two (alpha cut-outs that let card-beige show through),
+// this one is a full rectangular photo and fills its circle edge to edge —
+// expected and approved.
+const sectionVisuals: { imageSrc: string; imagePosition: "left" | "right" }[] = [
+  { imageSrc: "/images/connection-photo.webp", imagePosition: "left" },
+  { imageSrc: "/images/wispy-set-photo.webp", imagePosition: "right" },
+  { imageSrc: "/images/chemistry-photo.webp", imagePosition: "left" },
 ];
 
 // Matches the three full sets seeded by supabase/migrations/004_real_service_menu.sql,
@@ -162,7 +146,6 @@ export default async function HomePage() {
     name: service.name,
     label: formatPrice(service.price),
     description: leadSentence(service.description),
-    buttonText: `Book ${service.name}`,
   }));
 
   return (
@@ -201,98 +184,72 @@ export default async function HomePage() {
           behind the first. */}
       {featureSections.length > 0 && (
         <Reveal>
-          <div className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] text-center mb-8 sm:mb-10 lg:mb-[56px]">
-            <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[56px] leading-[1.1] text-dark-brown text-balance">
+          <div className="max-w-[720px] mx-auto px-6 sm:px-12 lg:px-0 flex flex-col items-center gap-4 text-center pt-8 sm:pt-12 lg:pt-[100px] mb-10 sm:mb-12 lg:mb-[80px]">
+            <h2 className="font-display font-bold text-[36px] sm:text-[44px] lg:text-[48px] leading-[1.15] text-charcoal text-balance">
               Find Your Signature Set
             </h2>
+            <p className="font-sans text-muted text-[16px] leading-[1.6]">
+              Three full sets, each one applied by me, one client at a time. Not
+              sure which is yours? Book the closest fit — we&rsquo;ll settle the
+              final look together at your appointment.
+            </p>
           </div>
         </Reveal>
       )}
-      {featureSections.map((section, index) => (
-        <Reveal key={section.name} delay={index * 80}>
-          <section
-            className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] mb-8 sm:mb-10 lg:mb-[96px]"
-          >
-            <div
-              className="relative rounded-surface overflow-hidden min-h-[360px] sm:min-h-[460px] lg:h-[641px]"
-              style={{ background: section.gradient }}
-            >
-              {/* Photo — on desktop it sits absolutely and bleeds past the
-                  edge, clipped by overflow:hidden. Below lg it is a normal
-                  full-width block stacked above the text.
-
-                  The per-section width and edge offset are passed as CSS
-                  variables and only consumed by `lg:` utilities. They used to
-                  be plain inline styles, which beat Tailwind at every
-                  breakpoint — so on tablet the photos rendered at 50% width
-                  and were shoved sideways by a `right: -8%` meant only for the
-                  desktop absolute layout. */}
+      {featureSections.length > 0 && (
+        <div className="w-full max-w-[960px] mx-auto px-6 lg:px-0 mb-8 sm:mb-10 lg:mb-[96px]">
+          {featureSections.map((section, index) => (
+            <Reveal key={section.name} delay={index * 80}>
               <div
-                className={`
-                  relative lg:absolute lg:top-0 lg:bottom-0
-                  w-full h-[240px] sm:h-[300px] lg:h-auto
-                  lg:w-[var(--img-w,40%)]
-                  ${
-                    section.imagePosition === "left"
-                      ? "lg:left-[var(--img-offset,0px)]"
-                      : "lg:right-[var(--img-offset,0px)]"
-                  }
-                `}
-                style={
-                  {
-                    "--img-w": section.imageWidth,
-                    "--img-offset": section.imageEdgeOffset,
-                  } as React.CSSProperties
-                }
+                className={`flex flex-col items-center gap-6 mb-14 last:mb-0 md:mb-0 md:items-center md:justify-between md:py-8 lg:py-[48px] ${
+                  section.imagePosition === "right" ? "md:flex-row-reverse" : "md:flex-row"
+                }`}
               >
-                <Image
-                  src={section.imageSrc}
-                  alt={section.name}
-                  fill
-                  className="object-cover"
-                  // Eager rather than priority on purpose: priority also emits
-                  // a preload link, and three of those would compete with the
-                  // hero photo, which is the LCP element and the one image that
-                  // genuinely needs to win. All three together are now 49KB.
-                  loading="eager"
-                  // See HowToBook for why these bypass /_next/image.
-                  unoptimized
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  style={{
-                    ...(section.flipImage ? { transform: "scaleX(-1)" } : {}),
-                  }}
-                />
-              </div>
+                <div className="relative shrink-0 rounded-full overflow-hidden bg-card-beige size-[240px] lg:size-[320px]">
+                  <Image
+                    src={section.imageSrc}
+                    /* Decorative: the set name is announced by the <h3> directly
+                       beside this image, so alt text would just repeat it. */
+                    alt=""
+                    fill
+                    className="object-cover object-top"
+                    loading="eager"
+                    unoptimized
+                    sizes="(max-width: 640px) 240px, 320px"
+                  />
+                </div>
 
-              {/* Text Content — tightly grouped */}
-              <div
-                className={`
-                  relative lg:absolute lg:top-1/2 lg:-translate-y-1/2
-                  flex flex-col
-                  p-6 sm:p-10 lg:p-0
-                  ${section.imagePosition === "left"
-                    ? "lg:right-[120px] items-start"
-                    : "lg:left-[100px] items-start"
-                  }
-                `}
-              >
-                <p className="font-sans font-light text-[14px] sm:text-[17px] lg:text-[20px] text-white tracking-[5px] sm:tracking-[6px] lg:tracking-[7.5px] -mb-1 lg:-mb-2">
-                  {section.label}
-                </p>
-                <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[60px] text-white tracking-[3px] sm:tracking-[5px] lg:tracking-[6.5px] leading-none mb-0">
-                  {section.name}
-                </h2>
-                <p className="font-sans font-light text-[15px] sm:text-[16px] lg:text-[18px] text-white leading-[1.445] max-w-[320px] sm:max-w-[340px] lg:max-w-[360px] mt-2 mb-4 lg:mb-5">
-                  {section.description}
-                </p>
-                <CtaLink href={`/book?service=${section.id}`} variant="onImage">
-                  {section.buttonText}
-                </CtaLink>
+                <div className="w-full max-w-[420px] md:max-w-none md:flex-1 lg:w-[480px] lg:flex-none flex flex-col gap-4 text-left">
+                  <span aria-hidden className="font-display font-bold italic text-text-brown text-[24px]">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div className="flex items-baseline justify-between gap-4">
+                    <h3 className="font-display font-bold text-charcoal text-[36px]">
+                      {section.name}
+                    </h3>
+                    <span className="font-display font-bold text-muted text-[24px]">
+                      {section.label}
+                    </span>
+                  </div>
+                  <p className="font-sans text-muted text-[15px] leading-[1.6]">
+                    {section.description}
+                  </p>
+                  <div className="pt-[8px]">
+                    <CtaLink
+                      href={`/book?service=${section.id}`}
+                      variant="outlineDark"
+                      size="sm"
+                      font="display"
+                    >
+                      Book {section.name}
+                    </CtaLink>
+                  </div>
+                </div>
               </div>
-            </div>
-          </section>
-        </Reveal>
-      ))}
+            </Reveal>
+          ))}
+        </div>
+      )}
 
       <Reveal>
         <Testimonials />

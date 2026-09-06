@@ -13,7 +13,7 @@ import Link from "next/link";
 export const CTA_HEIGHT = "h-control-lg";
 
 const base =
-  "inline-flex items-center justify-center box-border font-sans font-semibold " +
+  "inline-flex items-center justify-center box-border " +
   "rounded-control border-2 " +
   "transition-[background-color,color,transform] duration-200 hover:scale-[1.03] active:scale-[0.98] " +
   "motion-reduce:transition-none motion-reduce:hover:scale-100";
@@ -34,25 +34,41 @@ const variants = {
   outline:
     "bg-transparent border-brand-brown text-text-brown hover:bg-brand-brown hover:text-white",
   onImage: "bg-transparent border-[#ebebeb] text-white hover:bg-white/20",
+  dark: "bg-charcoal text-white border-transparent hover:bg-dark-brown",
+  outlineDark:
+    "bg-transparent border-charcoal text-charcoal hover:bg-charcoal hover:text-white",
+} as const;
+
+// The font classes are composed alongside `base` rather than substituted into
+// it: a string replace would fail silently if `base` were ever reworded, and
+// nothing would surface that until someone noticed the buttons looked wrong.
+// Swaps the sans/semibold weight for the display italic used by the
+// Signature Set row CTAs — kept as a prop rather than a new variant because
+// it is independent of color (variant), not tied to it.
+const fonts = {
+  sans: "font-sans font-semibold",
+  display: "font-display font-bold italic",
 } as const;
 
 export function CtaLink({
   href,
   variant = "solid",
   size = "lg",
+  font = "sans",
   className = "",
   children,
 }: {
   href: string;
   variant?: keyof typeof variants;
   size?: keyof typeof sizes;
+  font?: keyof typeof fonts;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
     <Link
       href={href}
-      className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}
+      className={`${base} ${fonts[font]} ${sizes[size]} ${variants[variant]} ${className}`}
     >
       {children}
     </Link>

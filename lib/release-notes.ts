@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.30.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "changed",
+        text: "Your home page now opens with a full-width photo and your headline sitting right over it, instead of a smaller image off to the side.",
+      },
+      {
+        kind: "changed",
+        text: "The How to Book steps now show as tilted photo cards, like they're scattered on a table. They're the same photos as before — if you upload your own in Settings, those still take their place.",
+      },
+      {
+        kind: "changed",
+        text: "Classic, Wispy, and Hybrid now show as round photos with the price right next to the name, still pulled straight from your Services list.",
+      },
+    ],
+  },
+  {
     version: "1.29.0",
     date: "2026-09-06",
     changes: [
