@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.36.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "Your site now has a Privacy Policy and a Terms & Conditions page, linked at the bottom of every page. Twilio needs both before they'll approve your texting, and clients can now read them without starting a booking.",
+      },
+      {
+        kind: "added",
+        text: "The Terms page carries your existing booking terms and lash waiver word for word — the same ones clients already sign — plus a new section covering the text messages.",
+      },
+      {
+        kind: "changed",
+        text: "Those terms now live in one place instead of two, so what a client signs at booking and what's on the public page can never drift apart.",
+      },
+    ],
+  },
+  {
     version: "1.35.1",
     date: "2026-09-06",
     changes: [
