@@ -95,6 +95,20 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
           <circle cx="19" cy="12" r="1.5" />
         </svg>
       );
+    case "chart":
+      return (
+        <svg {...props}>
+          <path d="M3 3v16a2 2 0 002 2h16" />
+          <path d="M7 15l3.5-4 3 2.5L20 7" />
+        </svg>
+      );
+    case "invoice":
+      return (
+        <svg {...props}>
+          <path d="M6 2h12a1 1 0 011 1v18l-3-2-2 2-2-2-2 2-2-2-3 2V3a1 1 0 011-1z" />
+          <path d="M9 7h6M9 11h6M9 15h3" />
+        </svg>
+      );
     case "database":
       return (
         <svg {...props}>
@@ -115,6 +129,8 @@ const navItems = [
   { label: "Clients", href: "/admin/clients", icon: "users" },
   { label: "Agreements", href: "/admin/agreements", icon: "file-text" },
   { label: "Services", href: "/admin/services", icon: "tag" },
+  { label: "Invoices", href: "/admin/invoices", icon: "invoice" },
+  { label: "Reports", href: "/admin/reports", icon: "chart" },
   { label: "Payments", href: "/admin/payments", icon: "receipt" },
   { label: "Settings", href: "/admin/settings", icon: "settings" },
   { label: "Migrations", href: "/admin/migrations", icon: "database" },

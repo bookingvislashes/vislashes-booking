@@ -31,6 +31,46 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.28.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "note",
+        text: "Run migration 013 in the Supabase SQL Editor before using Invoices — until you do, the Invoices tab will say it can't load.",
+      },
+      {
+        kind: "added",
+        text: "There's a Reports tab. Pick Day, Week, Month or Year and step through with the arrows to see how many appointments you did, what they were worth, and how many different clients you saw. Year opens into a month-by-month table, and Download for taxes gives you a spreadsheet of every appointment in the period — 2023 onward is all in there.",
+      },
+      {
+        kind: "added",
+        text: "There's an Invoices tab. Make an invoice for a deposit, copy the link, and text it to your client — she opens it, pays by card, and it flips to Paid on your screen. Picking the appointment fills in the deposit and the wording for you, and if someone pays you cash you can mark it paid yourself.",
+      },
+      {
+        kind: "added",
+        text: "The top of the Invoices tab shows what you're still owed and what you've collected, and the Not paid filter is the first thing you see.",
+      },
+    ],
+  },
+  {
+    version: "1.27.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "changed",
+        text: "Every client's visit count is real now. All 563 appointments from your Acuity schedule, 2023 through 2026, were loaded in and matched to the right person, so the Clients list shows how many times someone has actually sat in your chair and when they last came in — not the placeholder 1 everyone was stuck on after the import.",
+      },
+      {
+        kind: "changed",
+        text: "Clients you have in your list but who never had an appointment on the schedule now show 0 visits instead of 1, so \"returning client\" means something you can trust.",
+      },
+      {
+        kind: "added",
+        text: "Your full appointment history is stored on the site now, which is what the reports for tax season will be built on. Nothing about it shows to clients.",
+      },
+    ],
+  },
+  {
     version: "1.26.0",
     date: "2026-09-06",
     changes: [
