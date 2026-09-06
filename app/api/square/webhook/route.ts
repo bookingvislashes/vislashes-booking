@@ -3,6 +3,7 @@ import { WebhooksHelper } from "square";
 import { createServiceClient } from "@/lib/supabase/server";
 import { recordOrphanPayment } from "@/lib/orphan-payments";
 import { salonDateOf } from "@/lib/salon-time";
+import { parseCheckoutRef } from "@/lib/square-pos";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -128,23 +129,49 @@ export async function POST(req: NextRequest) {
       const tipAmount = tipCents / 100;
       const paidOn = salonDateOf(payment.created_at ?? new Date());
 
-      // Best-effort attribution: today's confirmed appointment, if there is
-      // exactly one that has not already collected a payment. A card charged
-      // in the salon almost always belongs to whoever is in the chair right
-      // now, but with more than one appointment that day (or none) a guess is
-      // worse than no guess — she can attribute it from the Today screen in
-      // ten seconds, and a wrong guess she never checks is a wrong tax number.
-      const { data: candidates } = await supabase
-        .from("bookings")
-        .select("id, client_id, client:clients(full_name)")
-        .eq("booking_date", paidOn)
-        .in("status", ["confirmed", "completed"]);
-
       let bookingId: string | null = null;
       let clientId: string | null = null;
       let clientName: string | null = null;
 
-      if (candidates && candidates.length) {
+      // Exact attribution first. When the checkout was started from the Today
+      // screen, the site wrote a reference into the payment's note before
+      // handing the sale to the Square app — so this is not a guess at all,
+      // it is the appointment she was looking at when she charged the card.
+      const ref = parseCheckoutRef(payment.note);
+      if (ref) {
+        const { data: referenced } = await supabase
+          .from("bookings")
+          .select("id, client_id, client:clients(full_name)")
+          .eq("checkout_ref", ref)
+          .maybeSingle();
+
+        if (referenced) {
+          bookingId = referenced.id;
+          clientId = referenced.client_id ?? null;
+          const clientRow = Array.isArray(referenced.client)
+            ? referenced.client[0]
+            : referenced.client;
+          clientName = clientRow?.full_name ?? null;
+        }
+      }
+
+      // Otherwise fall back to the guess, which is all there is for a card
+      // she rings up in the Square app on her own: today's confirmed
+      // appointment, if there is exactly one that has not already collected a
+      // payment. A card charged in the salon almost always belongs to whoever
+      // is in the chair right now, but with more than one appointment that
+      // day (or none) a guess is worse than no guess — she can attribute it
+      // from the Today screen in ten seconds, and a wrong guess she never
+      // checks is a wrong tax number.
+      const { data: candidates } = bookingId
+        ? { data: null }
+        : await supabase
+            .from("bookings")
+            .select("id, client_id, client:clients(full_name)")
+            .eq("booking_date", paidOn)
+            .in("status", ["confirmed", "completed"]);
+
+      if (!bookingId && candidates && candidates.length) {
         const unclaimed: typeof candidates = [];
         for (const c of candidates) {
           const { count } = await supabase

@@ -31,6 +31,44 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.34.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "Today has a Check out button. It already knows what she owes — price minus her deposit, minus anything you've recorded — and hands the whole thing to the Square app with the amount typed in and her name on the sale. Tap to Pay as normal from there.",
+      },
+      {
+        kind: "added",
+        text: "Before you charge, you can add anything else to the sale: lash care kit, a removal for someone who turned up still wearing a set, a shampoo. The list is your own Square library, so the prices are whatever you set in Square.",
+      },
+      {
+        kind: "added",
+        text: "A card charged this way lands against the right appointment on its own. It used to be a guess — fine on a one-client day, wrong on a busy one.",
+      },
+      {
+        kind: "fixed",
+        text: "Today was showing $25 too little to collect from anyone who booked a removal with their set. It was pricing the set on its own.",
+      },
+      {
+        kind: "note",
+        text: "Square can't show you who's coming — it only does that if you book inside Square Appointments, and your bookings live here. That's why Tabitha never appeared in the customer list. She was in Square all along, just not near the top.",
+      },
+      {
+        kind: "note",
+        text: "Your Square library prices Lash lift at $45. This site says $70. Worth checking which is right — I haven't touched either.",
+      },
+      {
+        kind: "note",
+        text: "Settings has a Match customers button. It links your clients to the Square profiles they already have. It only reads from Square — it never creates or merges anything. Christina and Tabitha are already linked.",
+      },
+      {
+        kind: "note",
+        text: "Your Square directory has duplicates from the Acuity years — Tabitha appears 3 times, Britney Vazquez 3 times, and several others twice. Match customers will list them; merging is done in Square.",
+      },
+    ],
+  },
+  {
     version: "1.33.0",
     date: "2026-09-06",
     changes: [
