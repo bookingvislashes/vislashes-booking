@@ -230,6 +230,24 @@ export async function createBooking({
   const appointmentTotal =
     Number(service.price) + (removalAdded ? removalPrice : 0);
 
+  // The studio address is private — it is deliberately absent from the public
+  // pages (the privacy policy, the site footer) and only ever reaches someone
+  // after she has booked and paid a deposit. The confirmation email and text
+  // are that moment: both go out once, to the person who just paid, and never
+  // anywhere public. Read fresh per booking rather than baked into a template,
+  // so a studio move only ever requires an edit in Settings.
+  let studioAddress: string | null = null;
+  try {
+    const { data: addressRow } = await supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "business_address")
+      .maybeSingle();
+    studioAddress = addressRow?.value ?? null;
+  } catch {
+    // Left null: both messages simply omit the address rather than guessing.
+  }
+
   try {
     await sendConfirmationEmail({
       clientName: formData.fullName,
@@ -243,6 +261,7 @@ export async function createBooking({
       depositAmount: service.deposit_amount,
       totalPrice: appointmentTotal,
       paymentMethod: formData.paymentMethod,
+      studioAddress,
     });
   } catch (emailErr) {
     // Log but don't fail the booking if email fails
@@ -267,6 +286,7 @@ export async function createBooking({
             bookingDate: formData.bookingDate,
             timeSlot: formData.timeSlot,
             depositAmount: Number(service.deposit_amount),
+            address: studioAddress,
           })
         );
       } catch (smsErr) {

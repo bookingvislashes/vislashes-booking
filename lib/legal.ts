@@ -75,16 +75,14 @@ export const SMS_TERMS = `TEXT MESSAGE TERMS
  */
 export function buildPrivacyPolicy(details: {
   businessName: string;
-  address: string | null;
   email: string | null;
   phone: string | null;
 }) {
-  const contact = [
-    details.businessName,
-    details.address,
-    details.email,
-    details.phone,
-  ]
+  // The studio address is deliberately excluded from this page. It is a home
+  // studio, this page is public and indexable, and the address only belongs
+  // in front of someone who has already booked and paid a deposit — the
+  // confirmation email and text, not a document anyone can open.
+  const contact = [details.businessName, details.email, details.phone]
     .filter(Boolean)
     .join("\n");
 

@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.37.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Your studio address is no longer on the public Privacy Policy page. That page is open to anyone, including search engines, and your address belongs only in front of someone who has actually booked with you.",
+      },
+      {
+        kind: "added",
+        text: "The confirmation email every client already gets now includes your address, so she can find you without having to ask. It didn't before — the email only named the general area, not your street.",
+      },
+      {
+        kind: "added",
+        text: "The confirmation text (once texting is approved) carries the address too, for anyone who reads texts more than email.",
+      },
+      {
+        kind: "note",
+        text: "To answer your question: yes, every client who books gets a confirmation email — it's required to book at all, so nobody slips through without one.",
+      },
+    ],
+  },
+  {
     version: "1.36.1",
     date: "2026-09-06",
     changes: [

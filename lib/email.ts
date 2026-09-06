@@ -31,6 +31,15 @@ interface BookingEmailData {
   depositPaid?: boolean;
   /** "Zelle", "Apple Cash" — named so the client can recognise her own payment. */
   depositMethodLabel?: string;
+  /**
+   * The studio's street address, read fresh from Settings by the caller.
+   * Deliberately not baked into this template as a constant: the address is
+   * private — it never appears on a public page — and only ever reaches
+   * someone through this email, sent once she has actually booked and paid a
+   * deposit. Null when Settings could not be read; the location section is
+   * then simply omitted rather than printing a placeholder.
+   */
+  studioAddress?: string | null;
 }
 
 export async function sendConfirmationEmail(data: BookingEmailData) {
@@ -75,6 +84,10 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
               </p>
               ${remainingBalance > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:#9A9A9A;">Remaining balance: $${remainingBalance.toFixed(2)} due at appointment</p>` : ""}
             </div>
+            ${data.studioAddress ? `
+            <h3 style="color:#3D2B1F;font-size:16px;margin-bottom:8px;">Location</h3>
+            <p style="color:#2C2C2C;font-size:14px;margin-bottom:24px;">${data.studioAddress}</p>
+            ` : ""}
             <h3 style="color:#3D2B1F;font-size:16px;margin-bottom:8px;">What to Expect</h3>
             <ul style="color:#2C2C2C;font-size:14px;padding-left:20px;">
               <li>Come with clean lashes, no eye makeup</li>

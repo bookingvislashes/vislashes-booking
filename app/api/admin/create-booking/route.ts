@@ -310,6 +310,21 @@ export async function POST(req: NextRequest) {
 
   let emailed = false;
   if (input.sendConfirmation && client?.email) {
+    // Same private-address contract as the site's own checkout: read fresh
+    // from Settings, sent only in this confirmation, never guessed at if the
+    // lookup fails.
+    let studioAddress: string | null = null;
+    try {
+      const { data: addressRow } = await admin
+        .from("settings")
+        .select("value")
+        .eq("key", "business_address")
+        .maybeSingle();
+      studioAddress = addressRow?.value ?? null;
+    } catch {
+      // Left null.
+    }
+
     try {
       await sendConfirmationEmail({
         clientName: client.full_name,
@@ -327,6 +342,7 @@ export async function POST(req: NextRequest) {
         depositMethodLabel: input.depositPaid
           ? METHOD_LABELS[input.depositMethod]
           : undefined,
+        studioAddress,
       });
       emailed = true;
     } catch (err) {

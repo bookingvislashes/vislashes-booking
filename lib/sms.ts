@@ -145,10 +145,14 @@ export function confirmationText(a: AppointmentSms): string {
   const deposit = a.depositAmount
     ? `\nDeposit received: $${a.depositAmount.toFixed(2)}`
     : "";
+  // The address is what makes this text actually useful for finding the
+  // studio, not just a receipt — printed here rather than only in the email
+  // so a client who reads texts and skims email still knows where to go.
+  const where = a.address ? `\n${a.address}` : "";
   return (
     `VIS Lashes — you're booked, ${firstName(a.clientName)}!\n\n` +
     `${a.serviceName}\n` +
-    `${friendlyDate(a.bookingDate)} at ${a.timeSlot}${deposit}\n\n` +
+    `${friendlyDate(a.bookingDate)} at ${a.timeSlot}${deposit}${where}\n\n` +
     `Everything you need is in your email confirmation. See you soon!\n\n` +
     // Carriers require opt-out instructions, and the first message a client
     // receives is the place for them. Only on the confirmation: repeating it
