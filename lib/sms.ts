@@ -149,7 +149,12 @@ export function confirmationText(a: AppointmentSms): string {
     `VIS Lashes — you're booked, ${firstName(a.clientName)}!\n\n` +
     `${a.serviceName}\n` +
     `${friendlyDate(a.bookingDate)} at ${a.timeSlot}${deposit}\n\n` +
-    `Everything you need is in your email confirmation. See you soon!`
+    `Everything you need is in your email confirmation. See you soon!\n\n` +
+    // Carriers require opt-out instructions, and the first message a client
+    // receives is the place for them. Only on the confirmation: repeating it
+    // on every reminder reads like marketing, which is the opposite of what
+    // this is.
+    `Reply STOP to opt out.`
   );
 }
 

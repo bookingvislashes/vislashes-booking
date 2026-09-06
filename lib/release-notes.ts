@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.35.1",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "The booking form now tells clients they'll get appointment texts and how to stop them. Phone carriers require this to be visible where you collect the number, and they check for it when approving your texting registration.",
+      },
+      {
+        kind: "changed",
+        text: "The booking confirmation text now ends with \"Reply STOP to opt out.\" Only that one — repeating it on every reminder would make them read like marketing.",
+      },
+    ],
+  },
+  {
     version: "1.35.0",
     date: "2026-09-06",
     changes: [
