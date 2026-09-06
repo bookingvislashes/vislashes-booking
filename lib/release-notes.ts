@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.35.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "Text messages are built and waiting: a confirmation the moment someone books, a reminder two days before, and one two hours before. 154 of your 157 clients have a number we can text — 45 more people than email reaches.",
+      },
+      {
+        kind: "note",
+        text: "Texts won't send until you open a Twilio account and register your business for texting — about $4 a month, and the registration takes a few days to approve. Ask me and I'll walk you through it step by step. Until then everything carries on by email exactly as it does now.",
+      },
+      {
+        kind: "added",
+        text: "If a client ever replies STOP, she stops getting texts automatically and is never texted again. Her email reminders carry on — stopping texts isn't cancelling her appointment.",
+      },
+      {
+        kind: "changed",
+        text: "Email and text are now sent independently at each reminder. If one fails the other still goes, and the appointment is only marked as reminded once something actually reached her.",
+      },
+    ],
+  },
+  {
     version: "1.34.3",
     date: "2026-09-06",
     changes: [

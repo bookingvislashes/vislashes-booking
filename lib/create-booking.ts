@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { sendConfirmationEmail } from "./email";
+import { confirmationText, isSmsConfigured, sendSms, toE164 } from "./sms";
 import { syncBookingEvent } from "./google-calendar";
 
 interface BookingFormData {
@@ -246,6 +247,32 @@ export async function createBooking({
   } catch (emailErr) {
     // Log but don't fail the booking if email fails
     console.error("Failed to send confirmation email:", emailErr);
+  }
+
+  // The same confirmation as a text. Best-effort on exactly the same terms as
+  // the email above: the card is already charged and the booking already
+  // written, so nothing here is allowed to fail the booking. Skipped silently
+  // when Twilio is not configured, or when the number cannot be parsed.
+  if (isSmsConfigured()) {
+    const phone = toE164(formData.phone);
+    if (phone) {
+      try {
+        await sendSms(
+          phone,
+          confirmationText({
+            clientName: formData.fullName,
+            serviceName: removalAdded
+              ? `${service.name} + lash removal`
+              : service.name,
+            bookingDate: formData.bookingDate,
+            timeSlot: formData.timeSlot,
+            depositAmount: Number(service.deposit_amount),
+          })
+        );
+      } catch (smsErr) {
+        console.error("Failed to send confirmation text:", smsErr);
+      }
+    }
   }
 
   // 7. Put it on her Google Calendar, if she has connected one. Same
