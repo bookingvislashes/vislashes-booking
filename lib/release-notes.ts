@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.30.1",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Closed a hole that let someone book a slot without paying. The old pay-at-the-appointment form was removed a while back, but the permission it needed was left switched on — so a person who knew where to look could put a fake confirmed appointment on your calendar with no card charged. Booking through the site is unchanged.",
+      },
+    ],
+  },
+  {
     version: "1.30.0",
     date: "2026-09-06",
     changes: [
@@ -53,8 +63,8 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     date: "2026-09-06",
     changes: [
       {
-        kind: "note",
-        text: "Run migration 014 in the Supabase SQL Editor. Until you do, reminders will stop going out.",
+        kind: "changed",
+        text: "Nothing to do — the database change behind the new reminders is already applied for you.",
       },
       {
         kind: "changed",
@@ -79,8 +89,8 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     date: "2026-09-06",
     changes: [
       {
-        kind: "note",
-        text: "Run migration 013 in the Supabase SQL Editor before using Invoices — until you do, the Invoices tab will say it can't load.",
+        kind: "changed",
+        text: "Nothing to do — the database change behind Invoices is already applied for you.",
       },
       {
         kind: "added",
