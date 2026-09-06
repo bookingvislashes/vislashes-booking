@@ -201,7 +201,7 @@ export default async function HomePage() {
           {featureSections.map((section, index) => (
             <Reveal key={section.name} delay={index * 80}>
               <div
-                className={`flex flex-col items-center gap-6 mb-14 last:mb-0 md:mb-0 md:items-center md:justify-between md:py-8 lg:py-[48px] ${
+                className={`group flex flex-col items-center gap-6 mb-14 last:mb-0 md:mb-0 md:items-center md:justify-between md:py-8 lg:py-[48px] ${
                   section.imagePosition === "right" ? "md:flex-row-reverse" : "md:flex-row"
                 }`}
               >
@@ -212,7 +212,7 @@ export default async function HomePage() {
                        beside this image, so alt text would just repeat it. */
                     alt=""
                     fill
-                    className="object-cover object-top"
+                    className="object-cover object-top transition-[scale] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                     loading="eager"
                     unoptimized
                     sizes="(max-width: 640px) 240px, 320px"
@@ -306,7 +306,7 @@ export default async function HomePage() {
                 id="newsletter-email"
                 type="email"
                 placeholder="Email Address"
-                className="w-full h-control box-border px-4 pr-[72px] border border-charcoal rounded-control font-sans text-[14px] text-charcoal leading-[24px] bg-transparent focus:outline-none focus:border-brand-brown"
+                className="w-full h-control box-border px-4 pr-[72px] border border-charcoal rounded-control font-sans text-[14px] text-charcoal leading-[24px] bg-transparent transition-[border-color,box-shadow] duration-200 focus:outline-none focus:border-brand-brown focus:shadow-[0_0_0_3px_rgba(139,111,71,0.15)] motion-reduce:transition-none"
               />
               <button
                 aria-label="Submit email"

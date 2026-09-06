@@ -31,6 +31,9 @@ export function ParallaxHero() {
     // than shared, so a change to its padding silently leaves a strip of the
     // next section showing below the fold. A height token would fix that.
     <section className="relative w-full overflow-hidden bg-white h-[clamp(560px,calc(100svh_-_88px),760px)] lg:h-[clamp(720px,calc(100svh_-_94px),1024px)]">
+      {/* The photograph. It settles out of a 6% scale over 14s — slow enough
+          to read as presence rather than motion, and it runs once so the page
+          is still afterwards. Disabled outright under reduced motion. */}
       {/* The photograph. `object-position` keeps the face right of centre with
           the eye in the upper middle, clear of the text column at both ends of
           the range. priority + unoptimized because this is the LCP element and
@@ -42,7 +45,7 @@ export function ParallaxHero() {
         priority
         unoptimized
         sizes="100vw"
-        className="object-cover object-[62%_top] lg:object-[center_top]"
+        className="object-cover object-[62%_top] lg:object-[center_top] animate-hero-drift motion-reduce:animate-none"
       />
 
 

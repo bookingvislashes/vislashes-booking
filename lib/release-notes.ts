@@ -31,6 +31,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.31.0",
+    date: "2026-09-06",
+    changes: [
+      { kind: "added", text: "The How to Book photos now lift off the page and straighten slightly when someone points at them, like picking a photo up off a table." },
+      { kind: "added", text: "The round photos in Find Your Signature Set ease in a little when someone hovers over that set." },
+      { kind: "added", text: "The photo at the top of the home page settles very slowly when the page opens, so it feels alive rather than pasted on." },
+      { kind: "fixed", text: "Buttons across the site were meant to grow slightly when you point at them, but the effect was jumping instantly instead of easing. It is smooth now." },
+      { kind: "fixed", text: "The email box under Stay Lashed In now shows a soft ring when you click into it, so it is obvious where you are typing." },
+    ],
+  },
+  {
     version: "1.30.3",
     date: "2026-09-06",
     changes: [

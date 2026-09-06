@@ -34,19 +34,19 @@ import { STEPS } from "@/lib/how-to-book-steps";
  */
 const POLAROIDS = [
   {
-    card: "rotate-[-2deg] lg:absolute lg:left-[8%] lg:top-[70px] lg:z-10 lg:w-[340px] lg:max-w-none lg:rotate-[7deg]",
+    card: "rotate-[-2deg] hover:rotate-[-1deg] lg:absolute lg:left-[8%] lg:top-[70px] lg:z-10 lg:w-[340px] lg:max-w-none lg:rotate-[7deg] lg:hover:rotate-[3deg]",
     numeral: "",
     title: "",
     body: "",
   },
   {
-    card: "rotate-[2deg] lg:absolute lg:left-[33.5%] lg:top-0 lg:z-20 lg:w-[391px] lg:max-w-none lg:rotate-[-5deg] lg:p-[23px] lg:pb-[37px] lg:gap-[23px]",
+    card: "rotate-[2deg] hover:rotate-[1deg] lg:absolute lg:left-[33.5%] lg:top-0 lg:z-20 lg:w-[391px] lg:max-w-none lg:rotate-[-5deg] lg:hover:rotate-[-2deg] lg:p-[23px] lg:pb-[37px] lg:gap-[23px]",
     numeral: "lg:text-[25px]",
     title: "lg:text-[21px]",
     body: "lg:text-[15px]",
   },
   {
-    card: "rotate-[-2deg] lg:absolute lg:left-[67.8%] lg:top-[115px] lg:z-10 lg:w-[340px] lg:max-w-none lg:rotate-[4deg]",
+    card: "rotate-[-2deg] hover:rotate-[-1deg] lg:absolute lg:left-[67.8%] lg:top-[115px] lg:z-10 lg:w-[340px] lg:max-w-none lg:rotate-[4deg] lg:hover:rotate-[1.5deg]",
     numeral: "",
     title: "",
     body: "",
@@ -91,7 +91,7 @@ export function HowToBook({ photoOverrides }: HowToBookProps = {}) {
             return (
               <div
                 key={step.number}
-                className={`flex flex-col gap-[20px] w-full max-w-[340px] bg-white rounded-[4px] p-[20px] pb-[32px] shadow-[0_12px_12px_rgba(61,43,31,0.10)] transform-gpu ${polaroid.card}`}
+                className={`group flex flex-col gap-[20px] w-full max-w-[340px] bg-white rounded-[4px] p-[20px] pb-[32px] shadow-[0_12px_12px_rgba(61,43,31,0.10)] transform-gpu transition-[rotate,translate,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-2 hover:shadow-[0_22px_28px_rgba(61,43,31,0.18)] hover:z-30 motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${polaroid.card}`}
               >
                 {/* The source photos are 1248x832, so a square frame with
                     object-cover centre-crops them rather than letterboxing. */}
@@ -101,7 +101,7 @@ export function HowToBook({ photoOverrides }: HowToBookProps = {}) {
                       src={src}
                       alt={step.alt}
                       fill
-                      className="object-cover"
+                      className="object-cover transition-[scale] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                       sizes="(min-width: 1024px) 351px, 300px"
                       loading="eager"
                       // Default files are small, unoptimised static WebPs (see
