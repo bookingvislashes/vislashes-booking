@@ -42,42 +42,38 @@ export function ParallaxHero() {
         priority
         unoptimized
         sizes="100vw"
-        className="object-cover object-[65%_35%] lg:object-[60%_40%]"
+        className="object-cover object-[62%_top] lg:object-[center_top]"
       />
 
-      {/* Tone. Warms the whole frame toward the brand brown so the photo reads
-          as one surface with the scrim rather than a picture behind a panel. */}
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-text-brown/[0.36] pointer-events-none"
-      />
 
       {/* Scrim, phone and tablet: bottom-up, because the text is anchored to
-          the bottom edge there.
-          Measured, not assumed. At 375x812 the stacked headline, paragraph and
-          button occupy the bottom ~55% of the hero, so the top of the headline
-          sits well above a 45% via stop; against the forehead behind it the
-          cream measured 2.8:1. The via is held out to 58% at /65 and the fade
-          runs to 88% so the whole text column keeps a dark ground, and the eye
-          still reads through the thin end of the gradient above it. */}
+          the bottom edge there. Held stronger than the desktop ramp because at
+          375 the headline sits over skin rather than the pale backdrop. */}
       <div
         aria-hidden
-        className="absolute inset-0 pointer-events-none lg:hidden bg-gradient-to-t from-dark-brown/85 from-[0%] via-dark-brown/65 via-[58%] to-transparent to-[88%]"
+        className="absolute inset-0 pointer-events-none lg:hidden bg-[linear-gradient(0deg,rgba(45,32,21,0.82)_0%,rgba(63,45,31,0.60)_52%,rgba(63,45,31,0)_85%)]"
       />
 
-      {/* Scrim, lg and up: left-to-right behind the text column.
-          Figma puts the via stop at 24.5%. It is deliberately pushed to 40%
-          here: the subtext column is 440px wide and, inside a 1440px frame
-          with 120px gutters, its right edge lands near 39% of the viewport.
-          At 24.5% the gradient has already faded to near-nothing by then and
-          the last words of that paragraph sit on the photo's pale background,
-          which is where the 4.5:1 contrast actually breaks. Holding the mid
-          stop out to 40% keeps the whole column over a dark ground.
-          The via is /65 rather than /60 for the same reason: at /60 the last
-          words of the paragraph's second line measured 4.36:1, just under AA. */}
+      {/* Scrim, lg and up.
+          Shaped from the photograph rather than copied from the design. A
+          horizontal luminance profile of the hero image shows a flat studio
+          backdrop (luminance 199) from 0% to 42%, and the face beginning at
+          43%. The text column ends at 39%. So the whole scrim can live over
+          the backdrop and be gone before it reaches her.
+
+          Figma's own stops (0.79 / 0.59 at 24.5% / 0 at 80%) were tried and
+          measured 3.03:1 on the headline and 2.73:1 on the subtext — the
+          design does not clear AA on its own. Holding ~0.70 across the text
+          column instead brings the backdrop to roughly rgb(107,91,78), which
+          measures past 4.5:1 on the subtext, while the fade completes by 60% so the eye
+          and cheek are untouched.
+
+          An earlier version instead laid a 36% brown wash over the entire
+          photograph. That came from misreading node 739:299, whose brown fill
+          sits *behind* the image and is invisible in the design. It is gone. */}
       <div
         aria-hidden
-        className="hidden absolute inset-0 pointer-events-none lg:block bg-gradient-to-r from-dark-brown/85 from-[0%] via-dark-brown/65 via-[40%] to-transparent to-[80%]"
+        className="hidden absolute inset-0 pointer-events-none lg:block bg-[linear-gradient(90deg,rgba(45,32,21,0.84)_0%,rgba(63,45,31,0.76)_26%,rgba(63,45,31,0.70)_40%,rgba(63,45,31,0)_60%)]"
       />
 
       <div className="relative z-10 h-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] flex flex-col justify-end pb-12 lg:justify-center lg:pb-0">

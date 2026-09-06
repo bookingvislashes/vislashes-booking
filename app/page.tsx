@@ -21,15 +21,15 @@ export const revalidate = 60;
 // price and description all come from `featuredServices` below; only the
 // photo and its side are fixed here.
 //
-// Row 2 uses the real Wispy Set service photo rather than the historical
-// passion-photo.webp — that photo is the same photograph now used full-bleed
-// in the hero, so keeping it here would put the same face on the page twice.
-// Unlike the other two (alpha cut-outs that let card-beige show through),
-// this one is a full rectangular photo and fills its circle edge to edge —
-// expected and approved.
+// Row 2 is the same photograph now used full-bleed in the hero. That repetition
+// is deliberate: it is what the Figma design does, and it was tried the other
+// way. Substituting the service photo from Admin removed the repeat but the
+// only copy of it is 711x550, which upscaled into a 320px circle at 2x read as
+// visibly soft beside two sharp studio cut-outs. The repeat is the better of
+// the two flaws.
 const sectionVisuals: { imageSrc: string; imagePosition: "left" | "right" }[] = [
   { imageSrc: "/images/connection-photo.webp", imagePosition: "left" },
-  { imageSrc: "/images/wispy-set-photo.webp", imagePosition: "right" },
+  { imageSrc: "/images/passion-photo.webp", imagePosition: "right" },
   { imageSrc: "/images/chemistry-photo.webp", imagePosition: "left" },
 ];
 

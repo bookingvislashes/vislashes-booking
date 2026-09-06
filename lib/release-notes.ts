@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.30.2",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "fixed",
+        text: "The photo at the top of the home page was coming out washed out and cropped in too close. It now shows the way it was designed — the lashes are sharp again and you can see more of her face.",
+      },
+    ],
+  },
+  {
     version: "1.30.1",
     date: "2026-09-06",
     changes: [
