@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.34.3",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Apple Pay and Google Pay now actually appear on the booking page. They never had, on any phone, since the day they were added — the site was asking Square for them the wrong way, and Square's complaint went somewhere only a desktop browser could show it. Your setup was correct the whole time.",
+      },
+      {
+        kind: "changed",
+        text: "Clients on an iPhone can now pay their deposit with Face ID instead of typing a card number, which is the single biggest thing that stops someone abandoning a booking on their phone.",
+      },
+    ],
+  },
+  {
     version: "1.34.2",
     date: "2026-09-06",
     changes: [

@@ -90,22 +90,28 @@ export function SquareWalletButton({
           process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID!,
           process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID!
         );
-        const paymentRequest: SquarePaymentRequest = {
+        // Square requires the request to be built through paymentRequest()
+        // rather than passed as a plain object. Handing applePay() the raw
+        // options throws "expected property: paymentRequest of type
+        // PaymentRequest" — which is why neither wallet ever appeared, on any
+        // device, since this component was written. The throw was caught and
+        // logged to a console nobody reads on a phone, so it looked like an
+        // Apple restriction or a missing domain registration instead.
+        const paymentRequest = payments.paymentRequest({
           countryCode: "US",
           currencyCode: "USD",
           total: {
             amount: depositAmount.toFixed(2),
             label: `VIS Lashes Deposit - ${serviceName}`,
           },
-        };
+        });
 
-        // Try Apple Pay. Square rejects this silently for any of: browser
-        // isn't Safari, the device has no card in Apple Wallet, or — the one
-        // that is actually a setup step rather than a device limitation —
-        // this domain was never registered for Apple Pay in the Square
-        // Developer Dashboard (Apple Pay → Add Domain). Logged rather than
-        // swallowed, since from the button's absence alone there is no way to
-        // tell which of those it is.
+        // With a real PaymentRequest, applePay() resolves to null — rather
+        // than throwing — when the device genuinely cannot pay: not Safari, no
+        // card in Wallet, or the domain not registered under this application
+        // in the Square dashboard. Null and a throw mean different things, so
+        // both are recorded; ?debug=wallet is what makes them readable on a
+        // phone, where there is no console.
         try {
           const ap = await payments.applePay(paymentRequest);
           note(`applePay() returned: ${ap ? "an object" : "null"}`);

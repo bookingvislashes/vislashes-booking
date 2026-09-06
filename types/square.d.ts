@@ -1,5 +1,11 @@
 interface SquarePayments {
   card(): Promise<SquareCard>;
+  /**
+   * Builds the PaymentRequest that applePay() and googlePay() require. Passing
+   * them a plain options object instead throws — which is exactly what this
+   * site did, so neither wallet ever initialised.
+   */
+  paymentRequest(options: SquarePaymentRequestOptions): SquarePaymentRequest;
   applePay(paymentRequest: SquarePaymentRequest): Promise<SquareApplePay | null>;
   googlePay(paymentRequest: SquarePaymentRequest): Promise<SquareGooglePay | null>;
   verifyBuyer(
@@ -31,10 +37,20 @@ interface SquareTokenResult {
   errors?: Array<{ message: string }>;
 }
 
-interface SquarePaymentRequest {
+/** The plain options handed to payments.paymentRequest(). */
+interface SquarePaymentRequestOptions {
   countryCode: string;
   currencyCode: string;
   total: { amount: string; label: string };
+}
+
+/**
+ * Opaque: what payments.paymentRequest() hands back. Deliberately not the same
+ * type as the options above, so the mistake that broke both wallets — handing
+ * the raw options straight to applePay() — is now a compile error.
+ */
+interface SquarePaymentRequest {
+  readonly __brand: unique symbol;
 }
 
 interface SquareVerificationDetails {
