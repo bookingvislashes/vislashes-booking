@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.32.1",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "fixed",
+        text: "The Apple Pay and Google Pay buttons were often missing from the booking page. The payment code loads a moment after the rest of the page, and the booking form gave up if it wasn't ready the instant it looked — so the buttons never appeared, with nothing to explain why. It now waits for it.",
+      },
+      {
+        kind: "fixed",
+        text: "The card box on the booking page could come up blank for the same reason, and just sat there doing nothing. It now waits too, and tells the client to refresh if it truly can't load.",
+      },
+    ],
+  },
+  {
     version: "1.32.0",
     date: "2026-09-06",
     changes: [

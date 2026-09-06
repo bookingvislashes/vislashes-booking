@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { waitForSquare } from "@/lib/wait-for-square";
 
 interface SquareWalletButtonProps {
   depositAmount: number;
@@ -31,10 +32,19 @@ export function SquareWalletButton({
   const attemptIdRef = useRef<string>(crypto.randomUUID());
 
   useEffect(() => {
+    let cancelled = false;
+
     const init = async () => {
-      if (!window.Square) return;
+      // The SDK is lazy-loaded in the root layout, so on a cold open it is
+      // usually not on `window` yet when this mounts. This used to be a bare
+      // `if (!window.Square) return;`, which lost that race silently and left
+      // the wallet uninitialised — the Apple Pay button then never rendered,
+      // with no error anywhere to say why.
+      const square = await waitForSquare(6000, () => cancelled);
+      if (cancelled || !square) return;
+
       try {
-        const payments = await window.Square.payments(
+        const payments = await square.payments(
           process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID!,
           process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID!
         );
@@ -56,7 +66,7 @@ export function SquareWalletButton({
         // tell which of those it is.
         try {
           const ap = await payments.applePay(paymentRequest);
-          if (ap) {
+          if (ap && !cancelled) {
             applePayRef.current = ap;
             setApplePayReady(true);
           }
@@ -71,7 +81,7 @@ export function SquareWalletButton({
         // Android and desktop-Chrome customer saw blank space.
         try {
           const gp = await payments.googlePay(paymentRequest);
-          if (gp && googlePayContainerRef.current) {
+          if (gp && googlePayContainerRef.current && !cancelled) {
             await gp.attach("#square-google-pay");
             googlePayRef.current = gp;
             setGooglePayReady(true);
@@ -84,6 +94,10 @@ export function SquareWalletButton({
       }
     };
     init();
+
+    return () => {
+      cancelled = true;
+    };
   }, [depositAmount, serviceName]);
 
   const processPayment = useCallback(

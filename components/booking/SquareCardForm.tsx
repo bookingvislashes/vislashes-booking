@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { waitForSquare } from "@/lib/wait-for-square";
 import { Button } from "@/components/ui/button";
 
 interface SquareCardFormProps {
@@ -29,10 +30,19 @@ export function SquareCardForm({
   const attemptIdRef = useRef<string>(crypto.randomUUID());
 
   useEffect(() => {
+    let cancelled = false;
+
     const init = async () => {
-      if (!window.Square) return;
+      // Same race the wallet button lost: the SDK is lazy-loaded in the root
+      // layout, so a single check at mount can miss it and leave a dead form.
+      const square = await waitForSquare(6000, () => cancelled);
+      if (cancelled) return;
+      if (!square) {
+        onError("The payment form couldn't load. Please refresh the page.");
+        return;
+      }
       try {
-        const payments = await window.Square.payments(
+        const payments = await square.payments(
           process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID!,
           process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID!
         );
@@ -49,6 +59,7 @@ export function SquareCardForm({
     init();
 
     return () => {
+      cancelled = true;
       cardRef.current?.destroy();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
