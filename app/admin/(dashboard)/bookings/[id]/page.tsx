@@ -37,6 +37,23 @@ function formatDate(date: string) {
   });
 }
 
+/**
+ * How each deposit method should read. Without this the page printed the raw
+ * column — "via apple_cash" — which is fine for a developer and not for the
+ * person the page is for.
+ */
+const METHOD_LABELS: Record<string, string> = {
+  square: "card",
+  apple_pay: "Apple Pay",
+  google_pay: "Google Pay",
+  cash: "cash on the day",
+  zelle: "Zelle",
+  venmo: "Venmo",
+  apple_cash: "Apple Cash",
+  invoice: "invoice",
+  other: "another way",
+};
+
 export default function BookingDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -278,9 +295,40 @@ export default function BookingDetailPage() {
             ) : (
               <span className="text-deep-brown font-semibold">Not paid</span>
             )}
-            <span className="text-muted"> · via {booking.payment_method}</span>
+            <span className="text-muted">
+              {" "}
+              ·{" "}
+              {booking.deposit_paid ? "by " : "expected as "}
+              {METHOD_LABELS[booking.payment_method] || booking.payment_method}
+            </span>
           </p>
         </Section>
+
+        {(booking.notes ||
+          booking.booking_source ||
+          booking.booked_by === "admin") && (
+          <Section title="Notes">
+            {booking.notes && (
+              <p className="text-[16px] text-charcoal whitespace-pre-wrap">
+                {booking.notes}
+              </p>
+            )}
+            {booking.booking_source && (
+              <p className="text-[12px] text-muted mt-1">
+                Came from {booking.booking_source}
+              </p>
+            )}
+            {booking.booked_by === "admin" && (
+              // Said out loud rather than left as an empty Intake section
+              // below. An appointment booked by hand has nobody's signature
+              // behind it yet, and that has to happen before any lashes go on.
+              <p className="text-[14px] text-deep-brown font-semibold mt-2">
+                You booked this one — she hasn&apos;t filled in the medical form
+                or signed the waiver yet.
+              </p>
+            )}
+          </Section>
+        )}
 
         {intake && (
           <Section title="Intake Answers">

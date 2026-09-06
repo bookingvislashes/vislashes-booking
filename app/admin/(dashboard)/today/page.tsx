@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { useRegisterRefresh } from "@/components/admin/RefreshProvider";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -43,11 +44,19 @@ interface Appointment {
   status: string;
   deposit_paid: boolean;
   deposit_amount: string | number | null;
+  has_removal: boolean;
   client_id: string | null;
   client_name: string;
   client_phone: string | null;
   service_name: string;
   price: number;
+}
+
+/** One sellable line from her Square library. */
+interface AddOn {
+  id: string;
+  name: string;
+  priceCents: number;
 }
 
 function money(value: string | number) {
@@ -70,16 +79,30 @@ export default function TodayPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Removal is priced in Settings, so it is read rather than assumed.
+  const [removalPrice, setRemovalPrice] = useState(0);
+
+  // ── Charging a card through the Square app ────────────────────────────
+  const [checkoutFor, setCheckoutFor] = useState<string | null>(null);
+  const [addOns, setAddOns] = useState<AddOn[]>([]);
+  const [addOnsError, setAddOnsError] = useState<string | null>(null);
+  const [addOnsLoading, setAddOnsLoading] = useState(false);
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const [addOnSearch, setAddOnSearch] = useState("");
+  const [handingOver, setHandingOver] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [chargeResult, setChargeResult] = useState<string | null>(null);
+
   const supabase = createClient();
   const today = todayISO();
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [bookingsRes, paymentsRes] = await Promise.all([
+    const [bookingsRes, paymentsRes, settingsRes] = await Promise.all([
       supabase
         .from("bookings")
         .select(
-          "id, time_slot, status, deposit_paid, deposit_amount, client_id, client:clients(full_name, phone), service:services(name, price)"
+          "id, time_slot, status, deposit_paid, deposit_amount, has_removal, client_id, client:clients(full_name, phone), service:services(name, price)"
         )
         .eq("booking_date", today)
         .in("status", ["confirmed", "completed"])
@@ -88,7 +111,10 @@ export default function TodayPage() {
         .from("payments")
         .select("id, booking_id, method, source, service_amount, tip_amount, total_collected")
         .eq("paid_on", today),
+      supabase.from("settings").select("key, value").eq("key", "removal_price"),
     ]);
+
+    setRemovalPrice(Number(settingsRes.data?.[0]?.value ?? 0));
 
     if (bookingsRes.error) {
       setError(bookingsRes.error.message);
@@ -102,6 +128,7 @@ export default function TodayPage() {
       status: string;
       deposit_paid: boolean;
       deposit_amount: string | number | null;
+      has_removal: boolean;
       client_id: string | null;
       client:
         | { full_name: string; phone: string | null }
@@ -122,6 +149,7 @@ export default function TodayPage() {
         status: b.status,
         deposit_paid: b.deposit_paid,
         deposit_amount: b.deposit_amount,
+        has_removal: b.has_removal,
         client_id: b.client_id,
         client_name: client?.full_name ?? "Unknown client",
         client_phone: client?.phone ?? null,
@@ -142,6 +170,26 @@ export default function TodayPage() {
     fetchAll();
   }, [fetchAll]);
 
+  // Square sends her back here with a flag on the URL. Read from
+  // window.location rather than useSearchParams so this page needs no
+  // Suspense boundary, then cleaned off so a refresh doesn't replay it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const charge = params.get("charge");
+    if (!charge) return;
+
+    setChargeResult(
+      charge === "done"
+        ? "Card charged. It'll appear against the appointment in a moment."
+        : charge === "failed"
+        ? `That charge didn't go through${
+            params.get("reason") ? ` (${params.get("reason")})` : ""
+          }.`
+        : "Came back from Square without charging."
+    );
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
+
   const paymentsByBooking = useMemo(() => {
     const map = new Map<string, Payment[]>();
     for (const p of payments) {
@@ -153,6 +201,13 @@ export default function TodayPage() {
     return map;
   }, [payments]);
 
+  function totalFor(appt: Appointment) {
+    // A removal booked with the set lengthens the appointment and adds to
+    // what is owed. This screen used to price the set alone, so every client
+    // who booked one was shown $25 too little to collect.
+    return appt.price + (appt.has_removal ? removalPrice : 0);
+  }
+
   function balanceFor(appt: Appointment) {
     const collected = (paymentsByBooking.get(appt.id) ?? []).reduce(
       (sum, p) => sum + Number(p.service_amount ?? 0),
@@ -160,7 +215,7 @@ export default function TodayPage() {
     );
     const deposit =
       appt.deposit_paid && appt.deposit_amount ? Number(appt.deposit_amount) : 0;
-    return Math.max(0, appt.price - deposit - collected);
+    return Math.max(0, totalFor(appt) - deposit - collected);
   }
 
   function tipsFor(appt: Appointment) {
@@ -170,9 +225,83 @@ export default function TodayPage() {
     );
   }
 
+  async function openCheckout(appt: Appointment) {
+    setCheckoutFor(appt.id);
+    setOpenFor(null);
+    setCart({});
+    setAddOnSearch("");
+    setCheckoutError(null);
+
+    // Her library is fetched the first time she opens a checkout, not on
+    // every page load: most visits to this screen never charge a card, and
+    // it is a round trip to Square.
+    if (addOns.length || addOnsLoading) return;
+    setAddOnsLoading(true);
+    setAddOnsError(null);
+    try {
+      const res = await fetch("/api/admin/square/catalog");
+      const body = await res.json();
+      if (!res.ok) {
+        setAddOnsError(body.error || "Couldn't load your Square library.");
+      } else {
+        setAddOns(body.items || []);
+      }
+    } catch {
+      setAddOnsError("Couldn't reach Square.");
+    } finally {
+      setAddOnsLoading(false);
+    }
+  }
+
+  function bumpAddOn(id: string, by: number) {
+    setCart((current) => {
+      const next = { ...current };
+      const quantity = (next[id] ?? 0) + by;
+      if (quantity <= 0) delete next[id];
+      else next[id] = quantity;
+      return next;
+    });
+  }
+
+  /**
+   * Hands the sale to the Square app. The total is worked out on the server
+   * from the booking and her Square prices — this only says which appointment
+   * and which extras, so nothing here can change what a client is charged.
+   */
+  async function chargeInSquare(appt: Appointment) {
+    setHandingOver(true);
+    setCheckoutError(null);
+    try {
+      const res = await fetch("/api/admin/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: appt.id,
+          addOns: Object.entries(cart).map(([id, quantity]) => ({
+            id,
+            quantity,
+          })),
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setCheckoutError(body.message || body.error || "Couldn't start that checkout.");
+        return;
+      }
+      // Leaves this page for the Square app. Nothing is recorded here — the
+      // webhook does that when Square reports the payment.
+      window.location.href = body.url;
+    } catch {
+      setCheckoutError("Something went wrong. Try again.");
+    } finally {
+      setHandingOver(false);
+    }
+  }
+
   function openForm(appt: Appointment) {
     const due = balanceFor(appt);
     setOpenFor(appt.id);
+    setCheckoutFor(null);
     setAmount(due > 0 ? due.toFixed(2) : "");
     setMethod("zelle");
     setFormError(null);
@@ -223,14 +352,39 @@ export default function TodayPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto">
-      <h1 className="font-display text-[28px] font-bold text-dark-brown">Today</h1>
-      <p className="font-sans text-[16px] text-muted mb-6 leading-[1.5]">
-        {new Date(today + "T12:00:00").toLocaleDateString("en-US", {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-        })}
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-[28px] font-bold text-dark-brown">
+            Today
+          </h1>
+          <p className="font-sans text-[16px] text-muted leading-[1.5]">
+            {new Date(today + "T12:00:00").toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
+          </p>
+        </div>
+        {/* Rebooking happens here, at the end of the appointment, with the
+            client still in the chair and her deposit already sent across. */}
+        <Link
+          href="/admin/bookings/new"
+          className="shrink-0 inline-flex items-center justify-center box-border h-control px-5 rounded-control border-2 border-transparent bg-text-brown text-white font-sans text-[14px] font-semibold hover:bg-deep-brown transition-colors"
+        >
+          + Book
+        </Link>
+      </div>
+
+      <div className="mb-6" />
+
+      {chargeResult && (
+        <p
+          role="status"
+          className="font-sans text-[15px] text-charcoal bg-white rounded-surface border border-light-tan px-4 py-3 mb-4"
+        >
+          {chargeResult}
+        </p>
+      )}
 
       {error && (
         <p className="font-sans text-[16px] text-danger mb-4">{error}</p>
@@ -249,6 +403,17 @@ export default function TodayPage() {
           const balance = balanceFor(appt);
           const tips = tipsFor(appt);
           const isOpen = openFor === appt.id;
+          const isCheckingOut = checkoutFor === appt.id;
+          const extrasCents = Object.entries(cart).reduce((sum, [id, qty]) => {
+            const item = addOns.find((a) => a.id === id);
+            return sum + (item ? item.priceCents * qty : 0);
+          }, 0);
+          const chargeTotal = balance + extrasCents / 100;
+          const visibleAddOns = addOnSearch.trim()
+            ? addOns.filter((a) =>
+                a.name.toLowerCase().includes(addOnSearch.trim().toLowerCase())
+              )
+            : addOns;
           return (
             <div
               key={appt.id}
@@ -297,14 +462,170 @@ export default function TodayPage() {
                 </div>
               </div>
 
-              {!isOpen && (
-                <Button
-                  className="mt-3 w-full"
-                  variant="secondary"
-                  onClick={() => openForm(appt)}
-                >
-                  Record payment
-                </Button>
+              {!isOpen && !isCheckingOut && (
+                <div className="flex gap-2 mt-3">
+                  {/* Card goes to the Square app, where Tap to Pay and her
+                      reader live. Everything else she takes by hand is
+                      recorded here. */}
+                  <Button
+                    className="flex-1"
+                    onClick={() => openCheckout(appt)}
+                  >
+                    Check out
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    variant="secondary"
+                    onClick={() => openForm(appt)}
+                  >
+                    Record payment
+                  </Button>
+                </div>
+              )}
+
+              {isCheckingOut && (
+                <div className="mt-3 pt-3 border-t border-light-tan">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-sans text-[12px] font-semibold text-dark-brown uppercase tracking-[0.6px]">
+                      Charging in Square
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutFor(null)}
+                      className="font-sans text-[14px] font-semibold text-text-brown cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  <dl className="font-sans text-[15px] mb-3">
+                    <div className="flex justify-between py-0.5">
+                      <dt className="text-muted">
+                        {appt.service_name}
+                        {appt.has_removal ? " + removal" : ""}
+                      </dt>
+                      <dd className="text-charcoal tabular-nums">
+                        {money(balance)}
+                      </dd>
+                    </div>
+                    {Object.entries(cart).map(([id, qty]) => {
+                      const item = addOns.find((a) => a.id === id);
+                      if (!item) return null;
+                      return (
+                        <div key={id} className="flex justify-between py-0.5">
+                          <dt className="text-muted">
+                            {item.name}
+                            {qty > 1 ? ` × ${qty}` : ""}
+                          </dt>
+                          <dd className="text-charcoal tabular-nums">
+                            {money((item.priceCents * qty) / 100)}
+                          </dd>
+                        </div>
+                      );
+                    })}
+                    <div className="flex justify-between py-1 mt-1 border-t border-light-tan font-semibold">
+                      <dt className="text-dark-brown">Total</dt>
+                      <dd className="text-dark-brown tabular-nums">
+                        {money(chargeTotal)}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  {/* Extras come straight from her Square library, so a price
+                      she changes in Square is the price charged here. */}
+                  <p className="font-sans text-[12px] font-semibold text-dark-brown mb-2">
+                    Add anything else
+                  </p>
+
+                  {addOnsLoading && (
+                    <p className="font-sans text-[14px] text-muted animate-pulse">
+                      Loading your Square library…
+                    </p>
+                  )}
+                  {addOnsError && (
+                    <p className="font-sans text-[14px] text-danger">
+                      {addOnsError}
+                    </p>
+                  )}
+
+                  {addOns.length > 0 && (
+                    <>
+                      <input
+                        value={addOnSearch}
+                        onChange={(e) => setAddOnSearch(e.target.value)}
+                        placeholder="Search — lash care kit, removal…"
+                        className="w-full h-control box-border bg-white border border-light-tan rounded-control px-3 text-[16px] md:text-[14px] text-charcoal font-sans placeholder:text-muted focus:border-deep-brown transition-colors mb-2"
+                      />
+                      <div className="max-h-56 overflow-y-auto rounded-control border border-light-tan">
+                        {visibleAddOns.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between gap-2 px-3 py-2 border-b border-light-tan last:border-b-0"
+                          >
+                            <div className="min-w-0">
+                              <p className="font-sans text-[15px] text-charcoal truncate">
+                                {item.name}
+                              </p>
+                              <p className="font-sans text-[12px] text-muted tabular-nums">
+                                {money(item.priceCents / 100)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {cart[item.id] ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    aria-label={`One fewer ${item.name}`}
+                                    onClick={() => bumpAddOn(item.id, -1)}
+                                    className="w-9 h-9 rounded-control border border-light-tan font-sans text-[18px] text-charcoal cursor-pointer"
+                                  >
+                                    −
+                                  </button>
+                                  <span className="font-sans text-[15px] font-semibold text-dark-brown tabular-nums w-4 text-center">
+                                    {cart[item.id]}
+                                  </span>
+                                </>
+                              ) : null}
+                              <button
+                                type="button"
+                                aria-label={`Add ${item.name}`}
+                                onClick={() => bumpAddOn(item.id, 1)}
+                                className="w-9 h-9 rounded-control border border-light-tan font-sans text-[18px] text-charcoal cursor-pointer"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {visibleAddOns.length === 0 && (
+                          <p className="font-sans text-[14px] text-muted px-3 py-3">
+                            Nothing in your library matches that.
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {checkoutError && (
+                    <p className="font-sans text-[14px] text-danger mt-2">
+                      {checkoutError}
+                    </p>
+                  )}
+
+                  <Button
+                    className="w-full mt-3"
+                    size="lg"
+                    onClick={() => chargeInSquare(appt)}
+                    disabled={handingOver || chargeTotal <= 0}
+                  >
+                    {handingOver
+                      ? "Opening Square…"
+                      : `Charge ${money(chargeTotal)} in Square`}
+                  </Button>
+                  <p className="font-sans text-[12px] text-muted mt-2 text-center">
+                    Opens the Square app with the amount and {appt.client_name.split(" ")[0]} already on it.
+                  </p>
+                </div>
               )}
 
               {isOpen && (

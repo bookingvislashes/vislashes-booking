@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { waitForSquare } from "@/lib/wait-for-square";
 import { Button } from "@/components/ui/button";
 
 interface InvoicePaymentProps {
@@ -39,18 +40,16 @@ export function InvoicePayment({
     const init = async () => {
       // The SDK is loaded lazily in the root layout, so on a cold open it may
       // not be on `window` yet. Poll briefly rather than failing the page.
-      for (let i = 0; i < 40 && !window.Square; i += 1) {
-        await new Promise((r) => setTimeout(r, 100));
-      }
+      const square = await waitForSquare(4000, () => cancelled);
       if (cancelled) return;
 
-      if (!window.Square) {
+      if (!square) {
         setError("The payment form couldn't load. Please refresh the page.");
         return;
       }
 
       try {
-        const payments = await window.Square.payments(
+        const payments = await square.payments(
           process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID!,
           process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID!
         );

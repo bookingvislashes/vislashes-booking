@@ -53,7 +53,20 @@ export interface Booking {
   booking_date: string;
   time_slot: string;
   status: "confirmed" | "completed" | "cancelled" | "no_show";
-  payment_method: "square" | "apple_pay" | "google_pay" | "cash";
+  /**
+   * How the deposit arrived. The first four come from the checkout page; the
+   * rest are the ways the salon is handed one herself (migration 017).
+   */
+  payment_method:
+    | "square"
+    | "apple_pay"
+    | "google_pay"
+    | "cash"
+    | "zelle"
+    | "venmo"
+    | "apple_cash"
+    | "invoice"
+    | "other";
   deposit_paid: boolean;
   deposit_amount: number | null;
   square_payment_id: string | null;
@@ -64,6 +77,10 @@ export interface Booking {
   reminder_sent_at: string | null;
   /** Free text, only when the admin gave one on cancelling (migration 007). */
   cancellation_reason: string | null;
+  /** Who made it. 'admin' has no intake form or signed waiver behind it (017). */
+  booked_by: "client" | "admin";
+  /** "Instagram DM", "Text" — where the appointment came from (017). */
+  booking_source: string | null;
   created_at: string;
   updated_at: string;
 }

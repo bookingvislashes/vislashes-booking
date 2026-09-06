@@ -20,11 +20,43 @@ interface BookingEmailData {
   depositAmount: number;
   totalPrice: number;
   paymentMethod: string;
+  /**
+   * Whether the deposit is actually in hand. Optional, and it has to stay
+   * that way: the checkout path never passes it, and there "not cash" has
+   * always meant "a card was just charged". An appointment the salon books
+   * herself is the case that breaks that assumption — a deposit sent by
+   * Zelle is paid and is not cash, and an invoice she has just texted is
+   * neither.
+   */
+  depositPaid?: boolean;
+  /** "Zelle", "Apple Cash" — named so the client can recognise her own payment. */
+  depositMethodLabel?: string;
+  /**
+   * The studio's street address, read fresh from Settings by the caller.
+   * Deliberately not baked into this template as a constant: the address is
+   * private — it never appears on a public page — and only ever reaches
+   * someone through this email, sent once she has actually booked and paid a
+   * deposit. Null when Settings could not be read; the location section is
+   * then simply omitted rather than printing a placeholder.
+   */
+  studioAddress?: string | null;
 }
 
 export async function sendConfirmationEmail(data: BookingEmailData) {
   const isCash = data.paymentMethod === "cash";
-  const remainingBalance = data.totalPrice - (isCash ? 0 : data.depositAmount);
+  const depositPaid = data.depositPaid ?? !isCash;
+  const depositHeld = depositPaid ? data.depositAmount : 0;
+  // Floored at zero. A deposit larger than the service price would otherwise
+  // print a negative balance as though the salon owed the client money.
+  const remainingBalance = Math.max(0, data.totalPrice - depositHeld);
+
+  const depositLine = depositPaid
+    ? `$${data.depositAmount.toFixed(2)} paid${
+        data.depositMethodLabel ? ` (${data.depositMethodLabel})` : ""
+      }`
+    : isCash
+    ? "Cash payment due at appointment"
+    : `$${data.depositAmount.toFixed(2)} due to hold your spot`;
 
   try {
     await getResend().emails.send({
@@ -43,15 +75,19 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
               <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">SERVICE</p>
               <p style="margin:0 0 16px;font-size:16px;color:#3D2B1F;font-weight:600;">${data.serviceName}</p>
               <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">DATE & TIME</p>
-              <p style="margin:0 0 16px;font-size:16px;color:#3D2B1F;font-weight:600;">${data.bookingDate} at ${data.timeSlot}</p>
+              <p style="margin:0 0 16px;font-size:16px;color:#3D2B1F;font-weight:600;">${friendlyDate(data.bookingDate)} at ${data.timeSlot}</p>
               <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">DURATION</p>
               <p style="margin:0 0 16px;font-size:16px;color:#3D2B1F;font-weight:600;">${data.duration}</p>
               <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">DEPOSIT</p>
               <p style="margin:0;font-size:16px;color:#3D2B1F;font-weight:600;">
-                ${isCash ? "Cash payment due at appointment" : `$${data.depositAmount.toFixed(2)} paid`}
+                ${depositLine}
               </p>
               ${remainingBalance > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:#9A9A9A;">Remaining balance: $${remainingBalance.toFixed(2)} due at appointment</p>` : ""}
             </div>
+            ${data.studioAddress ? `
+            <h3 style="color:#3D2B1F;font-size:16px;margin-bottom:8px;">Location</h3>
+            <p style="color:#2C2C2C;font-size:14px;margin-bottom:24px;">${data.studioAddress}</p>
+            ` : ""}
             <h3 style="color:#3D2B1F;font-size:16px;margin-bottom:8px;">What to Expect</h3>
             <ul style="color:#2C2C2C;font-size:14px;padding-left:20px;">
               <li>Come with clean lashes, no eye makeup</li>
@@ -164,7 +200,7 @@ export async function sendCancellationEmail(data: {
             </h1>
             <h2 style="color:#3D2B1F;font-size:22px;margin-bottom:8px;">Appointment Cancelled</h2>
             <p style="color:#2C2C2C;font-size:14px;">
-              Hi ${data.clientName.split(" ")[0]}, your appointment on ${data.bookingDate} at ${data.timeSlot} has been cancelled.
+              Hi ${data.clientName.split(" ")[0]}, your appointment on ${friendlyDate(data.bookingDate)} at ${data.timeSlot} has been cancelled.
             </p>
             ${data.depositPaid ? '<p style="color:#2C2C2C;font-size:14px;">Your deposit will be refunded within 5-10 business days.</p>' : ""}
             <p style="color:#2C2C2C;font-size:14px;">

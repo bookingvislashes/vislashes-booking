@@ -5,6 +5,7 @@ import { UseFormReturn } from "react-hook-form";
 import { BookingFormData } from "@/lib/schemas";
 import { Modal } from "@/components/ui/modal";
 import SignatureCanvas from "react-signature-canvas";
+import { WAIVER_TEXT, buildTerms } from "@/lib/legal";
 
 interface AgreementFormProps {
   form: UseFormReturn<BookingFormData>;
@@ -17,32 +18,6 @@ interface AgreementFormProps {
    */
   depositAmount: number;
 }
-
-const WAIVER_TEXT = `LASH CONSENTS, RELEASE, AND WAIVER OF LIABILITY AGREEMENT
-
-By signing this agreement, I acknowledge that I have been informed of the potential risks associated with eyelash extension application, including but not limited to: allergic reactions to adhesive or other products, eye irritation, temporary or permanent loss of natural eyelashes, and eye infections.
-
-I confirm that I have disclosed all relevant medical conditions and allergies. I understand that the lash artist is not a medical professional and cannot provide medical advice.
-
-I release VIS Lashes, its owner, and its employees from any liability for injury or damage that may result from the application of eyelash extensions.
-
-I understand that results may vary and that VIS Lashes does not guarantee specific outcomes.`;
-
-// Clause 6 previously promised PayPal, which does not exist anywhere in the
-// codebase and is not even a permitted value of bookings.payment_method — while
-// omitting Google Pay, which is offered. Clause 7 charged a $3 cash fee that
-// nothing collects and no column records.
-const buildTerms = (depositAmount: number) => `TERMS AND CONDITIONS
-
-1. A $${depositAmount.toFixed(2)} non-refundable deposit is required to secure your appointment.
-2. Cancellations must be made at least 24 hours before the scheduled appointment.
-3. Late cancellations or no-shows may forfeit the deposit.
-4. Please arrive with clean, makeup-free eyes.
-5. The deposit is paid at the time of booking by card, Apple Pay, or Google Pay.
-6. The remaining balance is due at your appointment and may be paid by cash or card.
-7. Refills are recommended every 2-3 weeks.
-8. VIS Lashes is not responsible for improper aftercare by the client.
-9. By booking an appointment, you agree to these terms and conditions.`;
 
 export function AgreementForm({ form, depositAmount }: AgreementFormProps) {
   const TERMS_TEXT = buildTerms(depositAmount);

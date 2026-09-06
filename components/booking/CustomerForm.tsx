@@ -45,6 +45,20 @@ export function CustomerForm({ form }: CustomerFormProps) {
           {...register("email")}
         />
       </div>
+
+      {/* Consent, shown where the number is actually collected.
+          US carriers require A2P senders to disclose at the point of capture
+          what the number will be used for and how to stop — and the 10DLC
+          campaign review asks for the page this appears on. It says texts only,
+          names the three that get sent, and promises no marketing, because that
+          is exactly what the site does. If the messages ever change, this
+          has to change with them. */}
+      <p className="font-sans text-[12px] text-muted leading-[1.6] mt-4">
+        By booking, you agree to receive appointment texts from VIS Lashes: a
+        confirmation, a reminder two days before, and one two hours before. No
+        marketing, ever. Reply STOP any time to stop them — your appointment is
+        unaffected. Message and data rates may apply.
+      </p>
     </div>
   );
 }

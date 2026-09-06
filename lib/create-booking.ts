@@ -1,6 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { sendConfirmationEmail } from "./email";
-import { createBookingEvent } from "./google-calendar";
+import { confirmationText, isSmsConfigured, sendSms, toE164 } from "./sms";
+import { syncBookingEvent } from "./google-calendar";
 
 interface BookingFormData {
   serviceId: string;
@@ -229,6 +230,24 @@ export async function createBooking({
   const appointmentTotal =
     Number(service.price) + (removalAdded ? removalPrice : 0);
 
+  // The studio address is private — it is deliberately absent from the public
+  // pages (the privacy policy, the site footer) and only ever reaches someone
+  // after she has booked and paid a deposit. The confirmation email and text
+  // are that moment: both go out once, to the person who just paid, and never
+  // anywhere public. Read fresh per booking rather than baked into a template,
+  // so a studio move only ever requires an edit in Settings.
+  let studioAddress: string | null = null;
+  try {
+    const { data: addressRow } = await supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "business_address")
+      .maybeSingle();
+    studioAddress = addressRow?.value ?? null;
+  } catch {
+    // Left null: both messages simply omit the address rather than guessing.
+  }
+
   try {
     await sendConfirmationEmail({
       clientName: formData.fullName,
@@ -242,27 +261,48 @@ export async function createBooking({
       depositAmount: service.deposit_amount,
       totalPrice: appointmentTotal,
       paymentMethod: formData.paymentMethod,
+      studioAddress,
     });
   } catch (emailErr) {
     // Log but don't fail the booking if email fails
     console.error("Failed to send confirmation email:", emailErr);
   }
 
+  // The same confirmation as a text. Best-effort on exactly the same terms as
+  // the email above: the card is already charged and the booking already
+  // written, so nothing here is allowed to fail the booking. Skipped silently
+  // when Twilio is not configured, or when the number cannot be parsed.
+  if (isSmsConfigured()) {
+    const phone = toE164(formData.phone);
+    if (phone) {
+      try {
+        await sendSms(
+          phone,
+          confirmationText({
+            clientName: formData.fullName,
+            serviceName: removalAdded
+              ? `${service.name} + lash removal`
+              : service.name,
+            bookingDate: formData.bookingDate,
+            timeSlot: formData.timeSlot,
+            depositAmount: Number(service.deposit_amount),
+            address: studioAddress,
+          })
+        );
+      } catch (smsErr) {
+        console.error("Failed to send confirmation text:", smsErr);
+      }
+    }
+  }
+
   // 7. Put it on her Google Calendar, if she has connected one. Same
-  // best-effort contract as the email above: createBookingEvent catches its
-  // own failures, because by this point the card has already been charged.
-  await createBookingEvent(supabase, {
-    bookingId: booking.id,
-    serviceName: removalAdded
-      ? `${service.name} + lash removal`
-      : service.name,
-    durationMinutes: appointmentMinutes,
-    clientName: fullName,
-    clientEmail: email,
-    clientPhone: formData.phone,
-    bookingDate: formData.bookingDate,
-    timeSlot: formData.timeSlot,
-  });
+  // best-effort contract as the email above: syncBookingEvent catches its own
+  // failures, because by this point the card has already been charged.
+  //
+  // It is given the id alone and reads the rest back itself, so the event
+  // carries the deposit and the intake answers this function has just written
+  // — the details that make the entry worth opening on a phone.
+  await syncBookingEvent(supabase, booking.id);
 
   return { bookingId: booking.id, clientId };
 }

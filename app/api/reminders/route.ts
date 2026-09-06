@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendReminderEmail } from "@/lib/email";
+import {
+  isSmsConfigured,
+  sendSms,
+  toE164,
+  twoDayText,
+  twoHourText,
+  SmsOptedOutError,
+} from "@/lib/sms";
 
 /**
  * Appointment reminders, in the two windows she asked for: two days before,
@@ -12,9 +20,15 @@ import { sendReminderEmail } from "@/lib/email";
  * nothing. Point an hourly scheduler at this URL (or move to a plan with
  * hourly crons) and the second reminder starts working with no code change.
  *
- * Everything here is email. SMS needs a paid provider and a registered
- * sending number, which is a decision rather than a code change — when that
- * exists, it hooks in beside sendReminderEmail in `send()` below.
+ * Each window sends by email and, when Twilio is configured, by text as well.
+ * The two are independent: a text failing never costs someone their email, and
+ * a client with no email still gets the text. A window is only stamped once at
+ * least one of them has actually gone out, so an outage retries on the next
+ * run instead of silently marking everyone as reminded.
+ *
+ * With no Twilio credentials set, the SMS half is skipped entirely and this
+ * behaves exactly as it did before — so it is safe to deploy ahead of the
+ * account existing.
  */
 
 // The salon is in Florida and the cron fires in UTC, so every date and hour
@@ -83,7 +97,13 @@ interface ReminderRow {
   booking_date: string;
   time_slot: string;
   deposit_amount: number | string | null;
-  clients: { full_name: string; email: string } | null;
+  clients: {
+    id: string;
+    full_name: string;
+    email: string | null;
+    phone: string | null;
+    sms_opt_out: boolean | null;
+  } | null;
   services: { name: string; price: number | string; duration_minutes: number } | null;
 }
 
@@ -107,8 +127,19 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = await createServiceClient();
 
+    // The two-hour text is the one that has to get someone to the door, so it
+    // carries the address. Read from Settings rather than written here: a
+    // hardcoded address survives a move and sends a client to the wrong house.
+    // Absent means the text simply omits it.
+    const { data: addressRow } = await supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "business_address")
+      .maybeSingle();
+    const salonAddress = addressRow?.value ?? null;
+
     const select =
-      "id, booking_date, time_slot, deposit_amount, clients(full_name, email), services(name, price, duration_minutes)";
+      "id, booking_date, time_slot, deposit_amount, clients(id, full_name, email, phone, sms_opt_out), services(name, price, duration_minutes)";
 
     const normalise = (rows: unknown[]): ReminderRow[] =>
       (rows || []).map((row) => {
@@ -129,38 +160,88 @@ export async function GET(req: NextRequest) {
           .update({ [column]: new Date().toISOString() })
           .eq("id", booking.id);
 
-      if (!booking.clients?.email || !booking.services) {
-        // Nothing to send to. Stamped anyway so a permanently unsendable row
-        // is not retried on every run forever.
+      const client = booking.clients;
+      const phone = client?.sms_opt_out ? null : toE164(client?.phone);
+
+      if (!booking.services || !client || (!client.email && !phone)) {
+        // No way to reach this person at all. Stamped anyway so a permanently
+        // unsendable row is not retried on every run forever.
         await stamp();
         return "skipped" as const;
       }
 
-      try {
-        await sendReminderEmail({
-          clientName: booking.clients.full_name,
-          clientEmail: booking.clients.email,
+      // Tracked separately: one shared flag would mean a text going out and an
+      // email going out were indistinguishable, and the stamp below has to
+      // know whether ANYTHING reached her.
+      let emailed = false;
+      let texted = false;
+
+      if (client.email) {
+        try {
+          await sendReminderEmail({
+            clientName: client.full_name,
+            clientEmail: client.email,
+            serviceName: booking.services.name,
+            bookingDate: booking.booking_date,
+            timeSlot: booking.time_slot,
+            duration: formatDuration(booking.services.duration_minutes),
+            depositAmount: Number(booking.deposit_amount ?? 0),
+            totalPrice: Number(booking.services.price),
+            paymentMethod: "square",
+            window: windowName,
+          });
+          emailed = true;
+        } catch (err) {
+          console.error(
+            `Reminders: ${windowName} email failed for booking ${booking.id}:`,
+            err
+          );
+        }
+      }
+
+      if (phone && isSmsConfigured()) {
+        const details = {
+          clientName: client.full_name,
           serviceName: booking.services.name,
           bookingDate: booking.booking_date,
           timeSlot: booking.time_slot,
-          duration: formatDuration(booking.services.duration_minutes),
-          depositAmount: Number(booking.deposit_amount ?? 0),
-          totalPrice: Number(booking.services.price),
-          paymentMethod: "square",
-          window: windowName,
-        });
+          address: salonAddress,
+        };
+        try {
+          await sendSms(
+            phone,
+            windowName === "twoDay" ? twoDayText(details) : twoHourText(details)
+          );
+          texted = true;
+        } catch (err) {
+          if (err instanceof SmsOptedOutError) {
+            // She replied STOP. Recorded so we stop trying, rather than
+            // failing this same send on every run from here on. Her email
+            // reminders carry on untouched.
+            await supabase
+              .from("clients")
+              .update({ sms_opt_out: true })
+              .eq("id", client.id);
+            console.warn(
+              `Reminders: ${client.id} has opted out of texts; flagged.`
+            );
+          } else {
+            console.error(
+              `Reminders: ${windowName} text failed for booking ${booking.id}:`,
+              err
+            );
+          }
+        }
+      }
 
-        // Stamped only after the send resolves, so a failure leaves the row
-        // eligible for the next run rather than being silently skipped.
+      if (emailed || texted) {
+        // Stamped only once something actually went out, so an outage leaves
+        // the row eligible for the next run rather than silently skipping it.
         await stamp();
         return "sent" as const;
-      } catch (err) {
-        console.error(
-          `Reminders: ${windowName} send failed for booking ${booking.id}:`,
-          err
-        );
-        return "failed" as const;
       }
+
+      return "failed" as const;
     };
 
     // ── Two days out ─────────────────────────────────────────────────────

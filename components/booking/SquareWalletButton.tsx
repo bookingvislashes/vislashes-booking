@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { waitForSquare } from "@/lib/wait-for-square";
 
 interface SquareWalletButtonProps {
   depositAmount: number;
@@ -23,6 +24,12 @@ export function SquareWalletButton({
   // was indistinguishable from Google Pay succeeding.
   const [applePayReady, setApplePayReady] = useState(false);
   const [googlePayReady, setGooglePayReady] = useState(false);
+  // Only ever populated when the URL carries ?debug=wallet. Apple Pay failing
+  // is silent by design — Square returns null for "this device can't" and for
+  // "this domain isn't registered" alike, and on an iPhone there is no console
+  // to read the difference from. This surfaces it on the page instead, for the
+  // salon owner only.
+  const [diagnostics, setDiagnostics] = useState<string[]>([]);
   const [processing, setProcessing] = useState(false);
   const applePayRef = useRef<SquareApplePay | null>(null);
   const googlePayRef = useRef<SquareGooglePay | null>(null);
@@ -31,37 +38,90 @@ export function SquareWalletButton({
   const attemptIdRef = useRef<string>(crypto.randomUUID());
 
   useEffect(() => {
+    let cancelled = false;
+
     const init = async () => {
-      if (!window.Square) return;
+      // The SDK is lazy-loaded in the root layout, so on a cold open it is
+      // usually not on `window` yet when this mounts. This used to be a bare
+      // `if (!window.Square) return;`, which lost that race silently and left
+      // the wallet uninitialised — the Apple Pay button then never rendered,
+      // with no error anywhere to say why.
+      const debugging =
+        typeof window !== "undefined" &&
+        new URLSearchParams(window.location.search).get("debug") === "wallet";
+      const notes: string[] = [];
+      const note = (line: string) => {
+        notes.push(line);
+        if (debugging) setDiagnostics([...notes]);
+      };
+
+      const square = await waitForSquare(6000, () => cancelled);
+      if (cancelled) return;
+      note(`SDK loaded: ${square ? "yes" : "NO — gave up after 6s"}`);
+      if (!square) return;
+
+      if (debugging) {
+        const w = window as unknown as Record<string, unknown>;
+        const session = w.ApplePaySession as
+          | { canMakePayments?: () => boolean; supportsVersion?: (v: number) => boolean }
+          | undefined;
+        note(`host: ${window.location.hostname}`);
+        note(`ApplePaySession present: ${session ? "yes" : "NO"}`);
+        if (session?.canMakePayments) {
+          try {
+            note(`canMakePayments: ${session.canMakePayments()}`);
+          } catch (err) {
+            note(`canMakePayments threw: ${String(err)}`);
+          }
+        }
+        if (session?.supportsVersion) {
+          try {
+            note(`supportsVersion(3): ${session.supportsVersion(3)}`);
+          } catch {
+            note("supportsVersion threw");
+          }
+        }
+        note(`appId: ${String(process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID).slice(0, 12)}…`);
+        note(`locationId: ${String(process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID)}`);
+      }
+
       try {
-        const payments = await window.Square.payments(
+        const payments = await square.payments(
           process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID!,
           process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID!
         );
-        const paymentRequest: SquarePaymentRequest = {
+        // Square requires the request to be built through paymentRequest()
+        // rather than passed as a plain object. Handing applePay() the raw
+        // options throws "expected property: paymentRequest of type
+        // PaymentRequest" — which is why neither wallet ever appeared, on any
+        // device, since this component was written. The throw was caught and
+        // logged to a console nobody reads on a phone, so it looked like an
+        // Apple restriction or a missing domain registration instead.
+        const paymentRequest = payments.paymentRequest({
           countryCode: "US",
           currencyCode: "USD",
           total: {
             amount: depositAmount.toFixed(2),
             label: `VIS Lashes Deposit - ${serviceName}`,
           },
-        };
+        });
 
-        // Try Apple Pay. Square rejects this silently for any of: browser
-        // isn't Safari, the device has no card in Apple Wallet, or — the one
-        // that is actually a setup step rather than a device limitation —
-        // this domain was never registered for Apple Pay in the Square
-        // Developer Dashboard (Apple Pay → Add Domain). Logged rather than
-        // swallowed, since from the button's absence alone there is no way to
-        // tell which of those it is.
+        // With a real PaymentRequest, applePay() resolves to null — rather
+        // than throwing — when the device genuinely cannot pay: not Safari, no
+        // card in Wallet, or the domain not registered under this application
+        // in the Square dashboard. Null and a throw mean different things, so
+        // both are recorded; ?debug=wallet is what makes them readable on a
+        // phone, where there is no console.
         try {
           const ap = await payments.applePay(paymentRequest);
-          if (ap) {
+          note(`applePay() returned: ${ap ? "an object" : "null"}`);
+          if (ap && !cancelled) {
             applePayRef.current = ap;
             setApplePayReady(true);
           }
         } catch (err) {
           console.warn("Apple Pay unavailable:", err);
+          note(`applePay() threw: ${err instanceof Error ? err.message : String(err)}`);
         }
 
         // Try Google Pay. The container is mounted unconditionally now — it
@@ -71,7 +131,7 @@ export function SquareWalletButton({
         // Android and desktop-Chrome customer saw blank space.
         try {
           const gp = await payments.googlePay(paymentRequest);
-          if (gp && googlePayContainerRef.current) {
+          if (gp && googlePayContainerRef.current && !cancelled) {
             await gp.attach("#square-google-pay");
             googlePayRef.current = gp;
             setGooglePayReady(true);
@@ -81,9 +141,14 @@ export function SquareWalletButton({
         }
       } catch (err) {
         console.error("Failed to initialize Square wallets:", err);
+        note(`payments() threw: ${err instanceof Error ? err.message : String(err)}`);
       }
     };
     init();
+
+    return () => {
+      cancelled = true;
+    };
   }, [depositAmount, serviceName]);
 
   const processPayment = useCallback(
@@ -181,6 +246,21 @@ export function SquareWalletButton({
         onClick={handleGooglePay}
         className={googlePayReady ? "" : "hidden"}
       />
+      {diagnostics.length > 0 && (
+        <div className="rounded-control border border-light-tan bg-white p-3 text-left">
+          <p className="font-sans text-[11px] font-semibold text-muted uppercase tracking-[1px] mb-1">
+            Wallet check
+          </p>
+          {diagnostics.map((line) => (
+            <p
+              key={line}
+              className="font-mono text-[11px] leading-[1.5] text-charcoal break-words"
+            >
+              {line}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -9,6 +9,8 @@ interface Status {
   connected: boolean;
   email?: string | null;
   connectedAt?: string | null;
+  /** The calendar appointments are written to, by its own name in Google. */
+  calendarName?: string | null;
   /** Set when the credentials are present but cannot work — see the API. */
   problem?: string | null;
 }
@@ -117,6 +119,23 @@ export function GoogleCalendarConnection() {
             {status.email && (
               <p className="font-sans text-[13px] text-charcoal mt-1 pl-4 break-all">
                 {status.email}
+              </p>
+            )}
+            {/* The question this panel could never answer before: not "is it
+                connected" but "which calendar will my appointments show up
+                on". Named from Google itself rather than inferred, so if it
+                is the wrong one she can see that at a glance. */}
+            {status.calendarName ? (
+              <p className="font-sans text-[13px] text-muted mt-1 pl-4">
+                Appointments go to{" "}
+                <strong className="text-dark-brown font-semibold">
+                  {status.calendarName}
+                </strong>
+              </p>
+            ) : (
+              <p className="font-sans text-[13px] text-muted mt-1 pl-4">
+                Couldn&apos;t read the calendar name just now — appointments
+                still go to this account&apos;s main calendar.
               </p>
             )}
           </div>

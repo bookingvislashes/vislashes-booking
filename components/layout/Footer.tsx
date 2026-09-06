@@ -21,6 +21,28 @@ export function Footer() {
             @vislashesbooking
           </Link>
         </div>
+        {/* Terms and privacy have to be reachable from every page: a carrier
+            reviewing the messaging campaign looks for them, and a client
+            deciding whether to hand over her phone number deserves to read
+            them without starting a booking first. */}
+        <div className="flex items-center gap-3 text-[12px] leading-none tracking-[0.3px]">
+          <Link
+            href="/terms"
+            className="font-sans text-white/60 hover:text-white transition-colors"
+          >
+            Terms
+          </Link>
+          <span aria-hidden="true" className="text-white/20">
+            ·
+          </span>
+          <Link
+            href="/privacy"
+            className="font-sans text-white/60 hover:text-white transition-colors"
+          >
+            Privacy
+          </Link>
+        </div>
+
         {/* Staff entry point. Deliberately quiet and in the footer rather than
             the header — it is for the salon, not for clients. */}
         <div className="flex items-center gap-2 text-[11px] leading-none tracking-[0.4px]">
