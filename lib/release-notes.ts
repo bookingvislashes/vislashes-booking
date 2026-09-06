@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.32.2",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "note",
+        text: "Apple Pay still isn't appearing on your phone, and the reason is hidden inside the browser where neither of us can read it. Open your booking page with ?debug=wallet on the end of the address, go to the payment step, and a small grey \"Wallet check\" box will appear under the payment buttons. Send me a photo of it and it will say exactly what is wrong. Your clients never see this box — it only appears with that wording in the address.",
+      },
+    ],
+  },
+  {
     version: "1.32.1",
     date: "2026-09-06",
     changes: [
