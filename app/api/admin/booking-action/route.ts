@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { syncBookingEvent, deleteBookingEvent } from "@/lib/google-calendar";
 import { sendCancellationEmail } from "@/lib/email";
+import { cancellationText, isSmsConfigured, sendSms, toE164 } from "@/lib/sms";
 
 /**
  * Cancel and reschedule, run server-side.
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
   const { data: booking, error: loadError } = await admin
     .from("bookings")
     .select(
-      "id, booking_date, time_slot, status, deposit_paid, client:clients(full_name, email)"
+      "id, booking_date, time_slot, status, deposit_paid, client:clients(full_name, email, phone, sms_opt_out)"
     )
     .eq("id", input.bookingId)
     .maybeSingle();
@@ -91,6 +92,28 @@ export async function POST(req: NextRequest) {
         });
       } catch (err) {
         console.error("Cancellation email failed:", err);
+      }
+    }
+
+    // Also by text. Of all the messages this site sends, this is the one a
+    // client most needs to see today rather than whenever she next opens her
+    // email — otherwise she drives to an appointment that is not happening.
+    // Best-effort, like the email: the cancellation is already saved.
+    if (isSmsConfigured() && !client?.sms_opt_out) {
+      const phone = toE164(client?.phone);
+      if (phone) {
+        try {
+          await sendSms(
+            phone,
+            cancellationText({
+              clientName: client.full_name,
+              bookingDate: booking.booking_date,
+              timeSlot: booking.time_slot,
+            })
+          );
+        } catch (err) {
+          console.error("Cancellation text failed:", err);
+        }
       }
     }
 

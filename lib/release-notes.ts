@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.36.1",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "Cancelling an appointment now texts the client as well as emailing her. Of everything the site sends, this is the one she most needs to see today rather than whenever she next checks email — otherwise she drives over for an appointment that isn't happening.",
+      },
+    ],
+  },
+  {
     version: "1.36.0",
     date: "2026-09-06",
     changes: [

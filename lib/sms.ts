@@ -167,6 +167,28 @@ export function twoDayText(a: AppointmentSms): string {
   );
 }
 
+/**
+ * Sent when the salon cancels an appointment from the admin. This is the one
+ * message a client most needs to actually see — an email she opens tomorrow is
+ * an email about a slot she has already driven to.
+ */
+export function cancellationText(a: {
+  clientName: string;
+  bookingDate: string;
+  timeSlot: string;
+  depositRefunded?: boolean;
+}): string {
+  const deposit = a.depositRefunded
+    ? `\n\nYour deposit will be refunded.`
+    : "";
+  return (
+    `Hi ${firstName(a.clientName)} — your VIS Lashes appointment on ` +
+    `${friendlyDate(a.bookingDate)} at ${a.timeSlot} has been cancelled.` +
+    `${deposit}\n\n` +
+    `Sorry for the change! Book again any time at vislashes.com.`
+  );
+}
+
 export function twoHourText(a: AppointmentSms): string {
   const where = a.address ? `\n${a.address}\n` : "\n";
   return (
