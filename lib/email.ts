@@ -71,12 +71,46 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
   }
 }
 
-export async function sendReminderEmail(data: BookingEmailData) {
+/** Which reminder this is. The wording is the only difference. */
+export type ReminderWindow = "twoDay" | "twoHour";
+
+const REMINDER_COPY: Record<ReminderWindow, { subject: string; lead: string }> = {
+  twoDay: {
+    subject: "Reminder: your lash appointment is in 2 days",
+    lead: "Your lash appointment is in two days.",
+  },
+  twoHour: {
+    subject: "See you soon — your lash appointment is in 2 hours",
+    lead: "Your lash appointment is in about two hours.",
+  },
+};
+
+/** "2026-09-08" reads as a database row, not a date. */
+function friendlyDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  const [, y, m, d] = match;
+  return new Date(Number(y), Number(m) - 1, Number(d), 12).toLocaleDateString(
+    "en-US",
+    { weekday: "long", month: "long", day: "numeric" }
+  );
+}
+
+/**
+ * Unlike the confirmation email, this one rethrows. Its caller stamps the
+ * booking as reminded only when the send resolves, so swallowing the error
+ * here would mark every booking reminded during a Resend outage and nobody
+ * would ever get one.
+ */
+export async function sendReminderEmail(
+  data: BookingEmailData & { window?: ReminderWindow }
+) {
+  const copy = REMINDER_COPY[data.window ?? "twoDay"];
   try {
     await getResend().emails.send({
       from: emailFrom,
       to: data.clientEmail,
-      subject: "Reminder: Your Lash Appointment is Tomorrow",
+      subject: copy.subject,
       html: `
         <div style="background-color:#F5F0EB;padding:40px 20px;font-family:Arial,sans-serif;">
           <div style="max-width:500px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
@@ -84,12 +118,12 @@ export async function sendReminderEmail(data: BookingEmailData) {
               VIS <em>LASHES</em>
             </h1>
             <h2 style="color:#3D2B1F;font-size:22px;margin-bottom:8px;">Hi ${data.clientName.split(" ")[0]}, just a friendly reminder!</h2>
-            <p style="color:#2C2C2C;font-size:14px;margin-bottom:24px;">Your lash appointment is tomorrow.</p>
+            <p style="color:#2C2C2C;font-size:14px;margin-bottom:24px;">${copy.lead}</p>
             <div style="background:#F5F0EB;border-radius:8px;padding:20px;margin-bottom:24px;">
               <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">SERVICE</p>
               <p style="margin:0 0 16px;font-size:16px;color:#3D2B1F;font-weight:600;">${data.serviceName}</p>
               <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">DATE & TIME</p>
-              <p style="margin:0;font-size:16px;color:#3D2B1F;font-weight:600;">${data.bookingDate} at ${data.timeSlot}</p>
+              <p style="margin:0;font-size:16px;color:#3D2B1F;font-weight:600;">${friendlyDate(data.bookingDate)} at ${data.timeSlot}</p>
             </div>
             <h3 style="color:#3D2B1F;font-size:16px;margin-bottom:8px;">Prep Tips</h3>
             <ul style="color:#2C2C2C;font-size:14px;padding-left:20px;">
@@ -106,6 +140,7 @@ export async function sendReminderEmail(data: BookingEmailData) {
     });
   } catch (error) {
     console.error("Failed to send reminder email:", error);
+    throw error;
   }
 }
 

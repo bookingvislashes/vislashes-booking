@@ -31,6 +31,32 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.29.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "note",
+        text: "Run migration 014 in the Supabase SQL Editor. Until you do, reminders will stop going out.",
+      },
+      {
+        kind: "changed",
+        text: "Reminders now go out two days before the appointment instead of one, which is what you had on Acuity. The email also reads properly now — \"Saturday, September 12\" instead of 2026-09-12.",
+      },
+      {
+        kind: "note",
+        text: "The two-hours-before reminder is built and waiting, but it can only send if the site checks more than once a day, and your current Vercel plan allows one check a day. Tell me and I'll set up a free hourly checker, or upgrading Vercel to Pro also does it.",
+      },
+      {
+        kind: "note",
+        text: "These reminders are email. Text messages need a paid texting service and a registered number — say the word and I'll walk you through what it costs and set it up.",
+      },
+      {
+        kind: "fixed",
+        text: "If the email service was down, reminders used to be marked as sent anyway and were never retried — so nobody got one and nothing showed it. They're now retried on the next check.",
+      },
+    ],
+  },
+  {
     version: "1.28.0",
     date: "2026-09-06",
     changes: [
