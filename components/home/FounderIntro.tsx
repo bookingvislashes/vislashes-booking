@@ -8,10 +8,14 @@ const PORTRAIT = "/images/vianney-portrait.webp";
 /**
  * Founder intro — Figma node 516:123 on the Home Page.
  *
- * Rewritten at her direction to speak straight to a first-time client's
- * hesitation (trusting someone new with your face) rather than lead with
- * studio facts. Copy is hers verbatim; split into three paragraphs here
- * purely for line length in a 380px column — no wording changed.
+ * Speaks straight to a first-time client's hesitation (trusting someone new
+ * with your face) rather than leading with studio facts.
+ *
+ * The body is the Figma text verbatim. A previous version here was longer —
+ * it added "mapped to your own eye shape — never a copy-paste set",
+ * "completely judgment-free", "not less", and a closing "Ready when you are,
+ * friend." Those were dropped to match the design; if she wants them back
+ * they are in the v1.26.0 commit.
  */
 export function FounderIntro() {
   const portraitReady = hasAsset(PORTRAIT);
@@ -25,6 +29,12 @@ export function FounderIntro() {
     // read as almost no gap at all. Bottom padding stays as designed so the
     // spacing to How to Book is unchanged.
     <section id="about" className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] pt-19 sm:pt-24 lg:pt-[120px] pb-12 sm:pb-14 lg:pb-[45px]">
+      {/* Figma node 715:205 — 52px display heading. It was absent here
+          entirely, so the section opened cold on body copy. */}
+      <h2 className="font-display font-bold text-[36px] sm:text-[44px] lg:text-[52px] leading-[1.1] text-dark-brown text-center mb-8 sm:mb-10 lg:mb-[56px]">
+        Meet Vianney
+      </h2>
+
       <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-12 lg:gap-[77px]">
         {/* The design uses a tall rounded oval rather than a circle — the
             radius is half the width, not half the height. */}
@@ -54,14 +64,10 @@ export function FounderIntro() {
             with your face feels like a big step.
           </p>
           <p className="font-sans text-[16px] sm:text-[18px] text-charcoal leading-[1.445]">
-            That&apos;s why every appointment starts with a real conversation
-            about the exact look you want, mapped to your own eye shape —
-            never a copy-paste set. My studio is private, calm, and
-            completely judgment-free. You&apos;ll leave feeling more like
-            yourself, not less.
-          </p>
-          <p className="font-sans text-[16px] sm:text-[18px] text-charcoal leading-[1.445]">
-            Ready when you are, friend. 🩷
+            That&apos;s why every appointment starts with a consultation about
+            the exact look you want. My studio is private, calm, and a
+            spa-like zone without the facials. You&apos;ll leave feeling more
+            like yourself.
           </p>
         </div>
       </div>

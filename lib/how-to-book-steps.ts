@@ -17,7 +17,8 @@ export const STEPS = [
   {
     number: "1",
     title: "Choose Your Look",
-    body: "Pick your set, tailored to your eye shape and desired fullness.",
+    body:
+      "Select a lash profile tailored to your eye shape and desired fullness, from classic to volume.",
     image: "/images/howtobook-choose.webp",
     alt: "Close-up of finished lash extensions",
   },
@@ -31,7 +32,8 @@ export const STEPS = [
   {
     number: "3",
     title: "Confirm & Arrive",
-    body: "You'll get appointment details, the address, and pre-care tips by email.",
+    body:
+      "Review your appointment details, studio address, and pre-care tips before your private session.",
     image: "/images/howtobook-arrive.webp",
     alt: "Client being prepared for a lash appointment",
   },

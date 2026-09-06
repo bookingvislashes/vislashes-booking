@@ -12,10 +12,13 @@ import Link from "next/link";
 
 export const CTA_HEIGHT = "h-control-lg";
 
+// Tailwind v4 compiles scale-* to the standalone `scale` property, not to
+// `transform`. This transitioned `transform` for a long time, which meant the
+// hover and press scales snapped rather than eased.
 const base =
   "inline-flex items-center justify-center box-border " +
   "rounded-control border-2 " +
-  "transition-[background-color,color,transform] duration-200 hover:scale-[1.03] active:scale-[0.98] " +
+  "transition-[background-color,color,scale] duration-200 hover:scale-[1.03] active:scale-[0.98] " +
   "motion-reduce:transition-none motion-reduce:hover:scale-100";
 
 const sizes = {

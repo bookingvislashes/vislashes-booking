@@ -21,15 +21,15 @@ export const revalidate = 60;
 // price and description all come from `featuredServices` below; only the
 // photo and its side are fixed here.
 //
-// Row 2 uses the real Wispy Set service photo rather than the historical
-// passion-photo.webp — that photo is the same photograph now used full-bleed
-// in the hero, so keeping it here would put the same face on the page twice.
-// Unlike the other two (alpha cut-outs that let card-beige show through),
-// this one is a full rectangular photo and fills its circle edge to edge —
-// expected and approved.
+// Row 2 is the same photograph now used full-bleed in the hero. That repetition
+// is deliberate: it is what the Figma design does, and it was tried the other
+// way. Substituting the service photo from Admin removed the repeat but the
+// only copy of it is 711x550, which upscaled into a 320px circle at 2x read as
+// visibly soft beside two sharp studio cut-outs. The repeat is the better of
+// the two flaws.
 const sectionVisuals: { imageSrc: string; imagePosition: "left" | "right" }[] = [
   { imageSrc: "/images/connection-photo.webp", imagePosition: "left" },
-  { imageSrc: "/images/wispy-set-photo.webp", imagePosition: "right" },
+  { imageSrc: "/images/passion-photo.webp", imagePosition: "right" },
   { imageSrc: "/images/chemistry-photo.webp", imagePosition: "left" },
 ];
 
@@ -150,7 +150,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-[100dvh] bg-cream">
-      <Header />
+      <Header tone="dark" />
 
       {/* Hero Section — parallax + mix-blend-difference */}
       <ParallaxHero />
@@ -201,7 +201,7 @@ export default async function HomePage() {
           {featureSections.map((section, index) => (
             <Reveal key={section.name} delay={index * 80}>
               <div
-                className={`flex flex-col items-center gap-6 mb-14 last:mb-0 md:mb-0 md:items-center md:justify-between md:py-8 lg:py-[48px] ${
+                className={`group flex flex-col items-center gap-6 mb-14 last:mb-0 md:mb-0 md:items-center md:justify-between md:py-8 lg:py-[48px] ${
                   section.imagePosition === "right" ? "md:flex-row-reverse" : "md:flex-row"
                 }`}
               >
@@ -212,7 +212,7 @@ export default async function HomePage() {
                        beside this image, so alt text would just repeat it. */
                     alt=""
                     fill
-                    className="object-cover object-top"
+                    className="object-cover object-top transition-[scale] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                     loading="eager"
                     unoptimized
                     sizes="(max-width: 640px) 240px, 320px"
@@ -267,8 +267,12 @@ export default async function HomePage() {
               Stay<br />Lashed in
             </h2>
 
-            {/* Social Media */}
+            {/* Social Media. The caption is Figma node 306:6226; it was
+                missing here, leaving the icons unlabelled. */}
             <div className="flex flex-col gap-[14px] mb-8 sm:mb-10 lg:mb-[40px]">
+              <p className="font-sans text-[14px] text-charcoal">
+                Follow us on social media for the latest news!
+              </p>
               <div className="flex items-center gap-8 sm:gap-10 lg:gap-[40px]">
                 {/* Instagram */}
                 <a href="https://www.instagram.com/vislashesbooking" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-charcoal hover:text-brand-brown transition-colors">
@@ -302,7 +306,7 @@ export default async function HomePage() {
                 id="newsletter-email"
                 type="email"
                 placeholder="Email Address"
-                className="w-full h-control box-border px-4 pr-[72px] border border-charcoal rounded-control font-sans text-[14px] text-charcoal leading-[24px] bg-transparent focus:outline-none focus:border-brand-brown"
+                className="w-full h-control box-border px-4 pr-[72px] border border-charcoal rounded-control font-sans text-[14px] text-charcoal leading-[24px] bg-transparent transition-[border-color,box-shadow] duration-200 focus:outline-none focus:border-brand-brown focus:shadow-[0_0_0_3px_rgba(139,111,71,0.15)] motion-reduce:transition-none"
               />
               <button
                 aria-label="Submit email"

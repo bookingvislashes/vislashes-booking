@@ -31,7 +31,7 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: "1.31.0",
+    version: "1.32.0",
     date: "2026-09-06",
     changes: [
       {
@@ -49,6 +49,37 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       {
         kind: "added",
         text: "Older tips from Square's own records are being pulled in now, so tax-season totals aren't limited to tips collected from today forward.",
+      },
+    ],
+  },
+  {
+    version: "1.31.0",
+    date: "2026-09-06",
+    changes: [
+      { kind: "added", text: "The How to Book photos now lift off the page and straighten slightly when someone points at them, like picking a photo up off a table." },
+      { kind: "added", text: "The round photos in Find Your Signature Set ease in a little when someone hovers over that set." },
+      { kind: "added", text: "The photo at the top of the home page settles very slowly when the page opens, so it feels alive rather than pasted on." },
+      { kind: "fixed", text: "Buttons across the site were meant to grow slightly when you point at them, but the effect was jumping instantly instead of easing. It is smooth now." },
+      { kind: "fixed", text: "The email box under Stay Lashed In now shows a soft ring when you click into it, so it is obvious where you are typing." },
+    ],
+  },
+  {
+    version: "1.30.3",
+    date: "2026-09-06",
+    changes: [
+      { kind: "changed", text: "The bar at the top of the home page is black now, and Book Appointment is back in it next to Home and Contact." },
+      { kind: "added", text: "Your About section has its Meet Vianney heading back — it was missing, so the section started straight into the paragraph." },
+      { kind: "changed", text: "Your About paragraph and two of the How to Book steps now read the way they do in the design." },
+      { kind: "added", text: "Follow us on social media for the latest news! sits above the social icons again." },
+    ],
+  },
+  {
+    version: "1.30.2",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "fixed",
+        text: "The photo at the top of the home page was coming out washed out and cropped in too close. It now shows the way it was designed — the lashes are sharp again and you can see more of her face.",
       },
     ],
   },
