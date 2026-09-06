@@ -16,7 +16,7 @@ interface BlockedDate {
   end_time: string | null;
 }
 
-interface AvailabilityRow {
+export interface AvailabilityRow {
   day_of_week: number;
   start_time: string;
   end_time: string;

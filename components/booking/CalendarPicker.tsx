@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { BookingFormData } from "@/lib/schemas";
 import {
@@ -39,9 +39,31 @@ export function CalendarPicker({
   });
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  // Which dates in the visible grid can actually be booked. `null` means we
+  // don't know yet — still loading, or the request failed. Unknown deliberately
+  // renders every future date as clickable: a hiccup fetching this should look
+  // like the calendar always did, never like a salon with no openings left.
+  const [openDates, setOpenDates] = useState<Set<string> | null>(null);
+  const [loadingMonth, setLoadingMonth] = useState(false);
 
   const selectedDate = form.watch("bookingDate");
   const selectedTime = form.watch("timeSlot");
+
+  // The six weeks the grid actually draws, as ISO strings. Deriving the days
+  // back out of the endpoints rather than carrying Date objects around is what
+  // lets the month fetch below depend on plain values instead of new Date
+  // instances that differ on every render.
+  const rangeFrom = format(startOfWeek(startOfMonth(currentMonth)), "yyyy-MM-dd");
+  const rangeTo = format(endOfWeek(endOfMonth(currentMonth)), "yyyy-MM-dd");
+
+  const days = useMemo(
+    () =>
+      eachDayOfInterval({
+        start: new Date(`${rangeFrom}T00:00:00`),
+        end: new Date(`${rangeTo}T00:00:00`),
+      }),
+    [rangeFrom, rangeTo]
+  );
 
   const fetchTimeSlots = useCallback(async (date: string) => {
     setLoadingSlots(true);
@@ -66,11 +88,43 @@ export function CalendarPicker({
     }
   }, [selectedDate, fetchTimeSlots]);
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const calendarStart = startOfWeek(monthStart);
-  const calendarEnd = endOfWeek(monthEnd);
-  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  // One request per visible month rather than one per date. Aborting on change
+  // matters here: paging through months quickly used to be the only way to get
+  // a stale answer painted over a newer one.
+  useEffect(() => {
+    if (!serviceId) {
+      setOpenDates(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    setLoadingMonth(true);
+    setOpenDates(null);
+
+    fetch(
+      `/api/availability/month?from=${rangeFrom}&to=${rangeTo}&serviceId=${serviceId}${
+        hasRemoval ? "&removal=1" : ""
+      }`,
+      { signal: controller.signal }
+    )
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        // A failed or malformed answer stays unknown, which keeps every date
+        // clickable instead of graying out the whole month.
+        setOpenDates(
+          data && Array.isArray(data.dates) ? new Set<string>(data.dates) : null
+        );
+        setLoadingMonth(false);
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setOpenDates(null);
+        setLoadingMonth(false);
+      });
+
+    return () => controller.abort();
+  }, [rangeFrom, rangeTo, serviceId, hasRemoval]);
 
   const handleDateSelect = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
@@ -84,6 +138,18 @@ export function CalendarPicker({
 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
+
+  // Only worth saying once the answer is in, and only when it is the whole
+  // month — otherwise she gets "no openings" flashing during every page.
+  const monthHasNoOpenings =
+    openDates !== null &&
+    !loadingMonth &&
+    days.every(
+      (day) =>
+        !isSameMonth(day, currentMonth) ||
+        isBefore(day, yesterday) ||
+        !openDates.has(format(day, "yyyy-MM-dd"))
+    );
 
   return (
     <div>
@@ -128,13 +194,17 @@ export function CalendarPicker({
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1 mb-6">
+      <div className="grid grid-cols-7 gap-1 mb-3">
         {days.map((day) => {
           const dateStr = format(day, "yyyy-MM-dd");
           const isPast = isBefore(day, yesterday);
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isSelected = selectedDate === dateStr;
-          const isDisabled = isPast || !isCurrentMonth;
+          // Three states, not two: open, closed, and not yet known. A date is
+          // only grayed out once the answer has actually come back saying the
+          // salon has nothing free on it.
+          const isOpen = openDates === null ? null : openDates.has(dateStr);
+          const isDisabled = isPast || !isCurrentMonth || isOpen === false;
 
           return (
             <button
@@ -142,14 +212,29 @@ export function CalendarPicker({
               type="button"
               disabled={isDisabled}
               onClick={() => handleDateSelect(day)}
+              aria-label={
+                isCurrentMonth && !isPast
+                  ? `${format(day, "EEEE, MMMM d")}${
+                      isOpen === false
+                        ? ", no openings"
+                        : isOpen
+                          ? ", openings available"
+                          : ""
+                    }`
+                  : undefined
+              }
               className={`aspect-square flex items-center justify-center rounded-control text-[13px] font-sans transition-colors ${
                 isSelected
-                  ? "bg-deep-brown text-white"
+                  ? "bg-deep-brown text-white font-semibold"
                   : isDisabled
-                    ? "text-muted/40 cursor-not-allowed"
+                    ? "text-muted/40 cursor-not-allowed font-normal"
                     : isToday(day)
-                      ? "bg-warm-beige/30 text-dark-brown hover:bg-warm-beige/50"
-                      : "text-charcoal hover:bg-light-tan"
+                      ? `bg-warm-beige/30 text-dark-brown hover:bg-warm-beige/50 ${
+                          isOpen ? "font-bold" : ""
+                        }`
+                      : `text-charcoal hover:bg-light-tan ${
+                          isOpen ? "font-bold" : ""
+                        }`
               }`}
             >
               {format(day, "d")}
@@ -157,6 +242,18 @@ export function CalendarPicker({
           );
         })}
       </div>
+
+      {/* Legend. Occupies the same line whether loading or loaded, so the grid
+          and the times below it don't jump as the answer arrives. */}
+      <p className="font-sans text-[12px] text-muted mb-6 min-h-[18px]">
+        {loadingMonth
+          ? "Checking which days are open..."
+          : monthHasNoOpenings
+            ? "No openings left this month — try the next one."
+            : openDates !== null
+              ? "Dates in bold have openings. Grayed-out dates are unavailable."
+              : ""}
+      </p>
 
       {/* Time slots */}
       {selectedDate && (

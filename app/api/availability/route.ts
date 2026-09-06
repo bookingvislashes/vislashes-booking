@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateTimeSlots, to24Hour } from "@/lib/availability";
+import {
+  loadAvailabilityContext,
+  previewContext,
+  slotsForDate,
+  PREVIEW_SERVICE_DURATIONS,
+} from "@/lib/availability-range";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -35,24 +40,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const serviceDurations: Record<string, number> = {
-      "svc-natural-glam": 110,
-      "svc-premium-wispy": 110,
-      "svc-premium-custom": 110,
-      "svc-natural-refill": 60,
-      "svc-premium-refill": 60,
-      "svc-premium-custom-refill": 60,
-    };
-    const mockAvailability = [
-      { day_of_week: 1, start_time: "09:00", end_time: "17:00", is_active: true },
-      { day_of_week: 2, start_time: "09:00", end_time: "17:00", is_active: true },
-      { day_of_week: 3, start_time: "09:00", end_time: "17:00", is_active: true },
-      { day_of_week: 4, start_time: "09:00", end_time: "17:00", is_active: true },
-      { day_of_week: 5, start_time: "09:00", end_time: "17:00", is_active: true },
-    ];
-    const duration = serviceDurations[serviceId] || 110;
-    // Use shorter advance window in preview mode so nearby dates show slots
-    const slots = generateTimeSlots(date, duration, mockAvailability, [], [], 15, 2);
+    const slots = slotsForDate(
+      previewContext(),
+      date,
+      PREVIEW_SERVICE_DURATIONS[serviceId] || 110,
+      withRemoval
+    );
     return NextResponse.json({ slots });
   }
 
@@ -86,114 +79,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const serviceDuration = service.duration_minutes;
-
-    // Fetch recurring availability hours
-    const { data: availability } = await supabase
-      .from("availability")
-      .select("day_of_week, start_time, end_time, is_active")
-      .eq("is_active", true);
-
-    // Fetch blocked dates for this date
-    const { data: blockedDates } = await supabase
-      .from("blocked_dates")
-      .select("date, start_time, end_time")
-      .eq("date", date);
-
-    // Per-date hours override. Replaces this date's weekday window entirely,
-    // which is what allows a date to open later, earlier, or on a weekday that
-    // is normally closed.
-    //
-    // The error is deliberately ignored: until migration 008 is run the table
-    // does not exist, and the correct behaviour then is to fall through to the
-    // weekday hours exactly as before rather than fail the whole request.
-    const { data: dateOverride } = await supabase
-      .from("date_overrides")
-      .select("date, is_open, start_time, end_time")
-      .eq("date", date)
-      .maybeSingle();
-
-    // Fetch existing bookings for this date (only confirmed ones block slots)
-    const { data: existingBookings } = await supabase
-      .from("bookings")
-      .select("time_slot, service_id, has_removal, services(duration_minutes)")
-      .eq("booking_date", date)
-      .eq("status", "confirmed");
-
-    // Fetch settings for buffer and advance hours
-    const { data: settings } = await supabase
-      .from("settings")
-      .select("key, value")
-      .in("key", [
-        "buffer_minutes",
-        "advance_booking_hours",
-        "removal_duration_minutes",
-      ]);
-
-    const settingsMap = Object.fromEntries(
-      (settings || []).map((s) => [s.key, s.value])
-    );
-    const bufferMinutes = parseInt(settingsMap.buffer_minutes || "15", 10);
-    const removalMinutes = parseInt(
-      settingsMap.removal_duration_minutes || "30",
-      10
-    );
-    const advanceHours = parseInt(
-      settingsMap.advance_booking_hours || "24",
-      10
-    );
-
-    // Map blocked dates to the format generateTimeSlots expects
-    // The function expects { blocked_date, start_time, end_time }
-    // Truncated to HH:mm to match the slot strings they are compared against.
-    // Postgres `time` arrives as "12:00:00", and "12:00" < "12:00:00" is true
-    // lexicographically — so the slot starting exactly when a partial block
-    // ended was treated as overlapping and silently dropped. Block 09:00-12:00
-    // and the 12:00 appointment disappeared while the salon was free. The same
-    // route already truncates booking times this way.
-    const blockedForSlots = (blockedDates || []).map((b) => ({
-      blocked_date: b.date as string,
-      start_time: b.start_time ? (b.start_time as string).substring(0, 5) : null,
-      end_time: b.end_time ? (b.end_time as string).substring(0, 5) : null,
-    }));
-
-    // Map bookings to { start_time, end_time } time ranges
-    // Convert "10:00 AM" time_slot + duration into HH:mm start/end
-    const bookingsForSlots = (existingBookings || []).map((b) => {
-      const bookedDuration =
-        (b.services as unknown as { duration_minutes: number })
-          ?.duration_minutes || serviceDuration;
-      // Their removal lengthened their appointment when they booked it, so it
-      // has to block the same longer window here.
-      const dur = bookedDuration + (b.has_removal ? removalMinutes : 0);
-      const start24 = to24Hour(b.time_slot);
-      const [h, m] = start24.split(":").map(Number);
-      const endMins = h * 60 + m + dur;
-      const end24 = `${Math.floor(endMins / 60)
-        .toString()
-        .padStart(2, "0")}:${(endMins % 60).toString().padStart(2, "0")}`;
-      return { start_time: start24, end_time: end24 };
-    });
-
-    const totalDuration =
-      serviceDuration + (withRemoval ? removalMinutes : 0);
-
-    const slots = generateTimeSlots(
+    // One date, so the range collapses to a single day. Everything the slot
+    // engine needs — hours, overrides, blocks, bookings, buffer and advance
+    // notice — comes back from the same loader the month grid uses, which is
+    // what keeps a day drawn bookable and its time list in agreement.
+    const ctx = await loadAvailabilityContext(supabase, date, date);
+    const slots = slotsForDate(
+      ctx,
       date,
-      totalDuration,
-      availability || [],
-      blockedForSlots,
-      bookingsForSlots,
-      bufferMinutes,
-      advanceHours,
-      dateOverride
-        ? {
-            date: dateOverride.date as string,
-            is_open: dateOverride.is_open as boolean,
-            start_time: (dateOverride.start_time as string | null) ?? null,
-            end_time: (dateOverride.end_time as string | null) ?? null,
-          }
-        : null
+      service.duration_minutes,
+      withRemoval
     );
 
     return NextResponse.json({ slots });

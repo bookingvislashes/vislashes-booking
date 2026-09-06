@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.33.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "The booking calendar now grays out every day a client can't actually book — days you're closed, days you've blocked off, and days already full. Those days can't be tapped at all.",
+      },
+      {
+        kind: "changed",
+        text: "Days that do have openings are in bold, so a client can see where to tap without opening each day one at a time.",
+      },
+      {
+        kind: "changed",
+        text: "Days too soon to book under your advance-notice setting are grayed out too, instead of looking open and then showing no times.",
+      },
+      {
+        kind: "changed",
+        text: "The calendar takes the chosen set and a removal into account, so a day with room for only a short appointment grays out for a longer one.",
+      },
+    ],
+  },
+  {
     version: "1.32.0",
     date: "2026-09-06",
     changes: [
