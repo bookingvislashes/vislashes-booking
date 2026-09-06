@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.26.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "changed",
+        text: "Rewrote your home page intro in your words — leads with your years of experience, speaks straight to someone booking their first lash appointment, and explains that every set is planned around their own eye shape rather than copy-pasted.",
+      },
+      {
+        kind: "changed",
+        text: "Classic, Wispy, and Hybrid now describe what each set actually looks like — a natural mascara look, feathery strip-lash look, and a fuller volume look that isn't heavy — instead of the older, vaguer wording.",
+      },
+    ],
+  },
+  {
     version: "1.25.1",
     date: "2026-08-30",
     changes: [

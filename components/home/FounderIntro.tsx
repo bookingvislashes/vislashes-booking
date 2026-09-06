@@ -8,10 +8,10 @@ const PORTRAIT = "/images/vianney-portrait.webp";
 /**
  * Founder intro — Figma node 516:123 on the Home Page.
  *
- * Trimmed from three paragraphs to one on request — every fact from the
- * original design survives (private home studio, Saint Cloud FL, one-on-one,
- * no rushing, the complimentary lash bath), just without three sentences of
- * connective tissue between them.
+ * Rewritten at her direction to speak straight to a first-time client's
+ * hesitation (trusting someone new with your face) rather than lead with
+ * studio facts. Copy is hers verbatim; split into three paragraphs here
+ * purely for line length in a 380px column — no wording changed.
  */
 export function FounderIntro() {
   const portraitReady = hasAsset(PORTRAIT);
@@ -48,12 +48,20 @@ export function FounderIntro() {
 
         <div className="max-w-[380px] flex flex-col gap-3 text-center sm:text-left">
           <p className="font-sans text-[16px] sm:text-[18px] text-charcoal leading-[1.445]">
-            Hi, I&apos;m Vianney — certified lash tech and founder of VISLashes.
+            Hi, I&apos;m Vianney — certified lash tech and founder of
+            VISLashes, with 3+ years of experience. If this is your first
+            time booking a lash appointment, I get it — trusting someone new
+            with your face feels like a big step.
           </p>
           <p className="font-sans text-[16px] sm:text-[18px] text-charcoal leading-[1.445]">
-            Every appointment is just the two of us in my private home studio
-            in Saint Cloud, FL — no rushing, no salon chaos, and a
-            complimentary lash bath included every time.
+            That&apos;s why every appointment starts with a real conversation
+            about the exact look you want, mapped to your own eye shape —
+            never a copy-paste set. My studio is private, calm, and
+            completely judgment-free. You&apos;ll leave feeling more like
+            yourself, not less.
+          </p>
+          <p className="font-sans text-[16px] sm:text-[18px] text-charcoal leading-[1.445]">
+            Ready when you are, friend. 🩷
           </p>
         </div>
       </div>
