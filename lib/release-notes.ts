@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.31.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "New Today tab: shows everyone booked today, what they still owe, and a Record payment button for Zelle, Apple Cash, cash or Venmo. One tap tells the site what came in.",
+      },
+      {
+        kind: "added",
+        text: "Card payments you take in the Square app — tap, dip, or a reader — now show up on the site automatically, tip included. Nothing new to do in Square itself.",
+      },
+      {
+        kind: "added",
+        text: "Reports now shows Collected and Tips for any period, plus a Tips list naming who tipped, how, and how much. The full appointment list and the tax spreadsheet both include a Tip column. Tips are counted by the day the money came in, so one that lands right at a tax-year boundary lands in the right year.",
+      },
+      {
+        kind: "added",
+        text: "Older tips from Square's own records are being pulled in now, so tax-season totals aren't limited to tips collected from today forward.",
+      },
+    ],
+  },
+  {
     version: "1.30.1",
     date: "2026-09-06",
     changes: [

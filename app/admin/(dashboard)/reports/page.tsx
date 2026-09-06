@@ -28,10 +28,25 @@ interface Appt {
   price: number | null;
   /** What arrived up front — the deposit on this site, "paid online" on Acuity. */
   collected: number;
+  /** Collected at the appointment itself — Square in person, or Zelle/cash/etc
+   *  she recorded from Today. Only ever populated for a booking-sourced row;
+   *  the Acuity years predate this table entirely. */
+  collectedInPerson: number;
+  /** Anything over the service price, from the same in-person payments. */
+  tip: number;
   paid: boolean;
   /** "Lash Model", "Giveaway Winner" — comped, and worth seeing separately. */
   label: string | null;
   source: "history" | "booking";
+}
+
+interface PaymentRow {
+  booking_id: string | null;
+  client_name: string | null;
+  paid_on: string;
+  method: string;
+  service_amount: string | number;
+  tip_amount: string | number;
 }
 
 const PERIODS: { value: Period; label: string }[] = [
@@ -146,6 +161,15 @@ function shortDate(key: string) {
   });
 }
 
+const METHOD_LABELS: Record<string, string> = {
+  card: "Card",
+  zelle: "Zelle",
+  apple_cash: "Apple Cash",
+  cash: "Cash",
+  venmo: "Venmo",
+  other: "Other",
+};
+
 // ── CSV ──────────────────────────────────────────────────────────────────
 
 function csvCell(value: string | number | null) {
@@ -158,7 +182,17 @@ function csvCell(value: string | number | null) {
 }
 
 function downloadCsv(filename: string, rows: Appt[]) {
-  const header = ["Date", "Client", "Service", "Price", "Paid", "Paid up front", "Label"];
+  const header = [
+    "Date",
+    "Client",
+    "Service",
+    "Price",
+    "Paid",
+    "Paid up front",
+    "Collected in person",
+    "Tip",
+    "Label",
+  ];
   const body = rows.map((r) => [
     r.date,
     r.client,
@@ -166,6 +200,8 @@ function downloadCsv(filename: string, rows: Appt[]) {
     r.price === null ? "" : r.price.toFixed(2),
     r.paid ? "Yes" : "No",
     r.collected.toFixed(2),
+    r.collectedInPerson.toFixed(2),
+    r.tip.toFixed(2),
     r.label ?? "",
   ]);
 
@@ -185,6 +221,7 @@ function downloadCsv(filename: string, rows: Appt[]) {
 
 export default function ReportsPage() {
   const [appts, setAppts] = useState<Appt[]>([]);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>("year");
@@ -194,7 +231,7 @@ export default function ReportsPage() {
   const supabase = createClient();
 
   const fetchAll = useCallback(async () => {
-    const [history, bookings] = await Promise.all([
+    const [history, bookings, paymentRows] = await Promise.all([
       supabase
         .from("appointment_history")
         .select(
@@ -207,6 +244,12 @@ export default function ReportsPage() {
           "id, booking_date, status, deposit_paid, deposit_amount, client:clients(full_name), service:services(name, price)"
         )
         .order("booking_date", { ascending: false }),
+      // Everything collected at the appointment itself, in or out of Square —
+      // the deposit above already has its own home on `bookings`.
+      supabase
+        .from("payments")
+        .select("booking_id, client_name, paid_on, method, service_amount, tip_amount")
+        .order("paid_on", { ascending: false }),
     ]);
 
     if (history.error) {
@@ -216,6 +259,11 @@ export default function ReportsPage() {
     }
     if (bookings.error) {
       setError(bookings.error.message);
+      setLoading(false);
+      return;
+    }
+    if (paymentRows.error) {
+      setError(paymentRows.error.message);
       setLoading(false);
       return;
     }
@@ -257,10 +305,23 @@ export default function ReportsPage() {
       service: h.service_type,
       price: num(h.price),
       collected: num(h.amount_paid_online) ?? 0,
+      collectedInPerson: 0,
+      tip: 0,
       paid: h.paid,
       label: h.label,
       source: "history",
     }));
+
+    // Only whether a booking ever collected an in-person payment at all —
+    // a Yes/No status, not a dollar figure. The actual amounts are computed
+    // per period below, from paid_on, so a balance paid on a different
+    // calendar day than the appointment lands in the tax period it was
+    // actually received in rather than the one the appointment fell in.
+    const everCollected = new Set(
+      ((paymentRows.data || []) as PaymentRow[])
+        .map((p) => p.booking_id)
+        .filter((id): id is string => Boolean(id))
+    );
 
     // Cancelled and no-show appointments are not work she did, so they never
     // belong in a tax total.
@@ -275,7 +336,10 @@ export default function ReportsPage() {
           service: service?.name ?? "Appointment",
           price: service ? num(service.price) : null,
           collected: (b.deposit_paid ? num(b.deposit_amount) : 0) ?? 0,
-          paid: b.deposit_paid,
+          // Filled in per period below — see paymentsByBookingInRange.
+          collectedInPerson: 0,
+          tip: 0,
+          paid: b.deposit_paid || everCollected.has(b.id),
           label: null,
           source: "booking",
         };
@@ -286,6 +350,7 @@ export default function ReportsPage() {
     );
 
     setAppts(all);
+    setPayments((paymentRows.data || []) as PaymentRow[]);
     setError(null);
     setLoading(false);
   }, [supabase]);
@@ -296,31 +361,82 @@ export default function ReportsPage() {
 
   const { from, to } = useMemo(() => rangeFor(period, anchor), [period, anchor]);
 
-  const rows = useMemo(
-    () => appts.filter((a) => a.date >= from && a.date <= to),
-    [appts, from, to]
+  // "In the period" is decided by when the money actually arrived, not by
+  // the date of whatever appointment it happens to be tied to. A deposit and
+  // an appointment share one date almost always; a balance or a tip settled
+  // days later does not, and at a period boundary — Dec 30 vs Jan 2 — that
+  // is the difference between two tax years. So payments are always filtered
+  // by their own paid_on, independently of which appointments fall in view,
+  // and only then laid over the appointment rows for display.
+  const paymentsInRange = useMemo(
+    () => payments.filter((p) => p.paid_on >= from && p.paid_on <= to),
+    [payments, from, to]
   );
+
+  const rows = useMemo(() => {
+    const base = appts.filter((a) => a.date >= from && a.date <= to);
+    if (paymentsInRange.length === 0) return base;
+
+    const byBooking = new Map<string, { collected: number; tip: number }>();
+    for (const p of paymentsInRange) {
+      if (!p.booking_id) continue;
+      const entry = byBooking.get(p.booking_id) || { collected: 0, tip: 0 };
+      entry.collected += Number(p.service_amount) || 0;
+      entry.tip += Number(p.tip_amount) || 0;
+      byBooking.set(p.booking_id, entry);
+    }
+    if (byBooking.size === 0) return base;
+
+    return base.map((r) => {
+      if (r.source !== "booking") return r;
+      const match = byBooking.get(r.id.slice(2));
+      return match
+        ? { ...r, collectedInPerson: match.collected, tip: match.tip }
+        : r;
+    });
+  }, [appts, paymentsInRange, from, to]);
 
   const totals = useMemo(() => {
     let revenue = 0;
-    let collected = 0;
+    let depositCollected = 0;
     let unpaid = 0;
     let comped = 0;
     for (const r of rows) {
       revenue += r.price ?? 0;
-      collected += r.collected;
+      depositCollected += r.collected;
       if (!r.paid) unpaid += 1;
       if (r.label) comped += 1;
+    }
+    // Summed straight from paymentsInRange rather than from the rows above,
+    // so a payment with no matching appointment in view — a walk-in, or a
+    // balance settled on a day outside this period's appointment list — is
+    // still counted exactly once, by the date it actually landed.
+    let inPersonCollected = 0;
+    let tips = 0;
+    for (const p of paymentsInRange) {
+      inPersonCollected += Number(p.service_amount) || 0;
+      tips += Number(p.tip_amount) || 0;
     }
     return {
       count: rows.length,
       revenue,
-      collected,
+      collected: depositCollected + inPersonCollected,
+      tips,
       unpaid,
       comped,
       clients: new Set(rows.map((r) => r.client.toLowerCase())).size,
     };
-  }, [rows]);
+  }, [rows, paymentsInRange]);
+
+  /** Tips, one line per payment, for the panel that answers "how much extra
+   *  did I make and when" directly — not folded into a bigger number. */
+  const tipEntries = useMemo(
+    () =>
+      paymentsInRange
+        .filter((p) => Number(p.tip_amount) > 0)
+        .sort((a, b) => (a.paid_on < b.paid_on ? 1 : -1)),
+    [paymentsInRange]
+  );
 
   /** Which services made up the period, biggest first. */
   const byService = useMemo(() => {
@@ -485,10 +601,11 @@ export default function ReportsPage() {
       ) : (
         <>
           {/* Headline numbers */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
             <Stat label="Appointments" value={`${totals.count}`} />
             <Stat label="Total value" value={money(totals.revenue)} />
-            <Stat label="Paid up front" value={money(totals.collected)} />
+            <Stat label="Collected" value={money(totals.collected)} />
+            <Stat label="Tips" value={money(totals.tips)} />
             <Stat
               label="Different clients"
               value={`${totals.clients}`}
@@ -556,6 +673,33 @@ export default function ReportsPage() {
                 </table>
               </Panel>
 
+              {/* Extra money on top of the service price, one line per
+                  payment — the number a tax return separates from revenue. */}
+              {tipEntries.length > 0 && (
+                <Panel title={`Tips (${money(totals.tips)})`}>
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-light-tan">
+                        <Th>Date</Th>
+                        <Th>Client</Th>
+                        <Th>Method</Th>
+                        <Th align="right">Tip</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tipEntries.map((p, i) => (
+                        <tr key={`${p.paid_on}-${i}`} className="border-b border-light-tan last:border-b-0">
+                          <Td>{shortDate(p.paid_on)}</Td>
+                          <Td>{p.client_name || "—"}</Td>
+                          <Td>{METHOD_LABELS[p.method] ?? p.method}</Td>
+                          <Td align="right">{money(Number(p.tip_amount) || 0)}</Td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Panel>
+              )}
+
               {/* Every appointment, for when the summary is not enough */}
               <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-light-tan">
@@ -587,7 +731,7 @@ export default function ReportsPage() {
 
                 {showList && (
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[520px]">
+                    <table className="w-full min-w-[600px]">
                       <thead>
                         <tr className="border-b border-light-tan">
                           <Th>Date</Th>
@@ -595,6 +739,7 @@ export default function ReportsPage() {
                           <Th>Service</Th>
                           <Th align="right">Value</Th>
                           <Th align="right">Paid</Th>
+                          <Th align="right">Tip</Th>
                         </tr>
                       </thead>
                       <tbody>
@@ -620,6 +765,9 @@ export default function ReportsPage() {
                                 {r.paid ? "Yes" : "No"}
                               </span>
                             </Td>
+                            <Td align="right">
+                              {r.source === "booking" && r.tip > 0 ? money(r.tip) : "—"}
+                            </Td>
                           </tr>
                         ))}
                       </tbody>
@@ -630,9 +778,13 @@ export default function ReportsPage() {
 
               <p className="font-sans text-[12px] text-muted mt-4 leading-[1.6]">
                 &quot;Total value&quot; is the full price of every appointment in the
-                period. &quot;Paid up front&quot; is only what was collected online — the
-                rest was taken in the studio, so it is not in that number.
-                Cancelled appointments are left out.
+                period. &quot;Collected&quot; is every dollar toward that price —
+                the deposit online, plus whatever came in at the appointment
+                itself, by card, Zelle, Apple Cash, cash or Venmo. &quot;Tips&quot;
+                is everything on top of the price, kept separate since it is
+                reported differently at tax time. Cancelled appointments are
+                left out. Tips before this table existed were not tracked by
+                appointment and only appear in the Tips panel above.
               </p>
             </>
           )}

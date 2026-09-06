@@ -95,6 +95,13 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
           <circle cx="19" cy="12" r="1.5" />
         </svg>
       );
+    case "sun":
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </svg>
+      );
     case "chart":
       return (
         <svg {...props}>
@@ -124,6 +131,7 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
 
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: "grid" },
+  { label: "Today", href: "/admin/today", icon: "sun" },
   { label: "Bookings", href: "/admin/bookings", icon: "calendar-check" },
   { label: "Calendar", href: "/admin/calendar", icon: "clock" },
   { label: "Clients", href: "/admin/clients", icon: "users" },

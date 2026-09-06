@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { WebhooksHelper } from "square";
 import { createServiceClient } from "@/lib/supabase/server";
 import { recordOrphanPayment } from "@/lib/orphan-payments";
+import { salonDateOf } from "@/lib/salon-time";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -103,6 +104,97 @@ export async function POST(req: NextRequest) {
           failureReason:
             "Square reported a completed payment with no matching booking.",
         });
+      }
+    }
+
+    // A completed payment that is NOT one of this site's own deposits is the
+    // other half of her money: what she collects in person, with her phone
+    // or a reader, through the Square app itself — including whatever a
+    // client added as a tip. Nothing prompted this site to charge a card, so
+    // there is no idempotency key to reuse from process-payment; the row's
+    // uniqueness on square_payment_id is what stops Square's retries from
+    // being counted twice, and the upsert below only ever touches the money
+    // fields, never an attribution she — or a later pass here — already set.
+    if (
+      payment?.status === "COMPLETED" &&
+      payment.id &&
+      !isSiteDeposit &&
+      !fullyRefunded &&
+      typeof capturedCents === "number"
+    ) {
+      const supabase = await createServiceClient();
+      const tipCents = payment.tip_money?.amount ?? 0;
+      const serviceAmount = (capturedCents - tipCents) / 100;
+      const tipAmount = tipCents / 100;
+      const paidOn = salonDateOf(payment.created_at ?? new Date());
+
+      // Best-effort attribution: today's confirmed appointment, if there is
+      // exactly one that has not already collected a payment. A card charged
+      // in the salon almost always belongs to whoever is in the chair right
+      // now, but with more than one appointment that day (or none) a guess is
+      // worse than no guess — she can attribute it from the Today screen in
+      // ten seconds, and a wrong guess she never checks is a wrong tax number.
+      const { data: candidates } = await supabase
+        .from("bookings")
+        .select("id, client_id, client:clients(full_name)")
+        .eq("booking_date", paidOn)
+        .in("status", ["confirmed", "completed"]);
+
+      let bookingId: string | null = null;
+      let clientId: string | null = null;
+      let clientName: string | null = null;
+
+      if (candidates && candidates.length) {
+        const unclaimed: typeof candidates = [];
+        for (const c of candidates) {
+          const { count } = await supabase
+            .from("payments")
+            .select("id", { count: "exact", head: true })
+            .eq("booking_id", c.id);
+          if (!count) unclaimed.push(c);
+        }
+        if (unclaimed.length === 1) {
+          const match = unclaimed[0];
+          bookingId = match.id;
+          clientId = match.client_id ?? null;
+          const clientRow = Array.isArray(match.client)
+            ? match.client[0]
+            : match.client;
+          clientName = clientRow?.full_name ?? null;
+        }
+      }
+
+      // A plain upsert would overwrite booking_id/client_id on every retry,
+      // silently undoing an attribution she makes from the Today screen
+      // after the first event lands. Insert once; if the row already exists
+      // (Square re-fired, or amended the tip), update only the money fields.
+      const { error: insertError } = await supabase.from("payments").insert({
+        square_payment_id: payment.id,
+        booking_id: bookingId,
+        client_id: clientId,
+        client_name: clientName,
+        paid_at: payment.created_at ?? new Date().toISOString(),
+        paid_on: paidOn,
+        method: "card",
+        source: "square",
+        service_amount: serviceAmount,
+        tip_amount: tipAmount,
+      });
+
+      if (insertError?.code === "23505") {
+        const { error: updateError } = await supabase
+          .from("payments")
+          .update({
+            paid_at: payment.created_at ?? undefined,
+            service_amount: serviceAmount,
+            tip_amount: tipAmount,
+          })
+          .eq("square_payment_id", payment.id);
+        if (updateError) {
+          console.error("Webhook: could not update in-person payment:", updateError);
+        }
+      } else if (insertError) {
+        console.error("Webhook: could not record in-person payment:", insertError);
       }
     }
   }
