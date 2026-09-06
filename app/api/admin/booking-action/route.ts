@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { createBookingEvent, deleteBookingEvent } from "@/lib/google-calendar";
+import { syncBookingEvent, deleteBookingEvent } from "@/lib/google-calendar";
 import { sendCancellationEmail } from "@/lib/email";
 
 /**
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   const { data: booking, error: loadError } = await admin
     .from("bookings")
     .select(
-      "id, booking_date, time_slot, status, deposit_paid, client:clients(full_name, email, phone), service:services(name, duration_minutes)"
+      "id, booking_date, time_slot, status, deposit_paid, client:clients(full_name, email)"
     )
     .eq("id", input.bookingId)
     .maybeSingle();
@@ -60,7 +60,6 @@ export async function POST(req: NextRequest) {
   }
 
   const client = Array.isArray(booking.client) ? booking.client[0] : booking.client;
-  const service = Array.isArray(booking.service) ? booking.service[0] : booking.service;
 
   if (input.action === "cancel") {
     const { error } = await admin
@@ -118,10 +117,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // The old event is removed before the new one is written, so a failure
-  // midway leaves one event rather than two competing ones on her calendar.
-  await deleteBookingEvent(admin, input.bookingId);
-
   const { error: updateError } = await admin
     .from("bookings")
     .update({
@@ -139,18 +134,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  if (client && service) {
-    await createBookingEvent(admin, {
-      bookingId: input.bookingId,
-      serviceName: service.name,
-      durationMinutes: service.duration_minutes,
-      clientName: client.full_name,
-      clientEmail: client.email,
-      clientPhone: client.phone,
-      bookingDate: input.bookingDate,
-      timeSlot: input.timeSlot,
-    });
-  }
+  // Moves the existing event rather than deleting and re-creating it, so the
+  // entry keeps its id and whatever reminder she had set on it. It also
+  // re-reads the booking instead of being handed the few fields this route
+  // happened to load — a reschedule used to drop the deposit line and the
+  // intake answers, leaving the event thinner every time it moved.
+  await syncBookingEvent(admin, input.bookingId);
 
   return NextResponse.json({ ok: true });
 }

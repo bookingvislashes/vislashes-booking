@@ -31,6 +31,48 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.33.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "You can book a client in yourself now. There's a + New button on Bookings and a + Book on Today — pick her, the service and the time, and you're done. Made for doing it on your phone with her still in the chair.",
+      },
+      {
+        kind: "added",
+        text: "When you book someone in, you can mark the deposit as already paid and say how it came: Zelle, Apple Cash, Venmo, cash, card, or an invoice you sent. The booking shows \"Paid $25.00 by Zelle\" instead of pretending a card was charged.",
+      },
+      {
+        kind: "added",
+        text: "A client you book in gets the same confirmation email, and the same two reminders, as anyone who books through the website. Nothing extra for you to send.",
+      },
+      {
+        kind: "changed",
+        text: "Your Google Calendar entries now hold the whole appointment: her number and email, how many visits she's had, how long it runs, what she's paid and how it arrived, what's left to collect that day, and anything you noted. The link at the bottom opens the booking.",
+      },
+      {
+        kind: "changed",
+        text: "Moving an appointment now moves the calendar entry you already have, rather than deleting it and making a new one. Any reminder you'd set on it survives.",
+      },
+      {
+        kind: "fixed",
+        text: "Confirmation and cancellation emails were showing the date as \"2026-09-13\". They now say \"Sunday, September 13\", the way the reminder emails already did.",
+      },
+      {
+        kind: "note",
+        text: "Christina Rosario (Sun 13 Sep, 10am) and Tabitha Rosado (today, 11:30am) are on the site now, both marked deposit-paid — Christina by Zelle, Tabitha by card. They're linked to the calendar entries you already had, so nothing is doubled up. Check Christina's deposit was $25; that's the standard one and you didn't say otherwise.",
+      },
+      {
+        kind: "note",
+        text: "Tabitha's email is now tabithaxx23@icloud.com — the one she used on her last booking. Her old gmail is saved on her client record in case that was the right one.",
+      },
+      {
+        kind: "note",
+        text: "Database change 017 was needed for deposits paid by Zelle. It has already been run for you — Migrations will show it green, nothing to do.",
+      },
+    ],
+  },
+  {
     version: "1.32.1",
     date: "2026-09-06",
     changes: [

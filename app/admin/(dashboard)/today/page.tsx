@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { useRegisterRefresh } from "@/components/admin/RefreshProvider";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -223,14 +224,30 @@ export default function TodayPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto">
-      <h1 className="font-display text-[28px] font-bold text-dark-brown">Today</h1>
-      <p className="font-sans text-[16px] text-muted mb-6 leading-[1.5]">
-        {new Date(today + "T12:00:00").toLocaleDateString("en-US", {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-        })}
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-[28px] font-bold text-dark-brown">
+            Today
+          </h1>
+          <p className="font-sans text-[16px] text-muted leading-[1.5]">
+            {new Date(today + "T12:00:00").toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
+          </p>
+        </div>
+        {/* Rebooking happens here, at the end of the appointment, with the
+            client still in the chair and her deposit already sent across. */}
+        <Link
+          href="/admin/bookings/new"
+          className="shrink-0 inline-flex items-center justify-center box-border h-control px-5 rounded-control border-2 border-transparent bg-text-brown text-white font-sans text-[14px] font-semibold hover:bg-deep-brown transition-colors"
+        >
+          + Book
+        </Link>
+      </div>
+
+      <div className="mb-6" />
 
       {error && (
         <p className="font-sans text-[16px] text-danger mb-4">{error}</p>

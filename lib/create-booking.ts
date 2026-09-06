@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { sendConfirmationEmail } from "./email";
-import { createBookingEvent } from "./google-calendar";
+import { syncBookingEvent } from "./google-calendar";
 
 interface BookingFormData {
   serviceId: string;
@@ -249,20 +249,13 @@ export async function createBooking({
   }
 
   // 7. Put it on her Google Calendar, if she has connected one. Same
-  // best-effort contract as the email above: createBookingEvent catches its
-  // own failures, because by this point the card has already been charged.
-  await createBookingEvent(supabase, {
-    bookingId: booking.id,
-    serviceName: removalAdded
-      ? `${service.name} + lash removal`
-      : service.name,
-    durationMinutes: appointmentMinutes,
-    clientName: fullName,
-    clientEmail: email,
-    clientPhone: formData.phone,
-    bookingDate: formData.bookingDate,
-    timeSlot: formData.timeSlot,
-  });
+  // best-effort contract as the email above: syncBookingEvent catches its own
+  // failures, because by this point the card has already been charged.
+  //
+  // It is given the id alone and reads the rest back itself, so the event
+  // carries the deposit and the intake answers this function has just written
+  // — the details that make the entry worth opening on a phone.
+  await syncBookingEvent(supabase, booking.id);
 
   return { bookingId: booking.id, clientId };
 }
