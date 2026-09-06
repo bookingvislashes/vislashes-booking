@@ -1,8 +1,13 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * The loyalty program: five completed appointments earn $15 off the next full
- * set or refill.
+ * The loyalty program: five completed appointments earn $15 off the next
+ * appointment, whatever it is.
+ *
+ * Every service counts, both ways: a lash lift is a visit like any other, and
+ * the $15 can be spent on one. Anyone who sat in the chair earned it, and the
+ * salon does not want to be the one telling a client the reward they earned
+ * is not valid on the thing they came in for.
  *
  * Everything that moves a reward lives here, and every one of these functions
  * expects the SERVICE client. A reward is money off a bill, so nothing about
@@ -45,13 +50,6 @@ export const LOYALTY_DEFAULTS = {
   rewardAmount: 15,
   visitsRequired: 5,
 } as const;
-
-/**
- * Which services a reward can be spent on. Her words: "$15 off their next
- * set, full or refill set". A lash lift still counts as a visit — anyone who
- * sat in the chair did — but it is not what the discount is for.
- */
-const QUALIFYING_CATEGORIES = new Set(["full_set", "refill"]);
 
 export interface LoyaltyConfig {
   rewardAmount: number;
@@ -116,16 +114,9 @@ export interface AppliedReward {
  */
 export async function claimReward(
   supabase: SupabaseClient,
-  input: {
-    bookingId: string;
-    clientId: string;
-    /** services.category for the booked service. */
-    serviceCategory: string | null | undefined;
-  }
+  input: { bookingId: string; clientId: string }
 ): Promise<AppliedReward | null> {
   try {
-    if (!QUALIFYING_CATEGORIES.has(input.serviceCategory ?? "")) return null;
-
     const { rewardAmount } = await getLoyaltyConfig(supabase);
     if (rewardAmount <= 0) return null;
 

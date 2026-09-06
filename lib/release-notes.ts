@@ -36,23 +36,27 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     changes: [
       {
         kind: "added",
-        text: "Loyalty is live: every fifth appointment you mark complete earns that client $15 off their next full set or refill. A lash lift counts as a visit, but the $15 can only be spent on a set.",
+        text: "Loyalty is live: every fifth appointment you mark complete earns that client $15 off their next one. Every service counts, both ways — a lift is a visit like any other, and the $15 can be spent on one.",
       },
       {
         kind: "added",
-        text: "Clients see how close they are on the confirmation page after booking — a bar of five with their place on it, and on the fifth it turns into \"$15 off your next set\" with confetti.",
+        text: "Clients see where they stand on the confirmation page after booking — a bar of five with their place on it, and on the fifth it turns into \"$15 off your next set\" with confetti.",
       },
       {
         kind: "added",
-        text: "The next set they book has the $15 already taken off, everywhere you look at it: Today, the appointment, your Google Calendar entry and their confirmation email. It says which visit earned it, so you can tell her while she's in the chair.",
+        text: "That same bar is in their confirmation email, and their reminder email says it in one line. So they can check without asking you, and you never have to keep a count in your head.",
       },
       {
         kind: "added",
-        text: "Check out already knows. The Square app opens with the discount applied, so you never have to do that subtraction in your head.",
+        text: "The next appointment they book has the $15 already taken off, everywhere you look at it: Today, the appointment, your Google Calendar entry and their email. It says which visit earned it, so you can tell her while she's in the chair.",
       },
       {
         kind: "added",
-        text: "Clients shows everyone's progress — \"3 of 5 toward $15 off\", or \"$15 off waiting\" for the ones holding a reward.",
+        text: "Check out already knows. The Square app opens with the discount applied, so you never have to do that subtraction yourself.",
+      },
+      {
+        kind: "added",
+        text: "Clients shows everyone's progress — \"3 of 5 toward $15 off\", or \"$15 off waiting\" for the ones holding a reward. That page is your list of who to celebrate.",
       },
       {
         kind: "note",
@@ -60,7 +64,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       },
       {
         kind: "note",
-        text: "Everyone starts at zero, including your regulars. Backdating years of Acuity visits would have handed out several $15 rewards on day one, and that's your call to make, not mine. Settings → Loyalty is where you change the $15 or the 5 — set the reward to 0 to switch the whole thing off.",
+        text: "Everyone starts at zero, including your regulars — a clean start for the announcement. Settings → Loyalty is where you change the $15 or the 5; set the reward to 0 to switch the whole thing off.",
       },
     ],
   },

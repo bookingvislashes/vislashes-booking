@@ -267,8 +267,8 @@ export default function BookingDetailPage() {
           <span className="font-semibold text-dark-brown">
             That was visit {rewardEarned.visitNumber}.
           </span>{" "}
-          ${Number(rewardEarned.amount).toFixed(2)} comes off her next full set
-          or refill — it&apos;ll be on the appointment as soon as she books.
+          ${Number(rewardEarned.amount).toFixed(2)} comes off her next
+          appointment — it&apos;ll be on there as soon as she books.
         </p>
       )}
 
@@ -318,7 +318,7 @@ export default function BookingDetailPage() {
           // client out, and the reason for it, so she can say it out loud.
           <Section title="Loyalty reward">
             <p className="text-[16px] text-success font-semibold">
-              &minus;${Number(booking.loyalty_discount).toFixed(2)} off this set
+              &minus;${Number(booking.loyalty_discount).toFixed(2)} off this one
             </p>
             {booking.loyalty_note && (
               <p className="text-[12px] text-muted mt-1">

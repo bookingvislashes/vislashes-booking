@@ -4,7 +4,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { syncBookingEvent } from "@/lib/google-calendar";
 import { sendConfirmationEmail } from "@/lib/email";
 import { notifyAdmins } from "@/lib/push";
-import { claimReward } from "@/lib/loyalty";
+import { claimReward, getLoyaltyStatus } from "@/lib/loyalty";
 
 /**
  * Appointments the salon books herself.
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
   // can edit.
   const { data: service, error: serviceError } = await admin
     .from("services")
-    .select("id, name, category, price, deposit_amount, duration_minutes")
+    .select("id, name, price, deposit_amount, duration_minutes")
     .eq("id", input.serviceId)
     .maybeSingle();
 
@@ -312,10 +312,12 @@ export async function POST(req: NextRequest) {
   // A regular she books in herself gets her reward exactly as one who booked
   // online would. Best-effort: the appointment is saved either way, and an
   // unspent reward waits for the next booking.
-  const loyalty = await claimReward(admin, {
-    bookingId: booking.id,
+  await claimReward(admin, { bookingId: booking.id, clientId });
+
+  const loyalty = await getLoyaltyStatus(admin, {
+    id: booking.id,
     clientId,
-    serviceCategory: service.category,
+    status: "confirmed",
   });
 
   // ── Everything that happens because it exists ───────────────────────────
@@ -347,8 +349,20 @@ export async function POST(req: NextRequest) {
         depositMethodLabel: input.depositPaid
           ? METHOD_LABELS[input.depositMethod]
           : undefined,
-        loyaltyDiscount: loyalty?.amount,
-        loyaltyVisitNumber: loyalty?.visitNumber,
+        loyalty: loyalty
+          ? {
+              position: loyalty.position,
+              visitsRequired: loyalty.visitsRequired,
+              rewardAmount: loyalty.rewardAmount,
+              completesCycle: loyalty.completesCycle,
+              applied: loyalty.applied
+                ? {
+                    amount: loyalty.applied.amount,
+                    note: loyalty.applied.note,
+                  }
+                : null,
+            }
+          : undefined,
       });
       emailed = true;
     } catch (err) {

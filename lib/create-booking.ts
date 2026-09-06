@@ -1,7 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { sendConfirmationEmail } from "./email";
 import { syncBookingEvent } from "./google-calendar";
-import { claimReward } from "./loyalty";
+import { claimReward, getLoyaltyStatus } from "./loyalty";
 
 interface BookingFormData {
   serviceId: string;
@@ -193,10 +193,15 @@ export async function createBooking({
   // Deliberately not thrown from: by this point on the card path the deposit
   // has already been captured, and an unspent reward simply waits for the
   // next booking. claimReward swallows its own failures for that reason.
-  const loyalty = await claimReward(supabase, {
-    bookingId: booking.id,
+  await claimReward(supabase, { bookingId: booking.id, clientId });
+
+  // Read back rather than assembled from the claim above: the status is where
+  // they now stand, reward or no reward, and it is what the email prints. Null
+  // when the program is off, and the email then looks as it always has.
+  const loyalty = await getLoyaltyStatus(supabase, {
+    id: booking.id,
     clientId,
-    serviceCategory: service.category,
+    status: "confirmed",
   });
 
   // 4. Create intake form
@@ -254,8 +259,20 @@ export async function createBooking({
       depositAmount: service.deposit_amount,
       totalPrice: appointmentTotal,
       paymentMethod: formData.paymentMethod,
-      loyaltyDiscount: loyalty?.amount,
-      loyaltyVisitNumber: loyalty?.visitNumber,
+      loyalty: loyalty
+        ? {
+            position: loyalty.position,
+            visitsRequired: loyalty.visitsRequired,
+            rewardAmount: loyalty.rewardAmount,
+            completesCycle: loyalty.completesCycle,
+            applied: loyalty.applied
+              ? {
+                  amount: loyalty.applied.amount,
+                  note: loyalty.applied.note,
+                }
+              : null,
+          }
+        : undefined,
     });
   } catch (emailErr) {
     // Log but don't fail the booking if email fails

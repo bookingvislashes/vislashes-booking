@@ -1,5 +1,4 @@
 import { Resend } from "resend";
-import { ordinal } from "./loyalty";
 
 let _resend: Resend | null = null;
 function getResend(): Resend {
@@ -33,13 +32,44 @@ interface BookingEmailData {
   /** "Zelle", "Apple Cash" — named so the client can recognise her own payment. */
   depositMethodLabel?: string;
   /**
-   * A loyalty reward spent on this appointment, in dollars. Comes off the
-   * balance printed below, because the balance is the number the client
-   * turns up expecting to pay.
+   * Where this appointment sits in the client's run of five, and any reward
+   * already spent on it. Omitted when the program is off — the email then
+   * looks exactly as it did before loyalty existed.
+   *
+   * This is the client's own copy of the progress bar they saw on the
+   * confirmation page. They keep the email; they do not keep the page.
    */
-  loyaltyDiscount?: number;
-  /** The visit that earned it — 5, 10, 15. Printed as "5th visit". */
-  loyaltyVisitNumber?: number;
+  loyalty?: {
+    /** Which visit this appointment is, 1…visitsRequired. */
+    position: number;
+    visitsRequired: number;
+    /** What a reward is worth, in dollars. */
+    rewardAmount: number;
+    /** True when this appointment is the last of the run. */
+    completesCycle: boolean;
+    /** A reward already taken off this appointment, and what to call it. */
+    applied: { amount: number; note: string } | null;
+  };
+}
+
+/**
+ * The 1–5 bar, in the one layout every mail client agrees on: a table.
+ * Filled behind them, outlined where they are, waiting ahead — the same three
+ * states, and the same colours, as the bar on the confirmation page.
+ */
+function loyaltyBar(position: number, visitsRequired: number): string {
+  const cells = Array.from({ length: visitsRequired }, (_, index) => {
+    const number = index + 1;
+    const style =
+      number < position
+        ? "background:#8B6F47;color:#ffffff;border:2px solid #8B6F47;"
+        : number === position
+          ? "background:#ffffff;color:#8B6F47;border:2px solid #8B6F47;"
+          : "background:#E8DDD0;color:#6E6A63;border:2px solid #E8DDD0;";
+    return `<td style="${style}width:20%;height:34px;text-align:center;border-radius:3px;font-size:15px;font-weight:bold;font-family:Arial,sans-serif;">${number}</td>`;
+  }).join("");
+
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:separate;border-spacing:5px 0;margin:0 0 12px;"><tr>${cells}</tr></table>`;
 }
 
 
@@ -47,13 +77,40 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
   const isCash = data.paymentMethod === "cash";
   const depositPaid = data.depositPaid ?? !isCash;
   const depositHeld = depositPaid ? data.depositAmount : 0;
-  const loyaltyDiscount = Math.max(0, Number(data.loyaltyDiscount ?? 0));
+  const loyaltyDiscount = Math.max(0, Number(data.loyalty?.applied?.amount ?? 0));
   // Floored at zero. A deposit larger than the service price would otherwise
   // print a negative balance as though the salon owed the client money.
   const remainingBalance = Math.max(
     0,
     data.totalPrice - depositHeld - loyaltyDiscount
   );
+
+  // The client's running total, in the thing they keep. Everything here is
+  // handed down already worked out — this file counts nothing.
+  const loyalty = data.loyalty;
+  const loyaltySection = loyalty
+    ? `<div style="border:1px solid #E8DDD0;border-radius:8px;padding:20px;margin-bottom:24px;">
+              <p style="margin:0 0 12px;font-size:13px;color:#9A9A9A;letter-spacing:1px;">YOUR LASH LOYALTY</p>
+              ${loyaltyBar(loyalty.position, loyalty.visitsRequired)}
+              <p style="margin:0;font-size:14px;color:#2C2C2C;line-height:1.5;">${
+                loyalty.completesCycle
+                  ? `This one is visit ${loyalty.position} of ${
+                      loyalty.visitsRequired
+                    } &mdash; <strong style="color:#3D2B1F;">$${
+                      loyalty.rewardAmount
+                    } comes off your next appointment.</strong> We'll take it off automatically when you book.`
+                  : `This one is visit ${loyalty.position} of ${
+                      loyalty.visitsRequired
+                    }. ${
+                      loyalty.visitsRequired - loyalty.position === 1
+                        ? "One more"
+                        : `${loyalty.visitsRequired - loyalty.position} more`
+                    } and your next appointment is $${
+                      loyalty.rewardAmount
+                    } off.`
+              }</p>
+            </div>`
+    : "";
 
   const depositLine = depositPaid
     ? `$${data.depositAmount.toFixed(2)} paid${
@@ -92,17 +149,17 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
                   ? `<p style="margin:16px 0 8px;font-size:13px;color:#9A9A9A;">LOYALTY REWARD</p>
               <p style="margin:0;font-size:16px;color:#4A7C59;font-weight:600;">&minus;$${loyaltyDiscount.toFixed(
                 2
-              )} off this set${
-                      data.loyaltyVisitNumber
-                        ? ` &middot; earned on your ${ordinal(
-                            data.loyaltyVisitNumber
-                          )} visit`
-                        : ""
-                    }</p>`
+              )} off this appointment</p>
+              ${
+                data.loyalty?.applied?.note
+                  ? `<p style="margin:2px 0 0;font-size:13px;color:#9A9A9A;">${data.loyalty.applied.note}</p>`
+                  : ""
+              }`
                   : ""
               }
               ${remainingBalance > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:#9A9A9A;">Remaining balance: $${remainingBalance.toFixed(2)} due at appointment</p>` : ""}
             </div>
+            ${loyaltySection}
             <h3 style="color:#3D2B1F;font-size:16px;margin-bottom:8px;">What to Expect</h3>
             <ul style="color:#2C2C2C;font-size:14px;padding-left:20px;">
               <li>Come with clean lashes, no eye makeup</li>
@@ -157,6 +214,25 @@ export async function sendReminderEmail(
   data: BookingEmailData & { window?: ReminderWindow }
 ) {
   const copy = REMINDER_COPY[data.window ?? "twoDay"];
+
+  // One line, not the whole bar. A reminder is read in three seconds on a
+  // phone, and the thing worth saying is either "your discount is already on
+  // this" or "here's how close you are".
+  const loyalty = data.loyalty;
+  const loyaltyLine = !loyalty
+    ? ""
+    : loyalty.applied
+      ? `<p style="margin:16px 0 0;font-size:14px;color:#4A7C59;font-weight:600;">Your $${loyalty.applied.amount} loyalty reward is on this one &mdash; already off your balance.</p>`
+      : loyalty.completesCycle
+        ? `<p style="margin:16px 0 0;font-size:14px;color:#3D2B1F;">Visit ${loyalty.position} of ${loyalty.visitsRequired} &mdash; after this one, $${loyalty.rewardAmount} comes off your next appointment.</p>`
+        : `<p style="margin:16px 0 0;font-size:14px;color:#2C2C2C;">Lash loyalty: visit ${
+            loyalty.position
+          } of ${loyalty.visitsRequired}. ${
+            loyalty.visitsRequired - loyalty.position === 1
+              ? "One more"
+              : `${loyalty.visitsRequired - loyalty.position} more`
+          } and your next appointment is $${loyalty.rewardAmount} off.</p>`;
+
   try {
     await getResend().emails.send({
       from: emailFrom,
@@ -175,6 +251,7 @@ export async function sendReminderEmail(
               <p style="margin:0 0 16px;font-size:16px;color:#3D2B1F;font-weight:600;">${data.serviceName}</p>
               <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">DATE & TIME</p>
               <p style="margin:0;font-size:16px;color:#3D2B1F;font-weight:600;">${friendlyDate(data.bookingDate)} at ${data.timeSlot}</p>
+              ${loyaltyLine}
             </div>
             <h3 style="color:#3D2B1F;font-size:16px;margin-bottom:8px;">Prep Tips</h3>
             <ul style="color:#2C2C2C;font-size:14px;padding-left:20px;">

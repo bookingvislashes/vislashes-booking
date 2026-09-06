@@ -1,5 +1,5 @@
 -- ============================================================
--- VIS Lashes — Loyalty: five visits, $15 off the next set
+-- VIS Lashes — Loyalty: five visits, $15 off the next appointment
 --
 -- SAFE TO RUN REPEATEDLY: two additive columns, one new table, its indexes
 -- and its policies. Nothing here touches a service, a price or a booking that
@@ -7,9 +7,10 @@
 --
 -- WHAT THE PROGRAM IS
 --
--- Every fifth completed appointment earns the client $15 off their next full
--- set or refill. The site has to answer three questions to run that, and each
--- one is a different piece of state:
+-- Every fifth completed appointment earns the client $15 off their next one.
+-- Every service counts, both ways: a lash lift is a visit like any other, and
+-- the $15 can be spent on one. The site has to answer three questions to run
+-- that, and each one is a different piece of state:
 --
 --   1. How far through the current five is she?      clients.loyalty_visits
 --   2. Has she got a reward waiting to be spent?     loyalty_rewards

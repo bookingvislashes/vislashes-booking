@@ -215,10 +215,10 @@ export default function LoyaltyProgress({
               {pending
                 ? `This is visit ${position} — once you're out of the chair, ${money(
                     rewardAmount
-                  )} comes off your next full set or refill. We'll apply it the moment you book.`
+                  )} comes off your next appointment. We'll apply it the moment you book.`
                 : `Visit ${position} is in. ${money(
                     rewardAmount
-                  )} comes off your next full set or refill, applied automatically when you book.`}
+                  )} comes off your next appointment, applied automatically when you book.`}
             </p>
           </div>
         ) : (

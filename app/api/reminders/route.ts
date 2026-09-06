@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendReminderEmail } from "@/lib/email";
+import { getLoyaltyStatus } from "@/lib/loyalty";
 
 /**
  * Appointment reminders, in the two windows she asked for: two days before,
@@ -83,6 +84,7 @@ interface ReminderRow {
   booking_date: string;
   time_slot: string;
   deposit_amount: number | string | null;
+  client_id: string | null;
   clients: { full_name: string; email: string } | null;
   services: { name: string; price: number | string; duration_minutes: number } | null;
 }
@@ -108,7 +110,7 @@ export async function GET(req: NextRequest) {
     const supabase = await createServiceClient();
 
     const select =
-      "id, booking_date, time_slot, deposit_amount, clients(full_name, email), services(name, price, duration_minutes)";
+      "id, booking_date, time_slot, deposit_amount, client_id, clients(full_name, email), services(name, price, duration_minutes)";
 
     const normalise = (rows: unknown[]): ReminderRow[] =>
       (rows || []).map((row) => {
@@ -136,6 +138,16 @@ export async function GET(req: NextRequest) {
         return "skipped" as const;
       }
 
+      // Read per booking rather than joined into the select above: this cron
+      // runs over a handful of rows, and getLoyaltyStatus returns null for
+      // any reason at all — including migration 019 not being run yet —
+      // without costing anybody their reminder.
+      const loyalty = await getLoyaltyStatus(supabase, {
+        id: booking.id,
+        clientId: booking.client_id,
+        status: "confirmed",
+      });
+
       try {
         await sendReminderEmail({
           clientName: booking.clients.full_name,
@@ -148,6 +160,15 @@ export async function GET(req: NextRequest) {
           totalPrice: Number(booking.services.price),
           paymentMethod: "square",
           window: windowName,
+          loyalty: loyalty
+            ? {
+                position: loyalty.position,
+                visitsRequired: loyalty.visitsRequired,
+                rewardAmount: loyalty.rewardAmount,
+                completesCycle: loyalty.completesCycle,
+                applied: loyalty.applied,
+              }
+            : undefined,
         });
 
         // Stamped only after the send resolves, so a failure leaves the row

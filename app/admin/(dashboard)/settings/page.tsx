@@ -43,7 +43,7 @@ const FIELDS = [
   // client's confirmation page.
   {
     key: "loyalty_reward_amount",
-    label: "Loyalty reward ($ off a full set or refill)",
+    label: "Loyalty reward ($ off their next appointment)",
     type: "number",
     group: "loyalty",
     fallback: "15",
@@ -445,12 +445,12 @@ export default function SettingsPage() {
             Loyalty
           </h2>
           <p className="font-sans text-[14px] text-muted leading-[1.5] mb-4 max-w-sm">
-            Every fifth appointment you mark complete earns your client $15 off
-            their next full set or refill. It comes off automatically the next
-            time they book, and shows on the appointment so you know before
-            they sit down. A lash lift counts as a visit but isn&apos;t what the
-            discount can be spent on. Set the reward to 0 to turn the whole
-            thing off.
+            Every fifth appointment you mark complete earns your client $15
+            off their next one. Every service counts, both ways — a lift is a
+            visit like any other, and the $15 can be spent on one. It comes
+            off automatically the next time they book, and shows on the
+            appointment so you know before they sit down. Set the reward to 0
+            to turn the whole thing off.
           </p>
           <div className="flex flex-col gap-4 max-w-sm">
             {loyalty.map((field) => (
