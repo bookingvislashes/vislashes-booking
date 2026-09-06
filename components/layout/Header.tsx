@@ -7,7 +7,15 @@ import { PRODUCTS_ENABLED } from "@/lib/features";
 import { MobileMenu } from "@/components/layout/MobileMenu";
 import { useRef, useEffect } from "react";
 
-export function Header() {
+/**
+ * `tone="dark"` is the home page's header from Figma node 484:186: a
+ * full-bleed #0D0D0D bar with brand-tan links. The booking pages keep
+ * `tone="light"`, which is what their own frames show — a transparent bar on
+ * cream with nav-brown links. The logo SVGs are already #B4957C, so they read
+ * on both without a second asset.
+ */
+export function Header({ tone = "light" }: { tone?: "light" | "dark" } = {}) {
+  const dark = tone === "dark";
   const { items, totalItems, isOpen, setIsOpen, removeItem, updateQuantity } = useCart();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -30,7 +38,8 @@ export function Header() {
     // It used to be tighter because the row also carried a Book CTA, a search
     // icon and a cart, which overflowed at 768px; with only the wordmark and
     // two links left there is room to align properly.
-    <header className="w-full px-6 sm:px-12 lg:px-[120px] pt-[27px] pb-[33px] flex items-center justify-between gap-3 max-w-[1440px] mx-auto">
+    <header className={dark ? "w-full bg-[#0D0D0D]" : "w-full"}>
+    <div className="px-6 sm:px-12 lg:px-[120px] pt-[27px] pb-[33px] flex items-center justify-between gap-3 max-w-[1440px] mx-auto">
       {/* Logo
           unoptimized on both: Next refuses to run an SVG through its image
           optimizer unless dangerouslyAllowSVG is set (it is not, and turning
@@ -69,6 +78,10 @@ export function Header() {
             is on — it would otherwise be a link to nothing. */}
         {[
           { label: "Home", href: "/" },
+          // Figma carries this on every frame. It is a text link, not the
+          // solid CTA that used to sit to the right of the nav — that one was
+          // removed because it duplicated the hero's button within one screen.
+          { label: "Book Appointment", href: "/book" },
           ...(PRODUCTS_ENABLED
             ? [{ label: "Lash Products", href: "#products" }]
             : []),
@@ -77,7 +90,11 @@ export function Header() {
           <Link
             key={link.label}
             href={link.href}
-            className="font-sans font-medium text-[15px] lg:text-[16px] text-nav-brown leading-[15px] tracking-[0.25px] whitespace-nowrap hover:text-brand-brown transition-colors"
+            className={`font-sans font-medium text-[15px] lg:text-[16px] leading-[15px] tracking-[0.25px] whitespace-nowrap transition-colors ${
+              dark
+                ? "text-brand-tan hover:text-cream"
+                : "text-nav-brown hover:text-brand-brown"
+            }`}
           >
             {link.label}
           </Link>
@@ -98,7 +115,7 @@ export function Header() {
           edge, and replaces nothing on desktop — the nav above is `hidden
           md:flex`, this is `md:hidden`, so exactly one of the two is ever
           present. */}
-      <MobileMenu />
+      <MobileMenu tone={tone} />
 
       {PRODUCTS_ENABLED && (
       <div className="flex items-center gap-4 sm:gap-[28px] shrink-0 ml-4 sm:ml-7">
@@ -233,6 +250,7 @@ export function Header() {
         </div>
       </div>
       )}
+    </div>
     </header>
   );
 }

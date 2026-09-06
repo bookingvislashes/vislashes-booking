@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.30.3",
+    date: "2026-09-06",
+    changes: [
+      { kind: "changed", text: "The bar at the top of the home page is black now, and Book Appointment is back in it next to Home and Contact." },
+      { kind: "added", text: "Your About section has its Meet Vianney heading back — it was missing, so the section started straight into the paragraph." },
+      { kind: "changed", text: "Your About paragraph and two of the How to Book steps now read the way they do in the design." },
+      { kind: "added", text: "Follow us on social media for the latest news! sits above the social icons again." },
+    ],
+  },
+  {
     version: "1.30.2",
     date: "2026-09-06",
     changes: [

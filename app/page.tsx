@@ -150,7 +150,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-[100dvh] bg-cream">
-      <Header />
+      <Header tone="dark" />
 
       {/* Hero Section — parallax + mix-blend-difference */}
       <ParallaxHero />
@@ -267,8 +267,12 @@ export default async function HomePage() {
               Stay<br />Lashed in
             </h2>
 
-            {/* Social Media */}
+            {/* Social Media. The caption is Figma node 306:6226; it was
+                missing here, leaving the icons unlabelled. */}
             <div className="flex flex-col gap-[14px] mb-8 sm:mb-10 lg:mb-[40px]">
+              <p className="font-sans text-[14px] text-charcoal">
+                Follow us on social media for the latest news!
+              </p>
               <div className="flex items-center gap-8 sm:gap-10 lg:gap-[40px]">
                 {/* Instagram */}
                 <a href="https://www.instagram.com/vislashesbooking" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-charcoal hover:text-brand-brown transition-colors">

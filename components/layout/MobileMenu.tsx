@@ -25,7 +25,7 @@ const LINKS = [
   { label: "Contact", href: "/#contact" },
 ];
 
-export function MobileMenu() {
+export function MobileMenu({ tone = "light" }: { tone?: "light" | "dark" } = {}) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -75,7 +75,9 @@ export function MobileMenu() {
         aria-controls="mobile-menu"
         // -m-2 p-2 keeps the tap target at 44px without the icon itself
         // growing, which is the minimum iOS treats as reliably hittable.
-        className="md:hidden -m-2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-nav-brown cursor-pointer rounded-control transition-transform active:scale-[0.94]"
+        className={`md:hidden -m-2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer rounded-control transition-transform active:scale-[0.94] ${
+          tone === "dark" ? "text-brand-tan" : "text-nav-brown"
+        }`}
       >
         <svg
           width="24"
