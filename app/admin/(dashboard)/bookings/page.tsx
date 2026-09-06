@@ -87,13 +87,24 @@ export default function BookingsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-[28px] font-bold text-dark-brown">
-          Bookings
-        </h1>
-        <span className="font-sans text-[16px] text-muted">
-          {bookings.length} total
-        </span>
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="min-w-0">
+          <h1 className="font-display text-[28px] font-bold text-dark-brown">
+            Bookings
+          </h1>
+          <p className="font-sans text-[12px] text-muted">
+            {bookings.length} total
+          </p>
+        </div>
+        {/* Booking someone in herself is a normal part of the day — a deposit
+            Zelled at the end of an appointment, an enquiry in the DMs — so it
+            starts from the list of bookings rather than being buried. */}
+        <Link
+          href="/admin/bookings/new"
+          className="shrink-0 inline-flex items-center justify-center box-border h-control px-5 rounded-control border-2 border-transparent bg-text-brown text-white font-sans text-[14px] font-semibold hover:bg-deep-brown transition-colors"
+        >
+          + New
+        </Link>
       </div>
 
       {/* Filters */}

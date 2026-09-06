@@ -31,12 +31,106 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: "1.32.2",
+    version: "1.34.2",
     date: "2026-09-06",
     changes: [
       {
         kind: "note",
         text: "Apple Pay still isn't appearing on your phone, and the reason is hidden inside the browser where neither of us can read it. Open your booking page with ?debug=wallet on the end of the address, go to the payment step, and a small grey \"Wallet check\" box will appear under the payment buttons. Send me a photo of it and it will say exactly what is wrong. Your clients never see this box — it only appears with that wording in the address.",
+      },
+    ],
+  },
+  {
+    version: "1.34.1",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "Settings now tells you which calendar your appointments actually go to, by name — so you can see it's VISLashes and not a personal one, without having to guess from the account.",
+      },
+      {
+        kind: "fixed",
+        text: "Booking a client in yourself now sends you the same phone alert a client's own booking does. Before, only bookings that came with a card notified you.",
+      },
+    ],
+  },
+  {
+    version: "1.34.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "Today has a Check out button. It already knows what she owes — price minus her deposit, minus anything you've recorded — and hands the whole thing to the Square app with the amount typed in and her name on the sale. Tap to Pay as normal from there.",
+      },
+      {
+        kind: "added",
+        text: "Before you charge, you can add anything else to the sale: lash care kit, a removal for someone who turned up still wearing a set, a shampoo. The list is your own Square library, so the prices are whatever you set in Square.",
+      },
+      {
+        kind: "added",
+        text: "A card charged this way lands against the right appointment on its own. It used to be a guess — fine on a one-client day, wrong on a busy one.",
+      },
+      {
+        kind: "fixed",
+        text: "Today was showing $25 too little to collect from anyone who booked a removal with their set. It was pricing the set on its own.",
+      },
+      {
+        kind: "note",
+        text: "Square can't show you who's coming — it only does that if you book inside Square Appointments, and your bookings live here. That's why Tabitha never appeared in the customer list. She was in Square all along, just not near the top.",
+      },
+      {
+        kind: "note",
+        text: "Your Square library prices Lash lift at $45. This site says $70. Worth checking which is right — I haven't touched either.",
+      },
+      {
+        kind: "note",
+        text: "Settings has a Match customers button. It links your clients to the Square profiles they already have. It only reads from Square — it never creates or merges anything. Christina and Tabitha are already linked.",
+      },
+      {
+        kind: "note",
+        text: "Your Square directory has duplicates from the Acuity years — Tabitha appears 3 times, Britney Vazquez 3 times, and several others twice. Match customers will list them; merging is done in Square.",
+      },
+    ],
+  },
+  {
+    version: "1.33.0",
+    date: "2026-09-06",
+    changes: [
+      {
+        kind: "added",
+        text: "You can book a client in yourself now. There's a + New button on Bookings and a + Book on Today — pick her, the service and the time, and you're done. Made for doing it on your phone with her still in the chair.",
+      },
+      {
+        kind: "added",
+        text: "When you book someone in, you can mark the deposit as already paid and say how it came: Zelle, Apple Cash, Venmo, cash, card, or an invoice you sent. The booking shows \"Paid $25.00 by Zelle\" instead of pretending a card was charged.",
+      },
+      {
+        kind: "added",
+        text: "A client you book in gets the same confirmation email, and the same two reminders, as anyone who books through the website. Nothing extra for you to send.",
+      },
+      {
+        kind: "changed",
+        text: "Your Google Calendar entries now hold the whole appointment: her number and email, how many visits she's had, how long it runs, what she's paid and how it arrived, what's left to collect that day, and anything you noted. The link at the bottom opens the booking.",
+      },
+      {
+        kind: "changed",
+        text: "Moving an appointment now moves the calendar entry you already have, rather than deleting it and making a new one. Any reminder you'd set on it survives.",
+      },
+      {
+        kind: "fixed",
+        text: "Confirmation and cancellation emails were showing the date as \"2026-09-13\". They now say \"Sunday, September 13\", the way the reminder emails already did.",
+      },
+      {
+        kind: "note",
+        text: "Christina Rosario (Sun 13 Sep, 10am) and Tabitha Rosado (today, 11:30am) are on the site now, both marked deposit-paid — Christina by Zelle, Tabitha by card. They're linked to the calendar entries you already had, so nothing is doubled up. Check Christina's deposit was $25; that's the standard one and you didn't say otherwise.",
+      },
+      {
+        kind: "note",
+        text: "Tabitha's email is now tabithaxx23@icloud.com — the one she used on her last booking. Her old gmail is saved on her client record in case that was the right one.",
+      },
+      {
+        kind: "note",
+        text: "Database change 017 was needed for deposits paid by Zelle. It has already been run for you — Migrations will show it green, nothing to do.",
       },
     ],
   },

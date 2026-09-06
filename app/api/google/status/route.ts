@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import {
   getConnection,
+  getCalendarSummary,
   isGoogleConfigured,
   googleConfigProblem,
 } from "@/lib/google-calendar";
@@ -39,11 +40,17 @@ export async function GET() {
     const admin = await createServiceClient();
     const connection = await getConnection(admin);
 
+    // The name of the calendar appointments actually land on. Asked for only
+    // when there is a connection to ask about, and a failure here is not a
+    // failure of the status check — the panel prints what it knows.
+    const calendarName = connection ? await getCalendarSummary(admin) : null;
+
     return NextResponse.json({
       configured: true,
       connected: Boolean(connection),
       email: connection?.googleEmail ?? null,
       connectedAt: connection?.connectedAt ?? null,
+      calendarName,
     });
   } catch (err) {
     console.error("Google Calendar: status check failed:", err);
