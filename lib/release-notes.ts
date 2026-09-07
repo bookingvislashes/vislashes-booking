@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.39.0",
+    date: "2026-09-07",
+    changes: [
+      {
+        kind: "changed",
+        text: "The Find Your Signature Set section on the home page now matches the latest design — new intro paragraph, and the Book buttons are filled tan instead of outlined.",
+      },
+      {
+        kind: "changed",
+        text: "Each round set photo now sits on a deeper backdrop and is centred in its circle, so faces are no longer cropped just below the nose.",
+      },
+      {
+        kind: "fixed",
+        text: "On a phone, the three sets on the home page no longer run into each other — each one has space above and below it again.",
+      },
+    ],
+  },
+  {
     version: "1.38.1",
     date: "2026-09-07",
     changes: [

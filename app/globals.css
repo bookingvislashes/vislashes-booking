@@ -24,6 +24,16 @@
   --color-nav-brown: #6D5B4D;
   --color-card-beige: #E7D7CB;
   --color-instagram: #C6AB95;
+  /* Sits behind the cut-out portraits in the Signature Set circles. Deeper
+     than --color-card-beige, which read as a pale halo around each face
+     rather than the plinth the design draws. Figma paints row 2 as
+     --color-text-brown at 45%, which composites to #C2B0A2 over cream — the
+     same colour to the eye, so all three rows share this one. */
+  --color-portrait-backdrop: #C3B3A4;
+  /* Fill of Figma's "Primary, light mode" button, used by the Signature Set
+     row CTAs. Shares a hex with --color-instagram by coincidence, not by
+     relation: that one is the Instagram link in the dark footer. */
+  --color-cta-tan: #C6AB95;
 
   /* Two families only. `font-sans` is body and every control; `font-display`
      is headings. Both are injected by next/font in app/layout.tsx. */

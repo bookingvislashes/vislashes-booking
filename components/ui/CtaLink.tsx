@@ -40,6 +40,10 @@ const variants = {
   dark: "bg-charcoal text-white border-transparent hover:bg-dark-brown",
   outlineDark:
     "bg-transparent border-charcoal text-charcoal hover:bg-charcoal hover:text-white",
+  /* Figma's "Primary, light mode" button — the Signature Set row CTAs.
+     Charcoal on this tan is 6.6:1, and 5.1:1 on the brand-tan hover, so the
+     label clears AA in both states. */
+  tan: "bg-cta-tan text-charcoal border-transparent hover:bg-brand-tan",
 } as const;
 
 // The font classes are composed alongside `base` rather than substituted into

@@ -189,37 +189,42 @@ export default async function HomePage() {
               Find Your Signature Set
             </h2>
             <p className="font-sans text-muted text-[16px] leading-[1.6]">
-              Three full sets, each one applied by me, one client at a time. Not
-              sure which is yours? Book the closest fit — we&rsquo;ll settle the
-              final look together at your appointment.
+              A slow-paced, intimate studio experience. Every set is tailored to
+              the quiet poetry of your unique bone structure. No rushes, no
+              distractions—just pure, restorative detail.
             </p>
           </div>
         </Reveal>
       )}
+      {/* Row spacing lives on this container, not on the rows. Each row sits
+          inside its own <Reveal>, so every row is its parent's only child and
+          the `last:mb-0` this used to carry matched all three of them — which
+          left the phone layout with the sets touching. From md up the rows
+          have their own vertical padding, so the gap hands off to that. */}
       {featureSections.length > 0 && (
-        <div className="w-full max-w-[960px] mx-auto px-6 lg:px-0 mb-8 sm:mb-10 lg:mb-[96px]">
+        <div className="w-full max-w-[960px] mx-auto px-6 lg:px-0 mb-8 sm:mb-10 lg:mb-[90px] flex flex-col gap-14 md:gap-0">
           {featureSections.map((section, index) => (
             <Reveal key={section.name} delay={index * 80}>
               <div
-                className={`group flex flex-col items-center gap-6 mb-14 last:mb-0 md:mb-0 md:items-center md:justify-between md:py-8 lg:py-[48px] ${
+                className={`group flex flex-col items-center gap-6 md:items-center md:justify-between md:py-8 lg:py-[48px] ${
                   section.imagePosition === "right" ? "md:flex-row-reverse" : "md:flex-row"
                 }`}
               >
-                <div className="relative shrink-0 rounded-full overflow-hidden bg-card-beige size-[240px] lg:size-[320px]">
+                <div className="relative shrink-0 rounded-full overflow-hidden bg-portrait-backdrop size-[240px] lg:size-[320px]">
                   <Image
                     src={section.imageSrc}
                     /* Decorative: the set name is announced by the <h3> directly
                        beside this image, so alt text would just repeat it. */
                     alt=""
                     fill
-                    className="object-cover object-top transition-[scale] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                    className="object-cover object-center transition-[scale] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                     loading="eager"
                     unoptimized
                     sizes="(max-width: 640px) 240px, 320px"
                   />
                 </div>
 
-                <div className="w-full max-w-[420px] md:max-w-none md:flex-1 lg:w-[480px] lg:flex-none flex flex-col gap-4 text-left">
+                <div className="w-full max-w-[420px] md:max-w-none md:flex-1 lg:w-[480px] lg:flex-none flex flex-col gap-[6px] text-left">
                   <span aria-hidden className="font-display font-bold italic text-text-brown text-[24px]">
                     {String(index + 1).padStart(2, "0")}
                   </span>
@@ -237,7 +242,7 @@ export default async function HomePage() {
                   <div className="pt-[8px]">
                     <CtaLink
                       href={`/book?service=${section.id}`}
-                      variant="outlineDark"
+                      variant="tan"
                       size="sm"
                       font="display"
                     >
