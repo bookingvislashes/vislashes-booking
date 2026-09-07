@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.40.0",
+    date: "2026-09-07",
+    changes: [
+      {
+        kind: "changed",
+        text: "The three How to Book photos on the home page are now the ones from the design — a tray of lashes, a phone with the calendar open, and a treatment room.",
+      },
+      {
+        kind: "note",
+        text: "Your own three photos are still set, and yours always win. To see the new ones, go to Settings → How to Book Photos and press “Use default” on each of the three steps.",
+      },
+      {
+        kind: "note",
+        text: "“Use default” does not delete your photo — press Upload on any step to put yours back, and it will win again.",
+      },
+    ],
+  },
+  {
     version: "1.39.0",
     date: "2026-09-07",
     changes: [
