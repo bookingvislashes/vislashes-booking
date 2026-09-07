@@ -26,9 +26,21 @@ interface SquareApplePay {
 }
 
 interface SquareGooglePay {
-  attach(selector: string): Promise<void>;
+  attach(selector: string, options?: SquareGooglePayButtonOptions): Promise<void>;
   tokenize(): Promise<SquareTokenResult>;
   destroy(): void;
+}
+
+/**
+ * Without buttonSizeMode: "fill", Google Pay renders its own default-width
+ * button inside whatever container it's given — it does not stretch to match
+ * a sibling button's width the way ordinary HTML would. That's why the
+ * button used to render narrower than the Apple Pay button next to it.
+ */
+interface SquareGooglePayButtonOptions {
+  buttonColor?: "black" | "white";
+  buttonType?: "buy" | "plain" | "book" | "checkout" | "donate" | "order" | "pay" | "subscribe";
+  buttonSizeMode?: "static" | "fill";
 }
 
 interface SquareTokenResult {

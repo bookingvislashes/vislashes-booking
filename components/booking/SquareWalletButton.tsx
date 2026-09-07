@@ -132,7 +132,11 @@ export function SquareWalletButton({
         try {
           const gp = await payments.googlePay(paymentRequest);
           if (gp && googlePayContainerRef.current && !cancelled) {
-            await gp.attach("#square-google-pay");
+            // buttonSizeMode: "fill" stretches Square's button to the
+            // container's own width and height, so it matches the Apple Pay
+            // button next to it instead of falling back to Square's default
+            // (narrower, shorter) button size.
+            await gp.attach("#square-google-pay", { buttonSizeMode: "fill" });
             googlePayRef.current = gp;
             setGooglePayReady(true);
           }
@@ -239,12 +243,15 @@ export function SquareWalletButton({
         </button>
       )}
       {/* Always in the DOM so attach() can find it during init; hidden rather
-          than unmounted until Square confirms Google Pay is usable. */}
+          than unmounted until Square confirms Google Pay is usable. Explicit
+          width/height give buttonSizeMode: "fill" a box to fill — without
+          them Google Pay's own default button size wins, which is what made
+          it render narrower and shorter than the Apple Pay button above. */}
       <div
         id="square-google-pay"
         ref={googlePayContainerRef}
         onClick={handleGooglePay}
-        className={googlePayReady ? "" : "hidden"}
+        className={`w-full h-control box-border ${googlePayReady ? "" : "hidden"}`}
       />
       {diagnostics.length > 0 && (
         <div className="rounded-control border border-light-tan bg-white p-3 text-left">

@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.38.1",
+    date: "2026-09-07",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Apple Pay and Google Pay buttons on the booking payment step are now the same size as each other on mobile, instead of Google Pay showing up narrower and shorter than Apple Pay.",
+      },
+    ],
+  },
+  {
     version: "1.38.0",
     date: "2026-09-06",
     changes: [
