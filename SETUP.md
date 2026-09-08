@@ -210,6 +210,9 @@ connected to her repository, and nothing breaks if Jerry's accounts go away.
    | `RESEND_API_KEY` | from Phase D |
    | `EMAIL_FROM` | `onboarding@resend.dev`, or her own domain address |
    | `NEXT_PUBLIC_BASE_URL` | her live site URL — fill in after the first deploy |
+   | `TWILIO_ACCOUNT_SID` | from Phase H — leave out until the campaign is approved |
+   | `TWILIO_AUTH_TOKEN` | from Phase H — leave out until the campaign is approved |
+   | `TWILIO_FROM_NUMBER` | from Phase H, in `+14079798350` form |
 
 6. Click **Deploy** and wait ~2 minutes.
 7. Copy the URL it gives you, go to **Settings → Environment Variables**, set
@@ -238,6 +241,46 @@ Walk through these in order. Each one confirms a different service is connected.
 - [ ] A confirmation email arrives
 - [ ] `/admin/login` accepts the user created in Phase B
 - [ ] After the Part 2 fix: visiting `/admin` while logged out redirects to the login page
+
+### Phase H — Appointment texts (optional, and genuinely last)
+
+Texting is the only part of this that a third party has to approve, so it is
+deliberately last. **Everything works without it:** with these three variables
+unset, the site skips texting entirely and sends the same confirmations and
+reminders by email that it always has. Nothing breaks, and nothing is queued
+up waiting — so there is no rush, and no harm in leaving this until the
+carriers have said yes.
+
+1. Register the A2P 10DLC campaign in the Twilio Console and wait for the
+   carriers to approve it. Do not do the rest of this until they have. A
+   number that sends before its campaign is approved gets its traffic
+   blocked, and repeat offences put the whole account at risk.
+2. In the Twilio Console, open **Messaging → Services → your service →
+   Opt-Out Management** and switch on **Advanced Opt-Out**. This is what
+   makes Twilio answer STOP and HELP by itself. The site does not answer
+   them — inbound texts go to Twilio, not to her phone — so without this,
+   a client replying STOP is answered by nobody, which is the thing the
+   carriers care most about.
+3. In Vercel, **Settings → Environment Variables**, add the three `TWILIO_*`
+   variables from the table in Phase E. The Account SID and Auth Token are on
+   the Twilio Console dashboard; the from-number is the salon's Twilio number
+   written as `+1` followed by the ten digits, no spaces or brackets.
+4. Redeploy. Environment variables only take effect on a new build, so nothing
+   changes until you do.
+5. Book a real appointment with a real phone number and check the text arrives.
+   Then open **Monitor → Logs → Messaging** in Twilio and look at that message:
+   it should say **GSM-7** and **2 segments**. If it says UCS-2, a character
+   that is not in the GSM-7 alphabet has crept into one of the message
+   templates in `lib/sms.ts`, and every text is costing about double. There is
+   a note above those templates explaining which characters are safe.
+
+**One thing to know about the two-hour reminder.** Vercel's Hobby plan only
+allows a cron to run once a day, and this site's cron runs at 9am Eastern. The
+two-day reminder goes out fine. The two-hour reminder cannot — by the time the
+job next runs, the appointment has already happened. The code for it is
+correct and already written; it needs either a paid Vercel plan with hourly
+crons, or any free external scheduler pointed at `/api/reminders` every hour.
+Until then, clients get the confirmation and the two-day reminder only.
 
 ---
 

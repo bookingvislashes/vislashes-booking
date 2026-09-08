@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.41.3",
+    date: "2026-09-08",
+    changes: [
+      {
+        kind: "note",
+        text: "Once Twilio approves the campaign, two things have to be switched on by hand: Advanced Opt-Out in the Twilio Console, so STOP and HELP get answered, and the three TWILIO_ settings in Vercel. Texts do nothing until both are done. The steps are written out in SETUP.md, Phase H.",
+      },
+      {
+        kind: "note",
+        text: "The two-hour reminder cannot send on the current Vercel plan, which only allows the reminder job to run once a day. Confirmations and two-day reminders are unaffected. Fixing it needs a paid plan or an hourly scheduler - no code change.",
+      },
+    ],
+  },
+  {
     version: "1.41.2",
     date: "2026-09-08",
     changes: [
