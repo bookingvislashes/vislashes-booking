@@ -31,6 +31,32 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.42.0",
+    date: "2026-09-08",
+    changes: [
+      {
+        kind: "changed",
+        text: "Bookings now opens on your upcoming appointments only, soonest first, grouped by day with Today and Tomorrow called out.",
+      },
+      {
+        kind: "changed",
+        text: "Completed, cancelled and no-show appointments have moved to their own tabs, so they no longer sit in the middle of the list you read each morning.",
+      },
+      {
+        kind: "added",
+        text: "A Past tab collects appointments that have already happened but are still marked confirmed, so nothing gets left unfinished.",
+      },
+      {
+        kind: "added",
+        text: "Every tab shows how many appointments are in it, and each upcoming appointment says whether its deposit has been paid.",
+      },
+      {
+        kind: "fixed",
+        text: "A day with several appointments now lists them in real time order — 9:00 AM used to come after 10:00 AM.",
+      },
+    ],
+  },
+  {
     version: "1.41.3",
     date: "2026-09-08",
     changes: [

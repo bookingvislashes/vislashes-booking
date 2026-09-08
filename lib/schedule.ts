@@ -95,6 +95,22 @@ export function to12Hour(time24: string): string {
   return `${hour12}:${m.toString().padStart(2, "0")} ${ampm}`;
 }
 
+/**
+ * "2:30 PM" — the shape `bookings.time_slot` is stored in — as minutes since
+ * midnight, or null when it isn't a slot at all.
+ *
+ * Needed because that column is text in a 12-hour format, so ordering on it in
+ * SQL sorts it alphabetically: "10:00 AM" lands before "9:00 AM" and a day's
+ * appointments come back in the wrong order. Anything that has to put bookings
+ * in time order sorts on this instead.
+ */
+export function slotToMinutes(slot: string): number | null {
+  const match = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(slot.trim());
+  if (!match) return null;
+  const hour = Number(match[1]) % 12;
+  return (hour + (match[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(match[2]);
+}
+
 export function formatRange(start: string, end: string): string {
   return `${to12Hour(start)} – ${to12Hour(end)}`;
 }
