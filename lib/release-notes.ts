@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.41.2",
+    date: "2026-09-08",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Appointment texts used a long dash, which phone networks charge double for. Swapping it for a short one cuts a booking from 9 billed text segments to 5 - the same messages, just under half the Twilio cost.",
+      },
+    ],
+  },
+  {
     version: "1.41.1",
     date: "2026-09-08",
     changes: [

@@ -136,6 +136,14 @@ export interface AppointmentSms {
 /**
  * The three messages, in the salon owner's voice.
  *
+ * PUNCTUATION: hyphens, not em dashes, and straight quotes throughout. A text
+ * is encoded in GSM-7 only while every character is in that alphabet, and an
+ * em dash is not; one of them anywhere in the body switches the whole message
+ * to UCS-2, which cuts a segment from 160 characters to 70. The confirmation
+ * below is long enough that this is the difference between 2 segments and 4 —
+ * paid per segment, on every booking, forever. Prose in these comments can use
+ * whatever punctuation reads best; the message bodies cannot.
+ *
  * Each is built on the same four beats: who it is from, the one fact that
  * matters, the one thing to do, and the way out. No message invites a reply
  * the salon cannot see — inbound texts land at Twilio, not on her phone, so
@@ -150,7 +158,7 @@ export function confirmationText(a: AppointmentSms): string {
   // so a client who reads texts and skims email still knows where to go.
   const where = a.address ? `\n${a.address}` : "";
   return (
-    `VIS Lashes — you're booked, ${firstName(a.clientName)}!\n\n` +
+    `VIS Lashes - you're booked, ${firstName(a.clientName)}!\n\n` +
     `${a.serviceName}\n` +
     `${friendlyDate(a.bookingDate)} at ${a.timeSlot}${deposit}${where}\n\n` +
     `Everything you need is in your email confirmation. See you soon!\n\n` +
@@ -165,7 +173,7 @@ export function confirmationText(a: AppointmentSms): string {
 export function twoDayText(a: AppointmentSms): string {
   return (
     `Hi ${firstName(a.clientName)}! Your ${a.serviceName} with VIS Lashes ` +
-    `is in 2 days — ${weekday(a.bookingDate)} at ${a.timeSlot}.\n\n` +
+    `is in 2 days - ${weekday(a.bookingDate)} at ${a.timeSlot}.\n\n` +
     `To prep: clean lashes, no mascara, and go easy on the caffeine.\n\n` +
     `Need to change it? Let me know today and I'll find you another spot.`
   );
@@ -186,7 +194,7 @@ export function cancellationText(a: {
     ? `\n\nYour deposit will be refunded.`
     : "";
   return (
-    `Hi ${firstName(a.clientName)} — your VIS Lashes appointment on ` +
+    `Hi ${firstName(a.clientName)} - your VIS Lashes appointment on ` +
     `${friendlyDate(a.bookingDate)} at ${a.timeSlot} has been cancelled.` +
     `${deposit}\n\n` +
     `Sorry for the change! Book again any time at vislashes.com.`
