@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { UseFormReturn } from "react-hook-form";
 import { BookingFormData } from "@/lib/schemas";
 import { Input } from "@/components/ui/input";
@@ -50,14 +51,26 @@ export function CustomerForm({ form }: CustomerFormProps) {
           US carriers require A2P senders to disclose at the point of capture
           what the number will be used for and how to stop — and the 10DLC
           campaign review asks for the page this appears on. It says texts only,
-          names the three that get sent, and promises no marketing, because that
-          is exactly what the site does. If the messages ever change, this
-          has to change with them. */}
+          names every message that gets sent, and promises no marketing, because
+          that is exactly what the site does. The links matter as much as the
+          words: a vetter following the registration to this form has to be able
+          to reach the policy from here. If the messages ever change, this has
+          to change with them. */}
       <p className="font-sans text-[12px] text-muted leading-[1.6] mt-4">
-        By booking, you agree to receive appointment texts from VIS Lashes: a
-        confirmation, a reminder two days before, and one two hours before. No
-        marketing, ever. Reply STOP any time to stop them — your appointment is
-        unaffected. Message and data rates may apply.
+        By entering your number you agree to receive appointment texts from
+        VIS Lashes: a confirmation, a reminder two days before, one two hours
+        before, and a notice if we have to cancel. No marketing, ever, and your
+        number is never shared. Reply STOP any time to stop them — your
+        appointment is unaffected — or HELP for help. Message and data rates
+        may apply. See our{" "}
+        <Link href="/terms" className="underline">
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline">
+          Privacy Policy
+        </Link>
+        .
       </p>
     </div>
   );

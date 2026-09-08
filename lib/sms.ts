@@ -154,11 +154,11 @@ export function confirmationText(a: AppointmentSms): string {
     `${a.serviceName}\n` +
     `${friendlyDate(a.bookingDate)} at ${a.timeSlot}${deposit}${where}\n\n` +
     `Everything you need is in your email confirmation. See you soon!\n\n` +
-    // Carriers require opt-out instructions, and the first message a client
-    // receives is the place for them. Only on the confirmation: repeating it
-    // on every reminder reads like marketing, which is the opposite of what
-    // this is.
-    `Reply STOP to opt out.`
+    // Carriers require opt-out and help instructions, and the first message a
+    // client receives is the place for them. Only on the confirmation:
+    // repeating it on every reminder reads like marketing, which is the
+    // opposite of what this is. Twilio answers both keywords itself.
+    `Reply HELP for help, STOP to opt out.`
   );
 }
 

@@ -51,27 +51,36 @@ export const buildTerms = (depositAmount: number | null) => `TERMS AND CONDITION
 /**
  * The messaging clauses, kept separate so the booking terms stay about the
  * appointment. Every claim here has to stay true of what the site actually
- * sends: three messages, transactional only, and STOP honoured automatically.
- * If the messages change, this changes with them — a carrier can and does
- * compare this page against the samples on the campaign registration.
+ * sends: the three in lib/sms.ts plus the cancellation notice, transactional
+ * only, and STOP honoured automatically. If the messages change, this changes
+ * with them — a carrier does compare this page against the samples on the
+ * campaign registration, and a fourth message the policy never mentioned is
+ * read as conflicting information and rejected.
  */
 export const SMS_TERMS = `TEXT MESSAGE TERMS
 
-1. By providing your mobile number when you book, you agree to receive appointment text messages from VIS Lashes.
-2. You will receive up to three messages per appointment: a booking confirmation, a reminder two days before, and a reminder two hours before.
-3. These messages are transactional. VIS Lashes does not send marketing or promotional text messages.
-4. Message and data rates may apply.
+1. By entering your mobile number when you book, you agree to receive appointment text messages from VIS Lashes at that number. This is how you opt in; we never add a number from any other source and we never buy or import phone lists.
+2. You will receive up to three messages per appointment — a booking confirmation, a reminder two days before, and a reminder two hours before — plus one message if VIS Lashes has to cancel your appointment.
+3. These messages are transactional and relate only to your own appointment. VIS Lashes does not send marketing or promotional text messages.
+4. Message frequency varies with how often you book. Message and data rates may apply.
 5. Reply STOP at any time to stop receiving text messages. Your appointment is unaffected, and you will continue to receive email confirmations and reminders.
 6. Reply HELP for help, or contact VIS Lashes using the details below.
-7. Carriers are not liable for delayed or undelivered messages.`;
+7. Your mobile number and your consent to be texted are never shared with any third party for marketing or promotional purposes. See our Privacy Policy.
+8. Carriers are not liable for delayed or undelivered messages.`;
 
 /**
  * The privacy policy.
  *
  * The mobile-number clause is not boilerplate: US carriers require an explicit
  * statement that phone numbers collected for messaging are not sold or shared,
- * and a campaign is rejected without one. Everything else describes what the
- * site genuinely does — the processors named are the ones actually in use.
+ * and a campaign is rejected without one. The vetting is partly a string
+ * match, so the words "affiliates" and "text messaging originator opt-in data
+ * and consent" are there deliberately — keep them. The processor list needs
+ * its carve-out for the same reason: naming Twilio and Square without it reads
+ * as sharing and contradicts the clause above.
+ *
+ * Everything else describes what the site genuinely does — the processors
+ * named are the ones actually in use.
  */
 export function buildPrivacyPolicy(details: {
   businessName: string;
@@ -94,14 +103,17 @@ When you book an appointment we collect your name, email address, phone number, 
 HOW WE USE IT
 To book and manage your appointment, to send you confirmations and reminders by email and text message, to keep a record of your visits and any health information relevant to your treatment, and to keep the financial records required for tax purposes.
 
-MOBILE NUMBERS ARE NOT SHARED
-No mobile information collected for text messaging will be sold, rented, or shared with any third party for marketing or promotional purposes. Phone numbers are used only to send you messages about your own appointments.
+MOBILE INFORMATION AND TEXT MESSAGING CONSENT
+No mobile information will be sold, rented, or shared with third parties or affiliates for marketing or promotional purposes. Text messaging originator opt-in data and consent are not shared with any third party, and are excluded from every category of sharing described anywhere in this policy. Your phone number is used only to send you messages about your own appointments.
+
+HOW YOU OPT IN TO TEXT MESSAGES
+You opt in by entering your own mobile number on the booking form at vislashes.com. The form tells you, at the point where the number is entered, exactly which messages you will receive and how to stop them. We never add a number from any other source, and we never buy, rent, or import phone lists.
 
 TEXT MESSAGES
-If you book with us you may receive up to three text messages per appointment: a confirmation, a reminder two days before, and a reminder two hours before. These are transactional messages, never marketing. Message and data rates may apply. Reply STOP at any time to stop them; your appointment and your email reminders are unaffected.
+If you book with us you may receive up to three text messages per appointment: a confirmation, a reminder two days before, and a reminder two hours before. You will also receive one message if we have to cancel your appointment. These are transactional messages about your own appointment, never marketing. Message frequency varies with how often you book, and message and data rates may apply. Reply STOP at any time to stop them; your appointment and your email reminders are unaffected. Reply HELP for help.
 
 WHO ELSE HANDLES YOUR INFORMATION
-We use a small number of service providers to run the business, and they only receive what they need to do their job: Square for card payments, Supabase for storing appointment records, Resend for sending email, Twilio for sending text messages, Google Calendar for the appointment schedule, and Vercel for hosting the website. None of them are permitted to use your information for their own marketing.
+We use a small number of service providers to run the business, and they only receive what they need to do their job: Square for card payments, Supabase for storing appointment records, Resend for sending email, Twilio for sending text messages, Google Calendar for the appointment schedule, and Vercel for hosting the website. None of them are permitted to use your information for their own marketing. This section does not apply to your mobile number or your text messaging consent: those are never shared with anyone for marketing or promotional purposes, and Twilio receives your number only to deliver a message to you.
 
 HOW LONG WE KEEP IT
 Appointment and payment records are kept as long as required for tax and business records. You can ask us to delete your contact details at any time.

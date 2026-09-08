@@ -31,6 +31,32 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.41.0",
+    date: "2026-09-08",
+    changes: [
+      {
+        kind: "changed",
+        text: "The privacy policy now says, in the exact words the phone carriers look for, that mobile numbers and text consent are never sold or shared — this is what the rejected Twilio campaign was missing.",
+      },
+      {
+        kind: "fixed",
+        text: "The privacy policy, the terms and the booking form all said clients get three texts, but a fourth was added when you cancel an appointment. All three now say the same thing, which is what carriers check.",
+      },
+      {
+        kind: "changed",
+        text: "The consent line under the phone number on the booking form now links to the Terms and Privacy Policy, and mentions replying HELP.",
+      },
+      {
+        kind: "changed",
+        text: "The booking confirmation text now ends \"Reply HELP for help, STOP to opt out.\" instead of only mentioning STOP.",
+      },
+      {
+        kind: "note",
+        text: "Resubmit the Twilio campaign only after vislashes.com/privacy shows today's date — the carrier reads the live page, not the code.",
+      },
+    ],
+  },
+  {
     version: "1.40.0",
     date: "2026-09-07",
     changes: [
