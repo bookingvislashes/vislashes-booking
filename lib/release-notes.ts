@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.41.1",
+    date: "2026-09-08",
+    changes: [
+      {
+        kind: "fixed",
+        text: "The Terms and Privacy pages still said \"Last updated September 6\" after today's rewrite. They now say September 8, so the carrier reviewing the campaign can see the page changed since they rejected it.",
+      },
+    ],
+  },
+  {
     version: "1.41.0",
     date: "2026-09-08",
     changes: [
