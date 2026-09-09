@@ -152,7 +152,7 @@ export default async function HomePage() {
     <div className="min-h-[100dvh] bg-cream">
       <Header tone="dark" />
 
-      {/* Hero Section — parallax + mix-blend-difference */}
+      {/* Hero Section */}
       <ParallaxHero />
 
       {/* Founder intro, then How to Book — in the order they sit on the Figma
@@ -184,7 +184,14 @@ export default async function HomePage() {
           behind the first. */}
       {featureSections.length > 0 && (
         <Reveal>
-          <div className="max-w-[720px] mx-auto px-6 sm:px-12 lg:px-0 flex flex-col items-center gap-4 text-center pt-8 sm:pt-12 lg:pt-[100px] mb-10 sm:mb-12 lg:mb-[80px]">
+          {/* The hero's second CTA lands here. scroll-mt clears the section's
+              own top padding so the heading isn't left flush against the top
+              of the viewport. The id is on the intro rather than on <Reveal>,
+              which takes no props. */}
+          <div
+            id="signature-sets"
+            className="scroll-mt-8 max-w-[720px] mx-auto px-6 sm:px-12 lg:px-0 flex flex-col items-center gap-4 text-center pt-8 sm:pt-12 lg:pt-[100px] mb-10 sm:mb-12 lg:mb-[80px]"
+          >
             <h2 className="font-display font-bold text-[36px] sm:text-[44px] lg:text-[48px] leading-[1.15] text-charcoal text-balance">
               Find Your Signature Set
             </h2>

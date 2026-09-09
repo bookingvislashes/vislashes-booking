@@ -31,8 +31,8 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: "1.43.0",
-    date: "2026-09-08",
+    version: "1.45.0",
+    date: "2026-09-09",
     changes: [
       {
         kind: "note",
@@ -73,8 +73,8 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     ],
   },
   {
-    version: "1.42.0",
-    date: "2026-09-08",
+    version: "1.44.0",
+    date: "2026-09-09",
     changes: [
       {
         kind: "changed",
@@ -95,6 +95,46 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       {
         kind: "fixed",
         text: "A day with several appointments now lists them in real time order — 9:00 AM used to come after 10:00 AM.",
+      },
+    ],
+  },
+  {
+    version: "1.43.0",
+    date: "2026-09-09",
+    changes: [
+      {
+        kind: "changed",
+        text: "What Clients Say on the home page now leads with Kim's Square feedback (\"Her studio is a WHOLE VIBE\") and closes with Valery's text (\"these lashes have stayed ONNNN\").",
+      },
+      {
+        kind: "changed",
+        text: "Those two replaced Dayanara's \"Thank you so much, I love them!\" and Charlene's \"Great experience! Beautiful work!\" - both kind, but neither showed how good the work actually is. Gaby's and Mattie's are unchanged.",
+      },
+      {
+        kind: "note",
+        text: "Send me any client message you want up there and I will add it. Best ones say something only you could earn - how long a set lasted, how the room felt, that she is sending friends - rather than just that she liked them.",
+      },
+    ],
+  },
+  {
+    version: "1.42.0",
+    date: "2026-09-09",
+    changes: [
+      {
+        kind: "changed",
+        text: "The top of the home page now reads \"Wake up with your lashes already done.\" instead of \"Your lash appointment, without the salon.\" - it leads with what a client gets rather than with what you are not.",
+      },
+      {
+        kind: "changed",
+        text: "The line under it is now \"Every set is mapped to your own eye shape and applied one-on-one in Vianney's private home studio.\"",
+      },
+      {
+        kind: "added",
+        text: "A second button, \"See Sets & Pricing\", jumps straight down to your three full sets. Someone who wants the price before booking now stays on the page instead of leaving to ask on Instagram.",
+      },
+      {
+        kind: "changed",
+        text: "The \"Book Your Appointment\" button is cream instead of near-black, so it stands out against the photo rather than blending into the dark side of it. On a phone both buttons now run the full width.",
       },
     ],
   },
