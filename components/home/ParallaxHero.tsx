@@ -23,8 +23,35 @@ import { PRODUCTS_ENABLED } from "@/lib/features";
  * The filename is historical. The parallax it was named for was removed with
  * the blend; `app/page.tsx` imports `ParallaxHero`, so the name stays put
  * rather than churning an unrelated file.
+ *
+ * ── The copy, and why it changed ─────────────────────────────────────────
+ * It used to read "Your lash appointment, without the salon." over "no
+ * walk-ins, no other chairs, no rush." Both sentences describe what this is
+ * *not*, and a first-time visitor who has never been to a lash salon has no
+ * salon to be relieved about — the promise only lands for someone already in
+ * the market. It also asked for the booking with no reason to trust her and
+ * no idea what a set costs, which are the two things a cold visitor actually
+ * wants before they tap.
+ *
+ * So the headline now leads with the result she is selling (waking up done),
+ * the studio line keeps her own "no other chairs, no rush" rhythm but spends
+ * its first half on the differentiator, and a proof line under the buttons
+ * carries her credential, the consultation and the real starting price. The
+ * second CTA goes to the price list rather than off the page, because
+ * "what does it cost" is the objection that otherwise sends people to
+ * Instagram to ask.
  */
-export function ParallaxHero() {
+export function ParallaxHero({
+  startingPrice,
+}: {
+  /**
+   * Lowest full-set price, straight from the `services` table via
+   * `app/page.tsx`. Optional and rendered only when present: an invented or
+   * stale number in the first line a client reads is worse than no number,
+   * and she changes prices herself in Services.
+   */
+  startingPrice?: number | null;
+} = {}) {
   return (
     // The subtracted values are the measured header height at each breakpoint
     // (88px below lg, 94px at lg). They are duplicated from the header rather
@@ -51,10 +78,15 @@ export function ParallaxHero() {
 
       {/* Scrim, phone and tablet: bottom-up, because the text is anchored to
           the bottom edge there. Held stronger than the desktop ramp because at
-          375 the headline sits over skin rather than the pale backdrop. */}
+          375 the headline sits over skin rather than the pale backdrop.
+
+          The hold was extended (0.88 to 70%, gone by 96%) when the kicker,
+          the second button and the proof list were added: the column is about
+          200px taller than it was, and the old ramp had already faded to
+          nothing by the height the kicker now sits at. */}
       <div
         aria-hidden
-        className="absolute inset-0 pointer-events-none lg:hidden bg-[linear-gradient(0deg,rgba(45,32,21,0.82)_0%,rgba(63,45,31,0.60)_52%,rgba(63,45,31,0)_85%)]"
+        className="absolute inset-0 pointer-events-none lg:hidden bg-[linear-gradient(0deg,rgba(45,32,21,0.88)_0%,rgba(63,45,31,0.72)_70%,rgba(63,45,31,0)_96%)]"
       />
 
       {/* Scrim, lg and up.
@@ -80,27 +112,81 @@ export function ParallaxHero() {
       />
 
       <div className="relative z-10 h-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] flex flex-col justify-end pb-12 lg:justify-center lg:pb-0">
-        <h1 className="font-display font-bold text-cream text-[40px] sm:text-[52px] lg:text-[64px] leading-[1.04] max-w-[500px] animate-fade-in-up">
-          Your lash appointment, without the salon.
-        </h1>
-
-        <p className="mt-6 font-sans text-light-tan text-[16px] lg:text-[17px] leading-[1.45] max-w-[440px] animate-fade-in-up [animation-delay:120ms]">
-          Every set is done one-on-one in Vianney&apos;s private home studio near
-          Lake Nona and St. Cloud — no walk-ins, no other chairs, no rush.
+        {/* Where and how, in one line above the headline, so the headline
+            itself never has to spend words on logistics. "By appointment
+            only" is the same fact the old subtext spent "no walk-ins" on. */}
+        {/* Set down a step with tighter tracking below sm: uppercased at
+            11px/0.18em this runs to roughly 378px, which is wider than the
+            342px a 390px phone leaves inside the gutters, and it broke with
+            "ONLY" alone on a second line. */}
+        <p className="font-sans text-warm-beige text-[10px] sm:text-[12px] font-semibold uppercase tracking-[0.12em] sm:tracking-[0.18em] animate-fade-in-up">
+          Lake Nona &amp; St. Cloud · By appointment only
         </p>
 
-        {/* The design's CTA is "Shop Our Collection", pointing at retail.
+        <h1 className="mt-3 font-display font-bold text-cream text-[40px] sm:text-[52px] lg:text-[64px] leading-[1.04] max-w-[500px] animate-fade-in-up [animation-delay:60ms]">
+          Wake up with your lashes already done.
+        </h1>
+
+        <p className="mt-5 font-sans text-light-tan text-[16px] lg:text-[17px] leading-[1.45] max-w-[440px] animate-fade-in-up [animation-delay:120ms]">
+          Every set is mapped to your own eye shape and applied one-on-one in
+          Vianney&apos;s private home studio — no other chairs, no rush.
+        </p>
+
+        {/* Two CTAs, clearly ranked. The primary is the light button so it is
+            the brightest object in the text column; the second is the outlined
+            `onImage` variant, which is the one already drawn for sitting on a
+            photograph.
+
+            The design's CTA is "Shop Our Collection", pointing at retail.
             Retail is off (lib/features.ts), #products does not render, and
             the rest of the site already resolves that same conflict by
             falling back to booking — see the feature panels. Copying the
             label verbatim would ship a button that scrolls nowhere. */}
-        <CtaLink
-          href={PRODUCTS_ENABLED ? "#products" : "/book"}
-          variant="dark"
-          className="mt-8 self-start animate-fade-in-up [animation-delay:240ms]"
-        >
-          {PRODUCTS_ENABLED ? "Shop Our Collection" : "Book Appointment"}
-        </CtaLink>
+        {/* max-sm:w-full on both: the two labels are 200px and 175px wide, so
+            below sm they wrap onto their own lines anyway and sat at two
+            different widths, which read as a mistake rather than a stack.
+            Full width makes the stack deliberate and enlarges the tap target
+            on the one screen size where that matters most. */}
+        <div className="mt-7 flex flex-wrap items-center gap-3 animate-fade-in-up [animation-delay:180ms]">
+          <CtaLink
+            href={PRODUCTS_ENABLED ? "#products" : "/book"}
+            variant="light"
+            className="max-sm:w-full"
+          >
+            {PRODUCTS_ENABLED ? "Shop Our Collection" : "Book Your Appointment"}
+          </CtaLink>
+
+          {/* Price is the question that otherwise sends someone to Instagram
+              to ask. This keeps them on the page and lands them on the three
+              full sets, which carry their own Book buttons. */}
+          <CtaLink
+            href="#signature-sets"
+            variant="onImage"
+            className="max-sm:w-full"
+          >
+            See Sets &amp; Pricing
+          </CtaLink>
+        </div>
+
+        {/* Proof line. Every item is a fact already established elsewhere on
+            the site or read live from the database — her certification and
+            the consultation are the Meet Vianney section's own words, and the
+            price is the cheapest active full set. Nothing here is a claim
+            that cannot be traced to something she controls. */}
+        {/* One item per line below sm, a separated row from sm up.
+            The three items are ~540px on one line, so a phone always has to
+            break them somewhere, and every inline arrangement breaks badly:
+            separators between the items leave a dot stranded at the end of a
+            line, and moving them onto the following item (::before) starts
+            the second line with one instead. Stacking sidesteps the choice —
+            and a short vertical list is the easier thing to scan on a phone
+            anyway. The separators only exist from sm up, where all three fit
+            on a single line and can never wrap. */}
+        <ul className="mt-6 flex flex-col items-start gap-y-1 sm:flex-row sm:flex-wrap sm:items-center font-sans text-light-tan text-[13px] sm:text-[14px] max-w-[540px] animate-fade-in-up [animation-delay:240ms] sm:[&>li+li]:before:content-['·'] sm:[&>li+li]:before:mx-[10px] sm:[&>li+li]:before:text-warm-beige/60">
+          <li>Certified lash tech, 3+ years</li>
+          <li>Consultation with every set</li>
+          {startingPrice != null && <li>Full sets from ${startingPrice}</li>}
+        </ul>
       </div>
     </section>
   );

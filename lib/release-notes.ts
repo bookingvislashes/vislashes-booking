@@ -31,6 +31,32 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.42.0",
+    date: "2026-09-09",
+    changes: [
+      {
+        kind: "changed",
+        text: "The top of the home page has been rewritten to ask for the booking harder. It now reads \"Wake up with your lashes already done\" over \"Lake Nona & St. Cloud - By appointment only\", instead of \"Your lash appointment, without the salon\".",
+      },
+      {
+        kind: "added",
+        text: "Under the headline there is now a line of proof a first-time client can see before scrolling: certified lash tech with 3+ years, a consultation with every set, and the price of your cheapest full set.",
+      },
+      {
+        kind: "added",
+        text: "A second button, \"See Sets & Pricing\", jumps straight down to your three full sets. Someone who wants to know the price before booking now stays on the page instead of leaving to ask on Instagram.",
+      },
+      {
+        kind: "changed",
+        text: "The \"Book Your Appointment\" button is cream instead of near-black, so it stands out against the photo rather than blending into the dark side of it.",
+      },
+      {
+        kind: "note",
+        text: "The \"Full sets from $85\" line reads your Services list live - it always shows your cheapest active full set, so it follows any price you change in Services with no help from anyone.",
+      },
+    ],
+  },
+  {
     version: "1.41.3",
     date: "2026-09-08",
     changes: [

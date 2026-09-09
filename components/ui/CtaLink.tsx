@@ -38,6 +38,12 @@ const variants = {
     "bg-transparent border-brand-brown text-text-brown hover:bg-brand-brown hover:text-white",
   onImage: "bg-transparent border-[#ebebeb] text-white hover:bg-white/20",
   dark: "bg-charcoal text-white border-transparent hover:bg-dark-brown",
+  /* The hero's primary CTA, which sits on the darkened photograph. `dark`
+     was used there and put charcoal on a brown scrim — the button read as a
+     hole in the image rather than the thing to press. Cream on charcoal is
+     13:1 and is the lightest surface already in the palette, so it is the
+     highest-contrast button available without introducing a new colour. */
+  light: "bg-cream text-charcoal border-transparent hover:bg-white",
   outlineDark:
     "bg-transparent border-charcoal text-charcoal hover:bg-charcoal hover:text-white",
   /* Figma's "Primary, light mode" button — the Signature Set row CTAs.

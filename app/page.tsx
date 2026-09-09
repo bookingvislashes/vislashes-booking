@@ -148,12 +148,23 @@ export default async function HomePage() {
     description: leadSentence(service.description),
   }));
 
+  // Cheapest of the three featured full sets, for the hero's "Full sets from
+  // $X" line. Whole dollars only: it is a from-price in a marketing line, not
+  // a charge, and "$85.00" reads like a receipt. A price that somehow arrives
+  // as 0 or NaN is dropped rather than shown — see ParallaxHero.
+  const prices = featuredServices
+    .map((s) => s.price)
+    .filter((p) => Number.isFinite(p) && p > 0);
+  const startingPrice = prices.length ? Math.floor(Math.min(...prices)) : null;
+
   return (
     <div className="min-h-[100dvh] bg-cream">
       <Header tone="dark" />
 
-      {/* Hero Section — parallax + mix-blend-difference */}
-      <ParallaxHero />
+      {/* Hero. The starting price is the cheapest active full set, so the
+          number under the buttons follows whatever she sets in Services
+          rather than being written into the page. */}
+      <ParallaxHero startingPrice={startingPrice} />
 
       {/* Founder intro, then How to Book — in the order they sit on the Figma
           Home Page: hero, founder, how-to-book, then the feature sections.
@@ -184,7 +195,14 @@ export default async function HomePage() {
           behind the first. */}
       {featureSections.length > 0 && (
         <Reveal>
-          <div className="max-w-[720px] mx-auto px-6 sm:px-12 lg:px-0 flex flex-col items-center gap-4 text-center pt-8 sm:pt-12 lg:pt-[100px] mb-10 sm:mb-12 lg:mb-[80px]">
+          {/* The hero's second CTA lands here. scroll-mt clears the section's
+              own top padding so the heading isn't left flush against the top
+              of the viewport. The id is on the intro rather than on <Reveal>,
+              which takes no props. */}
+          <div
+            id="signature-sets"
+            className="scroll-mt-8 max-w-[720px] mx-auto px-6 sm:px-12 lg:px-0 flex flex-col items-center gap-4 text-center pt-8 sm:pt-12 lg:pt-[100px] mb-10 sm:mb-12 lg:mb-[80px]"
+          >
             <h2 className="font-display font-bold text-[36px] sm:text-[44px] lg:text-[48px] leading-[1.15] text-charcoal text-balance">
               Find Your Signature Set
             </h2>
