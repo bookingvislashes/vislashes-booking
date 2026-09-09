@@ -22,6 +22,7 @@ const LINKS = [
   { label: "About Vianney", href: "/#about" },
   { label: "How to Book", href: "/#how-to-book" },
   ...(PRODUCTS_ENABLED ? [{ label: "Lash Products", href: "/#products" }] : []),
+  { label: "FAQ", href: "/#faq" },
   { label: "Contact", href: "/#contact" },
 ];
 

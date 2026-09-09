@@ -31,6 +31,36 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.46.0",
+    date: "2026-09-09",
+    changes: [
+      {
+        kind: "added",
+        text: "Contact on the website now shows real ways to reach you: a Text button that opens the client's own messages app with your number already filled in, and your email beside it. Both come straight from Settings — change them there and the website follows.",
+      },
+      {
+        kind: "added",
+        text: "A new Before You Book section on the website answers the nine questions clients ask most — how long an appointment takes, the deposit, cancelling, refills, what to do beforehand and aftercare — so she can book without messaging you first and waiting on a reply. It has its own FAQ link in the menu.",
+      },
+      {
+        kind: "changed",
+        text: "The email sign-up box in Contact is gone. It was never connected to anything: a client could type her address and press the arrow, and nothing happened and nothing reached you — so she was left waiting on a reply that was never coming.",
+      },
+      {
+        kind: "changed",
+        text: "The appointment lengths and the deposit quoted in those answers are read from your Services page, so changing a duration or a deposit there updates the website too.",
+      },
+      {
+        kind: "note",
+        text: "Read the new answers once through. Most are your Terms put in plain words, but three — whether it hurts, which set to start with, and how to look after them — are written from scratch, so tell me if any of it is not how you actually work.",
+      },
+      {
+        kind: "note",
+        text: "Your street address is deliberately not on the website. The answer says clients get the full address with their confirmation, which is already what happens. Say the word if you would rather it showed your city, or the whole address.",
+      },
+    ],
+  },
+  {
     version: "1.45.0",
     date: "2026-09-09",
     changes: [

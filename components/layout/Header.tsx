@@ -85,6 +85,7 @@ export function Header({ tone = "light" }: { tone?: "light" | "dark" } = {}) {
           ...(PRODUCTS_ENABLED
             ? [{ label: "Lash Products", href: "#products" }]
             : []),
+          { label: "FAQ", href: "#faq" },
           { label: "Contact", href: "#contact" },
         ].map((link) => (
           <Link
