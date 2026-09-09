@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.43.0",
+    date: "2026-09-09",
+    changes: [
+      {
+        kind: "changed",
+        text: "What Clients Say on the home page now leads with Kim's Square feedback (\"Her studio is a WHOLE VIBE\") and closes with Valery's text (\"these lashes have stayed ONNNN\").",
+      },
+      {
+        kind: "changed",
+        text: "Those two replaced Dayanara's \"Thank you so much, I love them!\" and Charlene's \"Great experience! Beautiful work!\" - both kind, but neither showed how good the work actually is. Gaby's and Mattie's are unchanged.",
+      },
+      {
+        kind: "note",
+        text: "Send me any client message you want up there and I will add it. Best ones say something only you could earn - how long a set lasted, how the room felt, that she is sending friends - rather than just that she liked them.",
+      },
+    ],
+  },
+  {
     version: "1.42.0",
     date: "2026-09-09",
     changes: [

@@ -1,44 +1,66 @@
 /**
- * Real client messages and reviews (Instagram DMs, texts, a Facebook
- * review) as she received them — light spelling/grammar cleanup only, no
- * added sentiment.
+ * Real client messages and feedback (Instagram DMs, texts, Square post-sale
+ * feedback) as she received them — light spelling and punctuation cleanup
+ * only, no added sentiment and no added words.
  *
- * First names only, at her request — including the one public review, which
- * was published under a full name but is shown here the same way as the
- * others. Where a quote came from is recorded here and deliberately NOT shown
- * on the page — naming the platform adds nothing for a reader and drags
- * another company's brand into the middle of hers.
+ * First names only, at her request. Where a quote came from is recorded per
+ * entry below and deliberately NOT shown on the page — naming the platform
+ * adds nothing for a reader and drags another company's brand into the middle
+ * of hers.
+ *
+ * Her own test of a quote, applied when two of these were replaced: does it
+ * show that she is good at this? "Thank you so much, I love them!" and "Great
+ * experience! Beautiful work!" are warm, but any lash tech in Orlando could
+ * have collected them, so they were doing nothing that the four of them
+ * together could not do with three. The two that replaced them each carry
+ * something specific instead — a room worth sitting in, and a set that
+ * outlasted the fill it was booked for.
+ *
+ * Caps and spellings like "WHOLE VIBE" and "ONNNN" are how the messages
+ * arrived and are the point of quoting them; do not tidy them into standard
+ * English, or these stop sounding like clients and start sounding like copy.
  */
 const TESTIMONIALS = [
   {
-    quote: "Thank you so much, I love them!",
-    name: "Dayanara",
+    // Square positive feedback left after a sale, tagged Environment and
+    // Customer Service. "in a WHOLE VIBE" -> "is a WHOLE VIBE"; trailing
+    // emoji dropped, as on every quote here.
+    quote: "She is an awesome young lady. Her studio is a WHOLE VIBE.",
+    name: "Kim",
   },
   {
+    // Instagram DM.
     quote:
       "She walked me through the process and the environment is really relaxing.",
     name: "Gaby",
   },
   {
+    // Text message.
     quote:
       "I feel so confident thanks to her. I'm keeping her card in my server book so I can send others her way.",
     name: "Mattie",
   },
   {
-    quote: "Great experience! Beautiful work!",
-    name: "Charlene",
+    // Text message, sent with a selfie. Comma after "Girl" and the closing
+    // period are the only changes; the retention it describes is the whole
+    // reason it is here, so it closes the list.
+    quote:
+      "Girl, I hate to keep rescheduling the lash fill but these lashes have stayed ONNNN.",
+    name: "Valery",
   },
 ] as const;
 
 /**
  * An editorial list rather than a card grid.
  *
- * These quotes are real messages and several are very short — "Thank you so
- * much, I love them!" is the whole thing. In equal-height cards a line that
- * short leaves most of the box empty and reads like something failed to load.
- * Set large in the display face, on its own row, the same words read as
- * deliberate. Rows also let each quote take the height it needs instead of
- * being padded out to match its neighbours.
+ * These quotes are real messages, so they run to whatever length they ran to
+ * — the shortest here is nine words and earlier versions of this list held
+ * quotes half that. In equal-height cards a line that short leaves most of
+ * the box empty and reads like something failed to load. Set large in the
+ * display face, on its own row, the same words read as deliberate. Rows also
+ * let each quote take the height it needs instead of being padded out to
+ * match its neighbours, which is what keeps this safe as she swaps quotes in
+ * and out.
  *
  * No avatars, and none should be added: these came from private DMs and texts,
  * which is also why most carry a first name only.
