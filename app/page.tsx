@@ -148,23 +148,12 @@ export default async function HomePage() {
     description: leadSentence(service.description),
   }));
 
-  // Cheapest of the three featured full sets, for the hero's "Full sets from
-  // $X" line. Whole dollars only: it is a from-price in a marketing line, not
-  // a charge, and "$85.00" reads like a receipt. A price that somehow arrives
-  // as 0 or NaN is dropped rather than shown — see ParallaxHero.
-  const prices = featuredServices
-    .map((s) => s.price)
-    .filter((p) => Number.isFinite(p) && p > 0);
-  const startingPrice = prices.length ? Math.floor(Math.min(...prices)) : null;
-
   return (
     <div className="min-h-[100dvh] bg-cream">
       <Header tone="dark" />
 
-      {/* Hero. The starting price is the cheapest active full set, so the
-          number under the buttons follows whatever she sets in Services
-          rather than being written into the page. */}
-      <ParallaxHero startingPrice={startingPrice} />
+      {/* Hero Section */}
+      <ParallaxHero />
 
       {/* Founder intro, then How to Book — in the order they sit on the Figma
           Home Page: hero, founder, how-to-book, then the feature sections.

@@ -36,23 +36,19 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     changes: [
       {
         kind: "changed",
-        text: "The top of the home page has been rewritten to ask for the booking harder. It now reads \"Wake up with your lashes already done\" over \"Lake Nona & St. Cloud - By appointment only\", instead of \"Your lash appointment, without the salon\".",
-      },
-      {
-        kind: "added",
-        text: "Under the headline there is now a line of proof a first-time client can see before scrolling: certified lash tech with 3+ years, a consultation with every set, and the price of your cheapest full set.",
-      },
-      {
-        kind: "added",
-        text: "A second button, \"See Sets & Pricing\", jumps straight down to your three full sets. Someone who wants to know the price before booking now stays on the page instead of leaving to ask on Instagram.",
+        text: "The top of the home page now reads \"Wake up with your lashes already done.\" instead of \"Your lash appointment, without the salon.\" - it leads with what a client gets rather than with what you are not.",
       },
       {
         kind: "changed",
-        text: "The \"Book Your Appointment\" button is cream instead of near-black, so it stands out against the photo rather than blending into the dark side of it.",
+        text: "The line under it is now \"Every set is mapped to your own eye shape and applied one-on-one in Vianney's private home studio.\"",
       },
       {
-        kind: "note",
-        text: "The \"Full sets from $85\" line reads your Services list live - it always shows your cheapest active full set, so it follows any price you change in Services with no help from anyone.",
+        kind: "added",
+        text: "A second button, \"See Sets & Pricing\", jumps straight down to your three full sets. Someone who wants the price before booking now stays on the page instead of leaving to ask on Instagram.",
+      },
+      {
+        kind: "changed",
+        text: "The \"Book Your Appointment\" button is cream instead of near-black, so it stands out against the photo rather than blending into the dark side of it. On a phone both buttons now run the full width.",
       },
     ],
   },

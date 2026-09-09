@@ -34,24 +34,24 @@ import { PRODUCTS_ENABLED } from "@/lib/features";
  * wants before they tap.
  *
  * So the headline now leads with the result she is selling (waking up done),
- * the studio line keeps her own "no other chairs, no rush" rhythm but spends
- * its first half on the differentiator, and a proof line under the buttons
- * carries her credential, the consultation and the real starting price. The
- * second CTA goes to the price list rather than off the page, because
- * "what does it cost" is the objection that otherwise sends people to
- * Instagram to ask.
+ * and the studio line keeps her own "no other chairs, no rush" rhythm but
+ * spends its first half on the differentiator. The second CTA goes to the
+ * price list rather than off the page, because "what does it cost" is the
+ * objection that otherwise sends people to Instagram to ask.
+ *
+ * Four elements, and no more. A version of this carried two extra lines of
+ * small print — a "Lake Nona & St. Cloud · By appointment only" kicker above
+ * the headline and a "certified · consultation · full sets from $85" strip
+ * below the buttons — and she asked for both to go. She was right: they were
+ * doing the arguing that the photograph and the headline already do, and
+ * fine print stacked at both ends made a hero that had been calm look busy.
+ * Everything they said still appears further down the page, where someone
+ * who wants that detail is actually looking for it: the studio and the
+ * booking rules in How to Book, the certification in Meet Vianney, the
+ * prices on the Signature Sets the second button points at. Anything added
+ * back here has to beat leaving the headline alone.
  */
-export function ParallaxHero({
-  startingPrice,
-}: {
-  /**
-   * Lowest full-set price, straight from the `services` table via
-   * `app/page.tsx`. Optional and rendered only when present: an invented or
-   * stale number in the first line a client reads is worse than no number,
-   * and she changes prices herself in Services.
-   */
-  startingPrice?: number | null;
-} = {}) {
+export function ParallaxHero() {
   return (
     // The subtracted values are the measured header height at each breakpoint
     // (88px below lg, 94px at lg). They are duplicated from the header rather
@@ -80,13 +80,15 @@ export function ParallaxHero({
           the bottom edge there. Held stronger than the desktop ramp because at
           375 the headline sits over skin rather than the pale backdrop.
 
-          The hold was extended (0.88 to 70%, gone by 96%) when the kicker,
-          the second button and the proof list were added: the column is about
-          200px taller than it was, and the old ramp had already faded to
-          nothing by the height the kicker now sits at. */}
+          Held a little longer than the original 0.82/0.60@52%/0@85%, because
+          the second CTA stacks below the first on a phone and puts the top of
+          the headline about 55% of the way up rather than 46%. It is pulled
+          back in again now the kicker and the proof list are gone: fading out
+          by 88% rather than 96% leaves the brow and the eye untinted, which is
+          the part of the photograph doing the selling. */}
       <div
         aria-hidden
-        className="absolute inset-0 pointer-events-none lg:hidden bg-[linear-gradient(0deg,rgba(45,32,21,0.88)_0%,rgba(63,45,31,0.72)_70%,rgba(63,45,31,0)_96%)]"
+        className="absolute inset-0 pointer-events-none lg:hidden bg-[linear-gradient(0deg,rgba(45,32,21,0.86)_0%,rgba(63,45,31,0.66)_58%,rgba(63,45,31,0)_88%)]"
       />
 
       {/* Scrim, lg and up.
@@ -115,21 +117,18 @@ export function ParallaxHero({
         {/* Where and how, in one line above the headline, so the headline
             itself never has to spend words on logistics. "By appointment
             only" is the same fact the old subtext spent "no walk-ins" on. */}
-        {/* Set down a step with tighter tracking below sm: uppercased at
-            11px/0.18em this runs to roughly 378px, which is wider than the
-            342px a 390px phone leaves inside the gutters, and it broke with
-            "ONLY" alone on a second line. */}
-        <p className="font-sans text-warm-beige text-[10px] sm:text-[12px] font-semibold uppercase tracking-[0.12em] sm:tracking-[0.18em] animate-fade-in-up">
-          Lake Nona &amp; St. Cloud · By appointment only
-        </p>
-
-        <h1 className="mt-3 font-display font-bold text-cream text-[40px] sm:text-[52px] lg:text-[64px] leading-[1.04] max-w-[500px] animate-fade-in-up [animation-delay:60ms]">
+        <h1 className="font-display font-bold text-cream text-[40px] sm:text-[52px] lg:text-[64px] leading-[1.04] max-w-[500px] animate-fade-in-up">
           Wake up with your lashes already done.
         </h1>
 
+        {/* The line used to end "— no other chairs, no rush", which is the
+            last survivor of the old all-negatives hero and reads as a slogan
+            rather than as her. What it was there to say is now carried by the
+            two plain facts in front of it: one-on-one, and a private home
+            studio. */}
         <p className="mt-5 font-sans text-light-tan text-[16px] lg:text-[17px] leading-[1.45] max-w-[440px] animate-fade-in-up [animation-delay:120ms]">
           Every set is mapped to your own eye shape and applied one-on-one in
-          Vianney&apos;s private home studio — no other chairs, no rush.
+          Vianney&apos;s private home studio.
         </p>
 
         {/* Two CTAs, clearly ranked. The primary is the light button so it is
@@ -173,20 +172,6 @@ export function ParallaxHero({
             the consultation are the Meet Vianney section's own words, and the
             price is the cheapest active full set. Nothing here is a claim
             that cannot be traced to something she controls. */}
-        {/* One item per line below sm, a separated row from sm up.
-            The three items are ~540px on one line, so a phone always has to
-            break them somewhere, and every inline arrangement breaks badly:
-            separators between the items leave a dot stranded at the end of a
-            line, and moving them onto the following item (::before) starts
-            the second line with one instead. Stacking sidesteps the choice —
-            and a short vertical list is the easier thing to scan on a phone
-            anyway. The separators only exist from sm up, where all three fit
-            on a single line and can never wrap. */}
-        <ul className="mt-6 flex flex-col items-start gap-y-1 sm:flex-row sm:flex-wrap sm:items-center font-sans text-light-tan text-[13px] sm:text-[14px] max-w-[540px] animate-fade-in-up [animation-delay:240ms] sm:[&>li+li]:before:content-['·'] sm:[&>li+li]:before:mx-[10px] sm:[&>li+li]:before:text-warm-beige/60">
-          <li>Certified lash tech, 3+ years</li>
-          <li>Consultation with every set</li>
-          {startingPrice != null && <li>Full sets from ${startingPrice}</li>}
-        </ul>
       </div>
     </section>
   );
