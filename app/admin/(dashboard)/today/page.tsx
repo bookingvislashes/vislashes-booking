@@ -48,6 +48,8 @@ interface Appointment {
   client_id: string | null;
   client_name: string;
   client_phone: string | null;
+  /** Non-empty means show it before she starts. See migration 020. */
+  client_allergy: string | null;
   service_name: string;
   price: number;
 }
@@ -102,7 +104,7 @@ export default function TodayPage() {
       supabase
         .from("bookings")
         .select(
-          "id, time_slot, status, deposit_paid, deposit_amount, has_removal, client_id, client:clients(full_name, phone), service:services(name, price)"
+          "id, time_slot, status, deposit_paid, deposit_amount, has_removal, client_id, client:clients(full_name, phone, allergy_note), service:services(name, price)"
         )
         .eq("booking_date", today)
         .in("status", ["confirmed", "completed"])
@@ -131,8 +133,8 @@ export default function TodayPage() {
       has_removal: boolean;
       client_id: string | null;
       client:
-        | { full_name: string; phone: string | null }
-        | { full_name: string; phone: string | null }[]
+        | { full_name: string; phone: string | null; allergy_note: string | null }
+        | { full_name: string; phone: string | null; allergy_note: string | null }[]
         | null;
       service:
         | { name: string; price: string | number }
@@ -153,6 +155,7 @@ export default function TodayPage() {
         client_id: b.client_id,
         client_name: client?.full_name ?? "Unknown client",
         client_phone: client?.phone ?? null,
+        client_allergy: client?.allergy_note ?? null,
         service_name: service?.name ?? "Appointment",
         price: Number(service?.price ?? 0),
       };
@@ -461,6 +464,17 @@ export default function TodayPage() {
                   )}
                 </div>
               </div>
+
+              {/* Set on the client's profile. It is here rather than only
+                  there because this is the screen open in her hand when she
+                  is about to start — a sensitivity found afterwards is found
+                  too late. */}
+              {appt.client_allergy && (
+                <p className="mt-3 font-sans text-[14px] text-danger bg-danger/10 border border-danger/20 rounded-control px-3 py-2 leading-[1.5]">
+                  <span className="font-semibold">Sensitivity: </span>
+                  {appt.client_allergy}
+                </p>
+              )}
 
               {!isOpen && !isCheckingOut && (
                 <div className="flex gap-2 mt-3">

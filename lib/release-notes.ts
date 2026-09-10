@@ -31,7 +31,7 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: "1.42.0",
+    version: "1.46.0",
     date: "2026-09-10",
     changes: [
       {
@@ -45,6 +45,114 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       {
         kind: "note",
         text: "Give Twilio the new /sms link when you resubmit. The consent wording was only visible three steps into booking, where a reviewer would never have reached it.",
+      },
+    ],
+  },
+  {
+    version: "1.45.0",
+    date: "2026-09-09",
+    changes: [
+      {
+        kind: "note",
+        text: "Run migration 020 (Migrations page, or supabase/migrations/020_client_profiles_and_documents.sql in Supabase). Client notes, the sensitivity flag and uploading signed forms all need it — until it runs, those parts sit idle and everything else works as before.",
+      },
+      {
+        kind: "added",
+        text: "Tap any client to open their profile: their name, number and email are editable there, alongside their appointments, their invoices and their signed forms.",
+      },
+      {
+        kind: "added",
+        text: "A notes box on each client for what you want to remember — the style they like, how they pay. Any notes that came across from Acuity are already in there.",
+      },
+      {
+        kind: "added",
+        text: "A sensitivity field on each client. Anything you put in it shows in red on Today, on the appointment and in the client list, so you see it before you start.",
+      },
+      {
+        kind: "added",
+        text: "You can now upload the consent and medical health forms signed on paper. Signed Agreements has an Import forms button that takes all of them at once; each one is filed under a client with the date it was signed, and opens to view, print or save on your phone or your computer.",
+      },
+      {
+        kind: "note",
+        text: "To get the forms off the iPad: open Pages, select the documents, then Share or Export as PDF. The signature is only part of the file once it is a PDF — a .pages file keeps it as separate ink and the form uploads blank.",
+      },
+      {
+        kind: "changed",
+        text: "Signed Agreements now shows the forms signed on paper alongside the ones signed online, newest first, and each name links to that client.",
+      },
+      {
+        kind: "changed",
+        text: "Every invoice is now filed against a client profile and shows up there. Invoicing a name nobody in your list has starts a profile for them.",
+      },
+      {
+        kind: "note",
+        text: "Uploaded forms are private. Nobody can open one without being signed in to the admin, and each link you open stops working an hour later.",
+      },
+    ],
+  },
+  {
+    version: "1.44.0",
+    date: "2026-09-09",
+    changes: [
+      {
+        kind: "changed",
+        text: "Bookings now opens on your upcoming appointments only, soonest first, grouped by day with Today and Tomorrow called out.",
+      },
+      {
+        kind: "changed",
+        text: "Completed, cancelled and no-show appointments have moved to their own tabs, so they no longer sit in the middle of the list you read each morning.",
+      },
+      {
+        kind: "added",
+        text: "A Past tab collects appointments that have already happened but are still marked confirmed, so nothing gets left unfinished.",
+      },
+      {
+        kind: "added",
+        text: "Every tab shows how many appointments are in it, and each upcoming appointment says whether its deposit has been paid.",
+      },
+      {
+        kind: "fixed",
+        text: "A day with several appointments now lists them in real time order — 9:00 AM used to come after 10:00 AM.",
+      },
+    ],
+  },
+  {
+    version: "1.43.0",
+    date: "2026-09-09",
+    changes: [
+      {
+        kind: "changed",
+        text: "What Clients Say on the home page now leads with Kim's Square feedback (\"Her studio is a WHOLE VIBE\") and closes with Valery's text (\"these lashes have stayed ONNNN\").",
+      },
+      {
+        kind: "changed",
+        text: "Those two replaced Dayanara's \"Thank you so much, I love them!\" and Charlene's \"Great experience! Beautiful work!\" - both kind, but neither showed how good the work actually is. Gaby's and Mattie's are unchanged.",
+      },
+      {
+        kind: "note",
+        text: "Send me any client message you want up there and I will add it. Best ones say something only you could earn - how long a set lasted, how the room felt, that she is sending friends - rather than just that she liked them.",
+      },
+    ],
+  },
+  {
+    version: "1.42.0",
+    date: "2026-09-09",
+    changes: [
+      {
+        kind: "changed",
+        text: "The top of the home page now reads \"Wake up with your lashes already done.\" instead of \"Your lash appointment, without the salon.\" - it leads with what a client gets rather than with what you are not.",
+      },
+      {
+        kind: "changed",
+        text: "The line under it is now \"Every set is mapped to your own eye shape and applied one-on-one in Vianney's private home studio.\"",
+      },
+      {
+        kind: "added",
+        text: "A second button, \"See Sets & Pricing\", jumps straight down to your three full sets. Someone who wants the price before booking now stays on the page instead of leaving to ask on Instagram.",
+      },
+      {
+        kind: "changed",
+        text: "The \"Book Your Appointment\" button is cream instead of near-black, so it stands out against the photo rather than blending into the dark side of it. On a phone both buttons now run the full width.",
       },
     ],
   },

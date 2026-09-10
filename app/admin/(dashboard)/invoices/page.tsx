@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -333,6 +334,10 @@ export default function InvoicesPage() {
                 placeholder="First and last name"
                 className="w-full mt-1 h-control px-3 box-border bg-white border border-light-tan rounded-control text-[16px] text-charcoal font-sans placeholder:text-muted focus:border-deep-brown transition-colors"
               />
+              <span className="font-sans text-[12px] text-muted mt-1 block leading-[1.5]">
+                Filed against this client&apos;s profile automatically. A name
+                nobody in your list has starts a new profile.
+              </span>
             </label>
 
             <label className="block">
@@ -539,9 +544,21 @@ export default function InvoicesPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-sans text-[16px] font-semibold text-dark-brown truncate">
-                    {invoice.client_name}
-                  </p>
+                  {/* Every invoice is filed against a client now (the server
+                      matches or creates one), so the name is the way through
+                      to everything else about them. */}
+                  {invoice.client_id ? (
+                    <Link
+                      href={`/admin/clients/${invoice.client_id}`}
+                      className="font-sans text-[16px] font-semibold text-dark-brown truncate hover:underline block"
+                    >
+                      {invoice.client_name}
+                    </Link>
+                  ) : (
+                    <p className="font-sans text-[16px] font-semibold text-dark-brown truncate">
+                      {invoice.client_name}
+                    </p>
+                  )}
                   <p className="font-sans text-[16px] text-muted leading-[1.5]">
                     {invoice.description}
                   </p>

@@ -42,8 +42,38 @@ export interface Client {
   phone: string;
   visit_count: number;
   last_visit_date: string | null;
+  /** Her private notes on this client. Never shown to the client (migration 020). */
+  notes: string | null;
+  /**
+   * A sensitivity worth knowing before touching someone's eyes. Non-empty is
+   * the flag itself — it surfaces on Today, not only on the profile (020).
+   */
+  allergy_note: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * A consent or medical health form — or anything else — kept against a client
+ * (migration 020). Years of these were signed on paper on the iPad; this is
+ * where they live once uploaded.
+ *
+ * `storage_path` points into the PRIVATE `client-documents` bucket, so there
+ * is no URL on this row: one is minted per view and expires.
+ */
+export interface ClientDocument {
+  id: string;
+  client_id: string;
+  booking_id: string | null;
+  kind: "consent" | "medical" | "other";
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  byte_size: number | null;
+  /** The date written on the paper. Null when the form is undated. */
+  signed_on: string | null;
+  note: string | null;
+  uploaded_at: string;
 }
 
 export interface Booking {

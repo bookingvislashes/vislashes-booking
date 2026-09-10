@@ -244,11 +244,31 @@ export default function BookingDetailPage() {
       </Link>
 
       <div className="flex items-start justify-between gap-3 mb-1">
-        <h1 className="font-display text-[28px] font-bold text-dark-brown leading-tight">
-          {booking.client?.full_name || "Unknown"}
-        </h1>
+        {/* The name is the way to their profile — their notes, their
+            sensitivities, their signed forms and everything they've paid. */}
+        {booking.client?.id ? (
+          <Link
+            href={`/admin/clients/${booking.client.id}`}
+            className="font-display text-[28px] font-bold text-dark-brown leading-tight hover:underline"
+          >
+            {booking.client.full_name}
+          </Link>
+        ) : (
+          <h1 className="font-display text-[28px] font-bold text-dark-brown leading-tight">
+            {booking.client?.full_name || "Unknown"}
+          </h1>
+        )}
         <Badge status={booking.status} />
       </div>
+
+      {/* Not buried in the Client section below — if it matters at all it
+          matters before she reads anything else on this page. */}
+      {booking.client?.allergy_note && (
+        <p className="font-sans text-[14px] text-danger bg-danger/10 border border-danger/20 rounded-control px-3 py-2 leading-[1.5] mt-2">
+          <span className="font-semibold">Sensitivity: </span>
+          {booking.client.allergy_note}
+        </p>
+      )}
       <p className="font-sans text-[16px] text-muted mb-6">
         {booking.service?.name} · {formatDate(booking.booking_date)} at{" "}
         {booking.time_slot}

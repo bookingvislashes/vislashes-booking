@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import type { Client } from "@/lib/supabase/types";
@@ -138,9 +139,12 @@ export default function ClientsPage() {
           </div>
         ) : (
           filtered.map((client) => (
-            <div
+            // The row is the way into the profile — where her name, number,
+            // email, notes, appointments, invoices and signed forms live.
+            <Link
               key={client.id}
-              className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0"
+              href={`/admin/clients/${client.id}`}
+              className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-light-tan last:border-b-0 hover:bg-cream/50 active:bg-cream transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="w-10 h-10 rounded-full bg-warm-beige/30 flex items-center justify-center shrink-0">
@@ -157,6 +161,13 @@ export default function ClientsPage() {
                   <p className="font-sans text-[16px] text-muted truncate">
                     {client.email}
                   </p>
+                  {/* Carried into the list so a sensitivity is visible while
+                      scanning, not only once the profile is open. */}
+                  {client.allergy_note && (
+                    <p className="font-sans text-[12px] text-danger truncate">
+                      Sensitivity: {client.allergy_note}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="text-right shrink-0">
@@ -167,7 +178,7 @@ export default function ClientsPage() {
                   {formatLastVisit(client.last_visit_date)}
                 </p>
               </div>
-            </div>
+            </Link>
           ))
         )}
       </div>

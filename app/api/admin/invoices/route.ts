@@ -38,6 +38,65 @@ function newToken() {
   return randomBytes(16).toString("hex");
 }
 
+/**
+ * The client this invoice belongs to, always.
+ *
+ * An invoice with `client_id` null shows up nowhere on a client's profile,
+ * and that was the common case: the form drops the picked client the moment
+ * she edits the name on the invoice, which she does constantly ("Tabitha"
+ * rather than "Tabitha Rosado"). So the link is settled here instead of being
+ * left to the browser — matched on email, then on the name as typed, and only
+ * created when neither finds anyone.
+ *
+ * Nothing is invented to make a row fit: email and phone go in exactly as
+ * given, which since migration 010 may be nothing at all.
+ */
+async function resolveClientId(
+  admin: Awaited<ReturnType<typeof createServiceClient>>,
+  input: z.infer<typeof createSchema>
+): Promise<string | null> {
+  if (input.clientId) return input.clientId;
+
+  const email = input.clientEmail?.trim().toLowerCase();
+  if (email) {
+    const { data } = await admin
+      .from("clients")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+    if (data?.id) return data.id;
+  }
+
+  const name = input.clientName.trim();
+  const { data: byName } = await admin
+    .from("clients")
+    .select("id")
+    .ilike("full_name", name)
+    .limit(1);
+  if (byName?.[0]?.id) return byName[0].id;
+
+  // Nobody by that name or address, so she is invoicing someone new. Creating
+  // the profile now is what makes "every invoice appears on a client" true —
+  // otherwise this one would be the exception forever.
+  const { data: created, error: createError } = await admin
+    .from("clients")
+    .insert({
+      full_name: name,
+      email: email || null,
+      phone: input.clientPhone?.trim() || null,
+    })
+    .select("id")
+    .single();
+
+  if (createError) {
+    // A failure here must not cost her the invoice — it is filed without a
+    // profile link, exactly as it would have been before.
+    console.error("Invoice: could not create a client for", name, createError);
+    return null;
+  }
+  return created.id;
+}
+
 async function requireAdmin() {
   const supabase = await createClient();
   const {
@@ -62,12 +121,13 @@ export async function POST(req: NextRequest) {
   }
 
   const admin = await createServiceClient();
+  const clientId = await resolveClientId(admin, input);
 
   const { data, error } = await admin
     .from("invoices")
     .insert({
       token: newToken(),
-      client_id: input.clientId ?? null,
+      client_id: clientId,
       client_name: input.clientName,
       client_email: input.clientEmail || null,
       client_phone: input.clientPhone || null,
