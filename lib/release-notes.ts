@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.42.0",
+    date: "2026-09-10",
+    changes: [
+      {
+        kind: "added",
+        text: "A new Text Message Policy page at vislashes.com/sms, linked in the footer of every page. It says on one public page what texts you send, how a client agrees to them, and how to stop them.",
+      },
+      {
+        kind: "changed",
+        text: "The consent line on the booking form now also links to that page, and both it and the page share one source - so they can never end up saying different things.",
+      },
+      {
+        kind: "note",
+        text: "Give Twilio the new /sms link when you resubmit. The consent wording was only visible three steps into booking, where a reviewer would never have reached it.",
+      },
+    ],
+  },
+  {
     version: "1.41.3",
     date: "2026-09-08",
     changes: [

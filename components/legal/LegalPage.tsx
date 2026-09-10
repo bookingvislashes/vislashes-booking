@@ -1,9 +1,9 @@
 /**
- * The shared frame for /privacy and /terms.
+ * The shared frame for /privacy, /terms and /sms.
  *
- * Both are plain documents: the job is that they are readable on a phone and
- * openable by anyone — including a carrier reviewing the messaging campaign —
- * without starting a booking. Deliberately quiet, and deliberately using the
+ * All three are plain documents: the job is that they are readable on a phone
+ * and openable by anyone — including a carrier reviewing the messaging
+ * campaign — without starting a booking. Deliberately quiet, and deliberately using the
  * same tokens as the rest of the site so they still feel like VIS Lashes.
  */
 import Link from "next/link";
@@ -74,6 +74,9 @@ export function LegalPage({ title, updated, sections }: LegalPageProps) {
           </Link>
           <Link href="/privacy" className="font-sans text-[14px] text-deep-brown underline">
             Privacy Policy
+          </Link>
+          <Link href="/sms" className="font-sans text-[14px] text-deep-brown underline">
+            Text Message Policy
           </Link>
           <Link href="/book" className="font-sans text-[14px] text-deep-brown underline">
             Book an appointment

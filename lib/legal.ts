@@ -130,3 +130,76 @@ If this policy changes, the updated version will be posted on this page.
 CONTACT
 ${contact}`;
 }
+
+/**
+ * The public messaging-policy page, at /sms.
+ *
+ * This exists because of how the booking flow is shaped. The consent
+ * disclosure is rendered by CustomerForm, which is step 3 of 7: a reviewer has
+ * to choose a service and pick a slot from a live calendar before the phone
+ * field — and the sentence next to it — is on screen at all. A carrier vetting
+ * an A2P campaign opens the URL on the registration and reads what comes back;
+ * a crawler certainly does no more than that. Neither of them completes two
+ * steps of a booking wizard, so the disclosure they are looking for has, until
+ * now, been invisible to the people the disclosure is for.
+ *
+ * So this page states the whole messaging programme on one public URL with no
+ * interaction: what is sent, how often, how consent is given, the exact words
+ * shown where the number is typed, how to stop, and the sharing statement the
+ * carriers require. It duplicates text that also lives in SMS_TERMS and the
+ * privacy policy, which is the point — a reviewer who reads only this page
+ * still sees everything, and every copy has to agree.
+ *
+ * CONSENT_DISCLOSURE below is the single source for that sentence: this page
+ * and CustomerForm both render it, so the page cannot quote a promise the
+ * booking form no longer makes.
+ */
+export const CONSENT_DISCLOSURE =
+  "By entering your number you agree to receive appointment texts from VIS " +
+  "Lashes: a confirmation, a reminder two days before, one two hours before, " +
+  "and a notice if we have to cancel. No marketing, ever, and your number is " +
+  "never shared. Reply STOP any time to stop them - your appointment is " +
+  "unaffected - or HELP for help. Message and data rates may apply.";
+
+export function buildMessagingPolicy(details: {
+  businessName: string;
+  email: string | null;
+  phone: string | null;
+}) {
+  const contact = [details.businessName, details.email, details.phone]
+    .filter(Boolean)
+    .join("\n");
+
+  return `TEXT MESSAGE POLICY
+
+WHO WE ARE
+${details.businessName} is a solo eyelash extension studio in Saint Cloud, Florida. We take appointment bookings at vislashes.com.
+
+WHAT THIS PROGRAMME SENDS
+Appointment messages, and nothing else. If you book an appointment you may receive a booking confirmation, a reminder two days before, a reminder two hours before, and a notice if we have to cancel. That is up to four messages per appointment, and how often you get them depends only on how often you book. We do not send marketing or promotional texts, and there is no way to subscribe to any that we do not send.
+
+HOW YOU OPT IN
+You opt in by typing your own mobile number into the booking form at vislashes.com/book, on the step that asks for your name, email and phone number. Nobody is added any other way: we never buy, rent, import or upload phone lists, and we never add a number we were given for something else.
+
+WHAT THE BOOKING FORM SAYS
+This sentence is shown directly beneath the phone field, before you submit anything:
+
+"${CONSENT_DISCLOSURE}"
+
+Links to our Terms, our Privacy Policy and this page appear immediately beneath that sentence, on the same step.
+
+HOW TO STOP
+Reply STOP to any message and they stop immediately. Your appointment is not affected, and you will still receive the same confirmations and reminders by email. Reply START to turn them back on. Reply HELP at any time and you will get our contact details back.
+
+COSTS
+Message and data rates may apply, depending on your mobile plan. We do not charge for the messages themselves.
+
+YOUR NUMBER IS NOT SHARED
+No mobile information will be sold, rented, or shared with third parties or affiliates for marketing or promotional purposes. Text messaging originator opt-in data and consent are not shared with any third party. Your number reaches Twilio, who deliver the message to your phone on our behalf, and goes nowhere else.
+
+THE FULL POLICIES
+Our Privacy Policy is at vislashes.com/privacy and our Terms & Conditions, including the text message terms, are at vislashes.com/terms.
+
+CONTACT
+${contact}`;
+}

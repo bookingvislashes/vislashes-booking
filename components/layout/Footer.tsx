@@ -21,10 +21,13 @@ export function Footer() {
             @vislashesbooking
           </Link>
         </div>
-        {/* Terms and privacy have to be reachable from every page: a carrier
-            reviewing the messaging campaign looks for them, and a client
-            deciding whether to hand over her phone number deserves to read
-            them without starting a booking first. */}
+        {/* Terms, privacy and the text message policy have to be reachable
+            from every page: a carrier reviewing the messaging campaign looks
+            for them, and a client deciding whether to hand over her phone
+            number deserves to read them without starting a booking first.
+            "Texts" is the one a carrier actually needs — the consent sentence
+            itself is three steps into the booking flow, where no reviewer will
+            ever see it, so /sms is the public copy of it. */}
         <div className="flex items-center gap-3 text-[12px] leading-none tracking-[0.3px]">
           <Link
             href="/terms"
@@ -40,6 +43,15 @@ export function Footer() {
             className="font-sans text-white/60 hover:text-white transition-colors"
           >
             Privacy
+          </Link>
+          <span aria-hidden="true" className="text-white/20">
+            ·
+          </span>
+          <Link
+            href="/sms"
+            className="font-sans text-white/60 hover:text-white transition-colors"
+          >
+            Texts
           </Link>
         </div>
 
