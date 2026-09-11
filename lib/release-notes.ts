@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.47.0",
+    date: "2026-09-11",
+    changes: [
+      {
+        kind: "changed",
+        text: "The privacy policy now carries the sentence about text consent in the exact words Twilio's own guide says it looks for, rather than our paraphrase of it.",
+      },
+      {
+        kind: "changed",
+        text: "The Terms page now lists your email and phone under the text message terms, and shows the STOP and HELP instructions in bold - both are things the carriers require and neither was there.",
+      },
+      {
+        kind: "changed",
+        text: "The booking confirmation text now says how many more texts to expect and that message and data rates may apply. Twilio requires both on the first message someone gets.",
+      },
+      {
+        kind: "note",
+        text: "Put the square brackets back in your Twilio sample messages - [Name], [Classic Set] - and swap \"Ana\" for [Name]. Twilio's guide asks for placeholders; my earlier advice to remove them was wrong.",
+      },
+    ],
+  },
+  {
     version: "1.46.0",
     date: "2026-09-10",
     changes: [

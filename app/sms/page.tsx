@@ -40,7 +40,7 @@ export default async function SmsPolicyPage() {
   return (
     <LegalPage
       title="Text Message Policy"
-      updated="September 10, 2026"
+      updated="September 11, 2026"
       sections={[
         buildMessagingPolicy({
           businessName: get("business_name") ?? "VIS Lashes",

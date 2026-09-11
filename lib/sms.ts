@@ -162,10 +162,13 @@ export function confirmationText(a: AppointmentSms): string {
     `${a.serviceName}\n` +
     `${friendlyDate(a.bookingDate)} at ${a.timeSlot}${deposit}${where}\n\n` +
     `Everything you need is in your email confirmation. See you soon!\n\n` +
-    // Carriers require opt-out and help instructions, and the first message a
-    // client receives is the place for them. Only on the confirmation:
-    // repeating it on every reminder reads like marketing, which is the
-    // opposite of what this is. Twilio answers both keywords itself.
+    // This is the opt-in confirmation, and Twilio's campaign guide is specific
+    // about what one has to carry: the brand (at the top), the frequency, the
+    // rates disclosure in those exact words, how to get help and how to stop.
+    // Only on the confirmation — repeating it on every reminder reads like
+    // marketing, which is the opposite of what this is. Twilio answers both
+    // keywords itself once Advanced Opt-Out is on.
+    `Up to 3 more texts for this appointment. Msg & data rates may apply.\n` +
     `Reply HELP for help, STOP to opt out.`
   );
 }
