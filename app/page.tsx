@@ -7,10 +7,14 @@ import { ParallaxHero } from "@/components/home/ParallaxHero";
 import { FounderIntro } from "@/components/home/FounderIntro";
 import { HowToBook } from "@/components/home/HowToBook";
 import { Testimonials } from "@/components/home/Testimonials";
+import { Faq } from "@/components/home/Faq";
+import { ContactSection } from "@/components/home/ContactSection";
 import { Reveal } from "@/components/home/Reveal";
 import { PRODUCTS_ENABLED } from "@/lib/features";
 import { createPublicClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getContactDetails } from "@/lib/contact";
+import { buildFaq, summariseTimings, EMPTY_FACTS, type ServiceTiming } from "@/lib/faq";
 
 // Re-read the menu at most once a minute, same as /book — so a price change
 // made in Services shows up here without waiting on a redeploy.
@@ -127,6 +131,42 @@ async function getHowToBookPhotos() {
   }
 }
 
+/**
+ * Duration and deposit for every active service, for the FAQ's answers.
+ *
+ * Separate from getFeaturedServices because that one is limited to the three
+ * full sets shown as Signature Sets; the FAQ answers for refills and the lash
+ * lift too, so it needs the whole active menu. No fallback: with Supabase
+ * unconfigured there are no real figures to quote, and buildFaq drops the
+ * questions it cannot answer rather than inventing a number.
+ */
+async function getServiceTimings(): Promise<ServiceTiming[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  try {
+    const supabase = await createPublicClient();
+    const { data, error } = await supabase
+      .from("services")
+      .select("category, duration_minutes, deposit_amount")
+      .eq("is_active", true);
+
+    if (error) {
+      console.error("getServiceTimings: fetch failed, FAQ omits figures:", error);
+      return [];
+    }
+
+    // Postgres `numeric` arrives as a string over PostgREST.
+    return (data || []).map((s) => ({
+      category: s.category,
+      duration_minutes: Number(s.duration_minutes),
+      deposit_amount: Number(s.deposit_amount),
+    }));
+  } catch (err) {
+    console.error("getServiceTimings: threw, FAQ omits figures:", err);
+    return [];
+  }
+}
+
 // The DB description is a full paragraph, written for the booking page's
 // service cards — too long for a banner. The first sentence is real copy she
 // already wrote for this exact service, just excerpted rather than replaced.
@@ -136,10 +176,16 @@ function leadSentence(description: string) {
 }
 
 export default async function HomePage() {
-  const [featuredServices, howToBookPhotos] = await Promise.all([
-    getFeaturedServices(),
-    getHowToBookPhotos(),
-  ]);
+  const [featuredServices, howToBookPhotos, serviceTimings, contact] =
+    await Promise.all([
+      getFeaturedServices(),
+      getHowToBookPhotos(),
+      getServiceTimings(),
+      getContactDetails(),
+    ]);
+  const faqItems = buildFaq(
+    serviceTimings.length > 0 ? summariseTimings(serviceTimings) : EMPTY_FACTS
+  );
   const featureSections = featuredServices.map((service, i) => ({
     ...sectionVisuals[i],
     id: service.id,
@@ -272,85 +318,15 @@ export default async function HomePage() {
         <Testimonials />
       </Reveal>
 
-      {/* Stay Lashed In Section */}
+      {/* Answers the questions that otherwise arrive as a DM and hold up a
+          booking — and sits directly above Contact, so anything it does not
+          cover is one scroll from the way to ask. */}
       <Reveal>
-      <section id="contact" className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] pt-12 sm:pt-16 lg:pt-[100px] pb-10 sm:pb-14 lg:pb-[80px]">
-        {/* Two-column layout */}
-        <div className="relative flex flex-col lg:flex-row items-start gap-8 sm:gap-10 lg:gap-[60px]">
-          {/* Left Content */}
-          <div className="w-full lg:w-[380px] shrink-0 pt-0 lg:pt-[20px]">
-            {/* Stay Lashed in heading */}
-            <h2 className="font-display text-[56px] sm:text-[72px] lg:text-[98px] leading-[0.97] text-dark-brown mb-8 sm:mb-10 lg:mb-[50px]">
-              Stay<br />Lashed in
-            </h2>
+        <Faq items={faqItems} />
+      </Reveal>
 
-            {/* Social Media. The caption is Figma node 306:6226; it was
-                missing here, leaving the icons unlabelled. */}
-            <div className="flex flex-col gap-[14px] mb-8 sm:mb-10 lg:mb-[40px]">
-              <p className="font-sans text-[14px] text-charcoal">
-                Follow us on social media for the latest news!
-              </p>
-              <div className="flex items-center gap-8 sm:gap-10 lg:gap-[40px]">
-                {/* Instagram */}
-                <a href="https://www.instagram.com/vislashesbooking" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-charcoal hover:text-brand-brown transition-colors">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="20" rx="5" />
-                    <circle cx="12" cy="12" r="5" />
-                    <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-                  </svg>
-                </a>
-                {/* Facebook */}
-                <a href="https://www.facebook.com/profile.php?id=100090403301732" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-charcoal hover:text-brand-brown transition-colors">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
-                  </svg>
-                </a>
-                {/* TikTok */}
-                <a href="https://www.tiktok.com/@vislashes" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-charcoal hover:text-brand-brown transition-colors">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M16.5 2h-3.2v13.6c0 1.5-1.2 2.75-2.75 2.75a2.75 2.75 0 01-2.75-2.75 2.75 2.75 0 012.75-2.75c.3 0 .6.05.87.14V9.7a6 6 0 00-.87-.06 5.95 5.95 0 00-5.95 5.95A5.95 5.95 0 0010.55 21.5a5.95 5.95 0 005.95-5.95V8.6a8.2 8.2 0 004.6 1.4V6.75c-1.9 0-3.55-1.15-4.25-2.8A5.3 5.3 0 0116.5 2z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-
-            {/* Email Signup */}
-            <div className="relative max-w-[327px]">
-              <label htmlFor="newsletter-email" className="sr-only">
-                Email Address
-              </label>
-              <input
-                id="newsletter-email"
-                type="email"
-                placeholder="Email Address"
-                className="w-full h-control box-border px-4 pr-[72px] border border-charcoal rounded-control font-sans text-[14px] text-charcoal leading-[24px] bg-transparent transition-[border-color,box-shadow] duration-200 focus:outline-none focus:border-brand-brown focus:shadow-[0_0_0_3px_rgba(139,111,71,0.15)] motion-reduce:transition-none"
-              />
-              <button
-                aria-label="Submit email"
-                className="absolute right-0 inset-y-0 w-[63px] bg-brand-brown rounded-r-control flex items-center justify-center hover:bg-text-brown transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rotate-90">
-                  <line x1="12" y1="19" x2="12" y2="5" />
-                  <polyline points="5 12 12 5 19 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Right: Photo */}
-          <div className="w-full lg:flex-1 relative h-[300px] sm:h-[420px] lg:h-[582px] rounded-surface overflow-hidden">
-            <video
-              src="/images/stay-lashed-photo.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="none"
-              className="absolute inset-0 w-full h-full object-cover rounded-surface"
-            />
-          </div>
-        </div>
-      </section>
+      <Reveal>
+        <ContactSection contact={contact} />
       </Reveal>
 
       <Footer />
