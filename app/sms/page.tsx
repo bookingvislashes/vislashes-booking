@@ -1,23 +1,20 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/LegalPage";
-import { buildPrivacyPolicy } from "@/lib/legal";
+import { buildMessagingPolicy } from "@/lib/legal";
 import { createPublicClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy · VIS Lashes",
+  title: "Text Message Policy · VIS Lashes",
   description:
-    "How VIS Lashes collects, uses and protects your information, including text message policy.",
+    "What text messages VIS Lashes sends, how you opt in, how to stop them, and how your mobile number is handled.",
 };
 
-// The contact block comes from Settings, so a change of address or email is
-// made in the admin rather than here — and a missing value renders nothing
-// rather than a placeholder.
+// Same contract as /privacy and /terms: the contact block comes from Settings,
+// missing values render nothing rather than a placeholder, and the page still
+// renders if the database cannot be read.
 export const revalidate = 3600;
 
-export default async function PrivacyPage() {
-  // Same contract as /terms: the policy still renders if Settings cannot be
-  // read. Missing contact lines are simply omitted — never guessed at.
-  // The address is intentionally not fetched here — see buildPrivacyPolicy.
+export default async function SmsPolicyPage() {
   let rows: { key: string; value: string }[] = [];
   try {
     const supabase = await createPublicClient();
@@ -42,10 +39,10 @@ export default async function PrivacyPage() {
 
   return (
     <LegalPage
-      title="Privacy Policy"
+      title="Text Message Policy"
       updated="September 11, 2026"
       sections={[
-        buildPrivacyPolicy({
+        buildMessagingPolicy({
           businessName: get("business_name") ?? "VIS Lashes",
           email: get("business_email"),
           phone: formattedPhone,

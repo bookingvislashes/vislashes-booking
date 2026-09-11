@@ -1,9 +1,9 @@
 /**
- * The shared frame for /privacy and /terms.
+ * The shared frame for /privacy, /terms and /sms.
  *
- * Both are plain documents: the job is that they are readable on a phone and
- * openable by anyone — including a carrier reviewing the messaging campaign —
- * without starting a booking. Deliberately quiet, and deliberately using the
+ * All three are plain documents: the job is that they are readable on a phone
+ * and openable by anyone — including a carrier reviewing the messaging
+ * campaign — without starting a booking. Deliberately quiet, and deliberately using the
  * same tokens as the rest of the site so they still feel like VIS Lashes.
  */
 import Link from "next/link";
@@ -11,7 +11,9 @@ import Link from "next/link";
 interface LegalPageProps {
   title: string;
   updated: string;
-  /** Plain text. Lines in CAPS become headings; everything else is a paragraph. */
+  /** Plain text. Lines in CAPS become headings; everything else is a
+   *  paragraph. **Double asterisks** render bold — the carriers require the
+   *  STOP and HELP instructions in the messaging terms to be shown in bold. */
   sections: string[];
 }
 
@@ -49,6 +51,12 @@ export function LegalPage({ title, updated, sections }: LegalPageProps) {
                 trimmed === trimmed.toUpperCase() &&
                 /[A-Z]/.test(trimmed) &&
                 trimmed.length < 60;
+              // **bold** segments. Split on the delimiter and emphasise the
+              // odd-indexed pieces, which are the ones that were wrapped.
+              const render = (text: string) =>
+                text.split("**").map((part, j) =>
+                  j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+                );
               return isHeading ? (
                 <h2
                   key={`${block.slice(0, 12)}-${i}`}
@@ -61,7 +69,7 @@ export function LegalPage({ title, updated, sections }: LegalPageProps) {
                   key={`${block.slice(0, 12)}-${i}`}
                   className="font-sans text-[15px] leading-[1.7] text-charcoal mb-3"
                 >
-                  {trimmed}
+                  {render(trimmed)}
                 </p>
               );
             })
@@ -74,6 +82,9 @@ export function LegalPage({ title, updated, sections }: LegalPageProps) {
           </Link>
           <Link href="/privacy" className="font-sans text-[14px] text-deep-brown underline">
             Privacy Policy
+          </Link>
+          <Link href="/sms" className="font-sans text-[14px] text-deep-brown underline">
+            Text Message Policy
           </Link>
           <Link href="/book" className="font-sans text-[14px] text-deep-brown underline">
             Book an appointment

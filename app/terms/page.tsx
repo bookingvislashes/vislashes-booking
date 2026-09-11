@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/LegalPage";
-import { buildTerms, SMS_TERMS, WAIVER_TEXT } from "@/lib/legal";
+import { buildTerms, buildSmsTerms, WAIVER_TEXT } from "@/lib/legal";
 import { createPublicClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -19,6 +19,9 @@ export default async function TermsPage() {
   // reached — including at build time, where the credentials are not present.
   // A legal document that 500s is worse than one missing a figure.
   let deposit: number | null = null;
+  // The messaging terms have to carry a support contact — the carriers check
+  // for one — so this page reads the same Settings rows /privacy does.
+  let rows: { key: string; value: string }[] = [];
   try {
     const supabase = await createPublicClient();
     const { data } = await supabase
@@ -29,15 +32,39 @@ export default async function TermsPage() {
       .limit(1)
       .maybeSingle();
     if (data?.deposit_amount != null) deposit = Number(data.deposit_amount);
+
+    const { data: settings } = await supabase
+      .from("settings")
+      .select("key, value")
+      .in("key", ["business_name", "business_email", "business_phone"]);
+    rows = settings ?? [];
   } catch {
-    // Left null: buildTerms writes the clause without an amount.
+    // Left null/empty: buildTerms writes the clause without an amount, and the
+    // support line collapses rather than printing a placeholder.
   }
+
+  const get = (key: string) => rows.find((row) => row.key === key)?.value ?? null;
+  const phone = get("business_phone");
+  const formattedPhone =
+    phone && phone.replace(/\D/g, "").length === 10
+      ? `(${phone.replace(/\D/g, "").slice(0, 3)}) ${phone
+          .replace(/\D/g, "")
+          .slice(3, 6)}-${phone.replace(/\D/g, "").slice(6)}`
+      : phone;
 
   return (
     <LegalPage
       title="Terms & Conditions"
-      updated="September 8, 2026"
-      sections={[buildTerms(deposit), SMS_TERMS, WAIVER_TEXT]}
+      updated="September 11, 2026"
+      sections={[
+        buildTerms(deposit),
+        buildSmsTerms({
+          businessName: get("business_name") ?? "VIS Lashes",
+          email: get("business_email"),
+          phone: formattedPhone,
+        }),
+        WAIVER_TEXT,
+      ]}
     />
   );
 }

@@ -31,9 +31,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: "1.46.0",
-    date: "2026-09-09",
+    version: "1.48.0",
+    date: "2026-09-11",
     changes: [
+      {
+        kind: "fixed",
+        text: "Today no longer shows a red \"column clients_1.allergy_note does not exist\" line with your appointments missing underneath it. The page was asking the database for the sensitivity flag from update 1.45, which only exists once migration 020 has been run — and when it could not find it, it gave up on the whole day instead of just that one flag.",
+      },
+      {
+        kind: "changed",
+        text: "Today now shows your appointments even when an update is waiting on a migration you have not run yet. You lose only the thing that migration adds, never the day's bookings.",
+      },
       {
         kind: "added",
         text: "Contact on the website now shows real ways to reach you: a Text button that opens the client's own messages app with your number already filled in, and your email beside it. Both come straight from Settings — change them there and the website follows.",
@@ -57,6 +65,56 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       {
         kind: "note",
         text: "Your street address is deliberately not on the website. The answer says clients get the full address with their confirmation, which is already what happens. Say the word if you would rather it showed your city, or the whole address.",
+      },
+    ],
+  },
+  {
+    version: "1.47.1",
+    date: "2026-09-10",
+    changes: [
+      {
+        kind: "changed",
+        text: "On the home page, each set's price now sits right beside its name instead of out at the far right of the row, where it read as unrelated to the set.",
+      },
+    ],
+  },
+  {
+    version: "1.47.0",
+    date: "2026-09-11",
+    changes: [
+      {
+        kind: "changed",
+        text: "The privacy policy now carries the sentence about text consent in the exact words Twilio's own guide says it looks for, rather than our paraphrase of it.",
+      },
+      {
+        kind: "changed",
+        text: "The Terms page now lists your email and phone under the text message terms, and shows the STOP and HELP instructions in bold - both are things the carriers require and neither was there.",
+      },
+      {
+        kind: "changed",
+        text: "The booking confirmation text now says how many more texts to expect and that message and data rates may apply. Twilio requires both on the first message someone gets.",
+      },
+      {
+        kind: "note",
+        text: "Put the square brackets back in your Twilio sample messages - [Name], [Classic Set] - and swap \"Ana\" for [Name]. Twilio's guide asks for placeholders; my earlier advice to remove them was wrong.",
+      },
+    ],
+  },
+  {
+    version: "1.46.0",
+    date: "2026-09-10",
+    changes: [
+      {
+        kind: "added",
+        text: "A new Text Message Policy page at vislashes.com/sms, linked in the footer of every page. It says on one public page what texts you send, how a client agrees to them, and how to stop them.",
+      },
+      {
+        kind: "changed",
+        text: "The consent line on the booking form now also links to that page, and both it and the page share one source - so they can never end up saying different things.",
+      },
+      {
+        kind: "note",
+        text: "Give Twilio the new /sms link when you resubmit. The consent wording was only visible three steps into booking, where a reviewer would never have reached it.",
       },
     ],
   },
