@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.47.1",
+    date: "2026-09-10",
+    changes: [
+      {
+        kind: "changed",
+        text: "On the home page, each set's price now sits right beside its name instead of out at the far right of the row, where it read as unrelated to the set.",
+      },
+    ],
+  },
+  {
     version: "1.47.0",
     date: "2026-09-11",
     changes: [

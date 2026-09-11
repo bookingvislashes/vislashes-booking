@@ -235,7 +235,12 @@ export default async function HomePage() {
                   <span aria-hidden className="font-display font-bold italic text-text-brown text-[24px]">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <div className="flex items-baseline justify-between gap-4">
+                  {/* Name and price sit together rather than at opposite ends
+                      of the 480px column, which is what the Figma frame does —
+                      at that width the price read as belonging to nothing.
+                      Wraps rather than overflows: the name comes from Services
+                      and can be any length. */}
+                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
                     <h3 className="font-display font-bold text-charcoal text-[36px]">
                       {section.name}
                     </h3>
