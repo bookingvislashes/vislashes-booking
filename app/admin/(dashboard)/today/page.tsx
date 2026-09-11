@@ -70,6 +70,40 @@ function money(value: string | number) {
   })}`;
 }
 
+/**
+ * The appointment columns this page needs, split from the one optional field.
+ *
+ * `clients.allergy_note` arrives with migration 020. Naming a column PostgREST
+ * cannot see fails the ENTIRE query, not just that field — so on a deployment
+ * that shipped ahead of its migration, this page answered "column
+ * clients_1.allergy_note does not exist" in red and showed no appointments at
+ * all. She opens this screen to find out who is coming; losing the whole day
+ * to a missing flag is the wrong trade in both directions.
+ *
+ * Migrations here are run by hand, so a window where the code is ahead of the
+ * database is normal rather than exceptional. The flag is shown the moment the
+ * column exists and silently skipped while it does not. The Agreements page
+ * already does the same for a missing `client_documents`.
+ */
+const BOOKING_FIELDS =
+  "id, time_slot, status, deposit_paid, deposit_amount, has_removal, client_id, service:services(name, price)";
+const CLIENT_WITH_FLAG = "client:clients(full_name, phone, allergy_note)";
+const CLIENT_WITHOUT_FLAG = "client:clients(full_name, phone)";
+
+/**
+ * Postgres raises undefined_column as 42703. The message is matched as well
+ * because PostgREST does not promise to forward the SQLSTATE on every error
+ * shape, and falling back one extra time costs a query while not falling back
+ * costs the page.
+ */
+function isMissingColumn(error: { code?: string; message?: string } | null) {
+  if (!error) return false;
+  return (
+    error.code === "42703" ||
+    /does not exist/i.test(error.message ?? "")
+  );
+}
+
 export default function TodayPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -100,21 +134,28 @@ export default function TodayPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [bookingsRes, paymentsRes, settingsRes] = await Promise.all([
+    // Retried without the flag only when the flag itself is what PostgREST
+    // rejected — any other failure is a real one and is surfaced as before.
+    const loadBookings = async (clientFields: string) =>
       supabase
         .from("bookings")
-        .select(
-          "id, time_slot, status, deposit_paid, deposit_amount, has_removal, client_id, client:clients(full_name, phone, allergy_note), service:services(name, price)"
-        )
+        .select(`${BOOKING_FIELDS}, ${clientFields}`)
         .eq("booking_date", today)
         .in("status", ["confirmed", "completed"])
-        .order("time_slot", { ascending: true }),
+        .order("time_slot", { ascending: true });
+
+    const [bookingsFirstTry, paymentsRes, settingsRes] = await Promise.all([
+      loadBookings(CLIENT_WITH_FLAG),
       supabase
         .from("payments")
         .select("id, booking_id, method, source, service_amount, tip_amount, total_collected")
         .eq("paid_on", today),
       supabase.from("settings").select("key, value").eq("key", "removal_price"),
     ]);
+
+    const bookingsRes = isMissingColumn(bookingsFirstTry.error)
+      ? await loadBookings(CLIENT_WITHOUT_FLAG)
+      : bookingsFirstTry;
 
     setRemovalPrice(Number(settingsRes.data?.[0]?.value ?? 0));
 
@@ -132,9 +173,11 @@ export default function TodayPage() {
       deposit_amount: string | number | null;
       has_removal: boolean;
       client_id: string | null;
+      // allergy_note is optional: the fallback select above omits it entirely
+      // while migration 020 is outstanding.
       client:
-        | { full_name: string; phone: string | null; allergy_note: string | null }
-        | { full_name: string; phone: string | null; allergy_note: string | null }[]
+        | { full_name: string; phone: string | null; allergy_note?: string | null }
+        | { full_name: string; phone: string | null; allergy_note?: string | null }[]
         | null;
       service:
         | { name: string; price: string | number }
@@ -142,7 +185,11 @@ export default function TodayPage() {
         | null;
     };
 
-    const mapped = ((bookingsRes.data ?? []) as Row[]).map((b) => {
+    // `as unknown` first: the select string is composed from the two constants
+    // above, so supabase-js cannot parse it as a literal and infers a
+    // ParserError rather than a row shape. `Row` is the real contract either
+    // way — it already has to describe both shapes, with and without the flag.
+    const mapped = ((bookingsRes.data ?? []) as unknown as Row[]).map((b) => {
       const client = Array.isArray(b.client) ? b.client[0] : b.client;
       const service = Array.isArray(b.service) ? b.service[0] : b.service;
       return {
