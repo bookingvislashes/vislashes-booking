@@ -213,7 +213,7 @@ export default async function HomePage() {
           {featureSections.map((section, index) => (
             <Reveal key={section.name} delay={index * 80}>
               <div
-                className={`group flex flex-col items-center gap-6 md:items-center md:justify-between md:py-8 lg:py-[48px] ${
+                className={`group flex flex-col items-start gap-6 md:items-center md:gap-10 md:py-8 lg:gap-16 lg:py-[48px] ${
                   section.imagePosition === "right" ? "md:flex-row-reverse" : "md:flex-row"
                 }`}
               >
@@ -231,16 +231,16 @@ export default async function HomePage() {
                   />
                 </div>
 
-                <div className="w-full max-w-[420px] md:max-w-none md:flex-1 lg:w-[480px] lg:flex-none flex flex-col gap-[6px] text-left">
-                  <span aria-hidden className="font-display font-bold italic text-text-brown text-[24px]">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  {/* Name and price sit together rather than at opposite ends
-                      of the 480px column, which is what the Figma frame does —
-                      at that width the price read as belonging to nothing.
-                      Wraps rather than overflows: the name comes from Services
-                      and can be any length. */}
-                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                <div className="w-full max-w-[420px] md:max-w-none md:flex-1 lg:w-[480px] lg:flex-none flex flex-col gap-4 text-left">
+                  {/* Index, name and price are one block, 2px apart, rather
+                      than three evenly spaced lines. The Figma frame puts the
+                      price at the far end of the column; at 480px wide it read
+                      as belonging to nothing, so it sits under the name here.
+                      Deliberate departure from node 756:337. */}
+                  <div className="flex flex-col gap-[2px]">
+                    <span aria-hidden className="font-display font-bold italic text-text-brown text-[24px]">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
                     <h3 className="font-display font-bold text-charcoal text-[36px]">
                       {section.name}
                     </h3>
