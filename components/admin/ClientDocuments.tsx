@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DocumentPreview } from "@/components/admin/DocumentPreview";
 import { createClient } from "@/lib/supabase/client";
 import type { ClientDocument } from "@/lib/supabase/types";
 import {
@@ -13,7 +14,6 @@ import {
   formatSignedOn,
   isAcceptedType,
   kindLabel,
-  signedUrlFor,
   storagePathFor,
   type DocumentKind,
 } from "@/lib/client-documents";
@@ -21,10 +21,10 @@ import {
 /**
  * The forms kept against one client — consent, medical health, anything else.
  *
- * Viewing opens the file in a new tab rather than an embedded frame. That is
- * the one thing that behaves the same on a desktop and on the iPad: the
- * browser's own PDF viewer, with its own Print and Save, instead of an iframe
- * that iOS renders as a single page with no controls.
+ * Preview opens the form in a dialog with Open, Print and Download on it, so
+ * the four things she does with a form are all one tap from the profile
+ * rather than a trip through the browser's own viewer. See DocumentPreview
+ * for why printing takes a different route on the iPad than on a desktop.
  */
 
 interface Props {
@@ -42,6 +42,7 @@ export function ClientDocuments({ clientId, clientName }: Props) {
   const [kind, setKind] = useState<DocumentKind>("consent");
   const [signedOn, setSignedOn] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<ClientDocument | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
@@ -126,22 +127,6 @@ export function ClientDocuments({ clientId, clientName }: Props) {
     setUploadError(problems.length ? problems.join(" ") : null);
     if (inputRef.current) inputRef.current.value = "";
     await fetchDocuments();
-  }
-
-  async function view(doc: ClientDocument) {
-    // The tab is opened synchronously, before the await, or Safari treats it
-    // as a popup and blocks it.
-    const tab = window.open("", "_blank");
-    setBusyId(doc.id);
-    const url = await signedUrlFor(supabase, doc.storage_path);
-    setBusyId(null);
-    if (!url) {
-      tab?.close();
-      setError("Couldn't open that file.");
-      return;
-    }
-    if (tab) tab.location.href = url;
-    else window.location.assign(url);
   }
 
   async function remove(doc: ClientDocument) {
@@ -270,11 +255,10 @@ export function ClientDocuments({ clientId, clientName }: Props) {
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
-                  onClick={() => view(doc)}
-                  disabled={busyId === doc.id}
-                  className="min-h-11 px-3 inline-flex items-center rounded-control font-sans text-[15px] font-semibold text-deep-brown hover:underline disabled:opacity-50 cursor-pointer"
+                  onClick={() => setPreviewing(doc)}
+                  className="min-h-11 px-3 inline-flex items-center rounded-control font-sans text-[15px] font-semibold text-deep-brown hover:underline cursor-pointer"
                 >
-                  {busyId === doc.id ? "Opening…" : "View"}
+                  View
                 </button>
                 <button
                   type="button"
@@ -290,6 +274,12 @@ export function ClientDocuments({ clientId, clientName }: Props) {
           ))}
         </ul>
       )}
+
+      <DocumentPreview
+        doc={previewing}
+        clientName={clientName}
+        onClose={() => setPreviewing(null)}
+      />
     </section>
   );
 }

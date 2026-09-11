@@ -31,6 +31,36 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.50.0",
+    date: "2026-09-11",
+    changes: [
+      {
+        kind: "added",
+        text: "Tapping View on a consent or medical form now opens the form itself on the page, with Open, Print and Download sitting right above it — so you can read one, print it for a client, or save a copy without leaving the profile. Works the same on your phone, the iPad and a computer.",
+      },
+      {
+        kind: "added",
+        text: "Signed Agreements now has a search box. Type a client's name to pull up everything she has signed — the forms you imported from paper as well as the ones signed online — instead of scrolling the whole list.",
+      },
+      {
+        kind: "changed",
+        text: "Downloading a form now saves it under its real name rather than a long string of letters and numbers, so it is findable again in your Files or Downloads afterwards.",
+      },
+      {
+        kind: "note",
+        text: "The date signed is already there on every form — you set it when you upload, and it shows on the client's profile and in Signed Agreements. If any of the forms you have already imported went in without a date, delete and re-add that one; there is no way to edit the date on a form that is already uploaded yet. Tell me if you want that.",
+      },
+      {
+        kind: "note",
+        text: "I could not reach the consent forms in your Pages folder — I only have access to the booking site's code and database, never the files on your Mac or iPad. Import them yourself from Signed Agreements > Import forms, where you pick them all at once and name each one.",
+      },
+      {
+        kind: "note",
+        text: "Matching the forms to clients by appointment date will not work the way you described: your client list came over from Acuity with only each client's most recent visit, not their first, and the forms are signed at the first visit. For the 52 clients who have only ever been once those are the same date, but for the other 105 they are years apart, so guessing from it would file forms under the wrong person. Preview each form and read the name off it instead.",
+      },
+    ],
+  },
+  {
     version: "1.49.0",
     date: "2026-09-11",
     changes: [

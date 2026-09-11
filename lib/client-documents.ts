@@ -64,19 +64,43 @@ export function formatSignedOn(date: string | null): string {
   });
 }
 
+/** Is this file one a browser can show inline as an image? */
+export function isImageDocument(doc: {
+  mime_type: string | null;
+  file_name: string;
+}): boolean {
+  if (doc.mime_type?.startsWith("image/")) return true;
+  return /\.(jpe?g|png|heic|gif|webp)$/i.test(doc.file_name);
+}
+
+/** Is this file a PDF? iPadOS sometimes uploads one with an empty mime type,
+ *  so the extension is checked too rather than trusted away. */
+export function isPdfDocument(doc: {
+  mime_type: string | null;
+  file_name: string;
+}): boolean {
+  if (doc.mime_type === "application/pdf") return true;
+  return /\.pdf$/i.test(doc.file_name);
+}
+
 /**
  * A URL for one stored document, good for an hour.
+ *
+ * Pass `download` to get a URL the browser saves instead of displays — a
+ * string names the saved file, which matters because the stored path is a
+ * random UUID and would otherwise land in Downloads as `a3f2….pdf`.
  *
  * Returns null rather than throwing: a document that won't open should leave
  * the rest of a profile working.
  */
 export async function signedUrlFor(
   supabase: SupabaseClient,
-  storagePath: string
+  storagePath: string,
+  options?: { download?: string | boolean }
 ): Promise<string | null> {
   const { data, error } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
-    .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
+    .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS, options);
   if (error || !data?.signedUrl) return null;
   return data.signedUrl;
 }

@@ -5,11 +5,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import {
-  formatSignedOn,
-  kindLabel,
-  signedUrlFor,
-} from "@/lib/client-documents";
+import { DocumentPreview } from "@/components/admin/DocumentPreview";
+import { formatSignedOn, kindLabel } from "@/lib/client-documents";
 
 /**
  * Every agreement on file, however it was signed.
@@ -37,6 +34,8 @@ interface DocumentRow {
   kind: string;
   storage_path: string;
   file_name: string;
+  mime_type: string | null;
+  byte_size: number | null;
   signed_on: string | null;
   uploaded_at: string;
   client: { id: string; full_name: string } | null;
@@ -73,7 +72,8 @@ export default function AgreementsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<AgreementRow | null>(null);
-  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<DocumentRow | null>(null);
+  const [search, setSearch] = useState("");
 
   const supabase = createClient();
 
@@ -88,7 +88,7 @@ export default function AgreementsPage() {
       supabase
         .from("client_documents")
         .select(
-          "id, client_id, kind, storage_path, file_name, signed_on, uploaded_at, client:clients(id, full_name)"
+          "id, client_id, kind, storage_path, file_name, mime_type, byte_size, signed_on, uploaded_at, client:clients(id, full_name)"
         )
         .order("signed_on", { ascending: false, nullsFirst: false }),
     ]);
@@ -147,20 +147,34 @@ export default function AgreementsPage() {
     );
   }, [agreements, documents]);
 
-  async function openDocument(doc: DocumentRow) {
-    // Opened synchronously, before the await, or Safari blocks it as a popup.
-    const tab = window.open("", "_blank");
-    setOpeningId(doc.id);
-    const url = await signedUrlFor(supabase, doc.storage_path);
-    setOpeningId(null);
-    if (!url) {
-      tab?.close();
-      setError("Couldn't open that file.");
-      return;
-    }
-    if (tab) tab.location.href = url;
-    else window.location.assign(url);
-  }
+  /**
+   * Searching is by client name, because that is the question being asked:
+   * "did she sign one, and where is it". The email and the file name are
+   * matched too — the email disambiguates two clients with the same name, and
+   * a form saved as "maria-consent.pdf" should turn up on its own name.
+   *
+   * Every term has to match somewhere, so "maria 2024" narrows rather than
+   * widens.
+   */
+  const filtered = useMemo(() => {
+    const terms = search.toLowerCase().split(/\s+/).filter(Boolean);
+    if (terms.length === 0) return entries;
+
+    return entries.filter((entry) => {
+      const haystack = [
+        entry.row.client?.full_name ?? "",
+        entry.type === "online" ? entry.row.client?.email ?? "" : "",
+        entry.type === "uploaded" ? entry.row.file_name : "",
+        entry.type === "uploaded" ? kindLabel(entry.row.kind) : "",
+        entry.type === "uploaded"
+          ? formatSignedOn(entry.row.signed_on)
+          : formatSigned(entry.row.signed_at),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return terms.every((term) => haystack.includes(term));
+    });
+  }, [entries, search]);
 
   return (
     <div>
@@ -172,6 +186,8 @@ export default function AgreementsPage() {
           <p className="font-sans text-[13px] text-muted">
             {loading
               ? "Loading…"
+              : search.trim()
+              ? `${filtered.length} of ${entries.length} on file`
               : `${entries.length} on file${
                   documents.length
                     ? ` · ${documents.length} uploaded from paper`
@@ -186,6 +202,36 @@ export default function AgreementsPage() {
           Import forms
         </Link>
       </div>
+
+      {/* Search sits outside the card so it stays put while the list under it
+          changes, and is hidden until there is something to search through. */}
+      {!loading && entries.length > 0 && (
+        <div className="relative mb-3">
+          <label htmlFor="agreement-search" className="sr-only">
+            Search by client name
+          </label>
+          <input
+            id="agreement-search"
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by client name"
+            // 16px on small screens: anything smaller and iOS zooms the page
+            // in when the field takes focus.
+            className="w-full h-control pl-3 pr-10 box-border bg-white border border-light-tan rounded-control text-[16px] md:text-[14px] text-charcoal font-sans placeholder:text-muted focus:border-deep-brown transition-colors"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              aria-label="Clear search"
+              className="absolute top-0 right-0 h-full w-10 inline-flex items-center justify-center text-muted hover:text-charcoal text-lg leading-none cursor-pointer"
+            >
+              &times;
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="bg-white rounded-surface shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
         {loading ? (
@@ -230,8 +276,18 @@ export default function AgreementsPage() {
               on paper go in with Import forms.
             </p>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <p className="font-sans text-[16px] text-charcoal font-semibold">
+              Nothing matching &ldquo;{search.trim()}&rdquo;
+            </p>
+            <p className="font-sans text-[16px] text-muted mt-1 leading-[1.5]">
+              A client who signed on paper only shows up here once their form
+              is imported.
+            </p>
+          </div>
         ) : (
-          entries.map((entry) => {
+          filtered.map((entry) => {
             const clientName =
               entry.row.client?.full_name || "Unknown client";
             const clientId = entry.row.client?.id;
@@ -292,12 +348,11 @@ export default function AgreementsPage() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => openDocument(entry.row as DocumentRow)}
-                    disabled={openingId === entry.row.id}
+                    onClick={() => setPreviewing(entry.row as DocumentRow)}
                     aria-label={`Open the form signed by ${clientName}`}
-                    className="shrink-0 ml-3 min-h-11 px-3 -mr-3 inline-flex items-center rounded-control font-sans text-[16px] text-deep-brown font-semibold hover:underline disabled:opacity-50 transition-transform active:scale-[0.97]"
+                    className="shrink-0 ml-3 min-h-11 px-3 -mr-3 inline-flex items-center rounded-control font-sans text-[16px] text-deep-brown font-semibold hover:underline transition-transform active:scale-[0.97]"
                   >
-                    {openingId === entry.row.id ? "Opening…" : "View"}
+                    View
                   </button>
                 )}
               </div>
@@ -373,6 +428,12 @@ export default function AgreementsPage() {
           </div>
         )}
       </Modal>
+
+      <DocumentPreview
+        doc={previewing}
+        clientName={previewing?.client?.full_name || undefined}
+        onClose={() => setPreviewing(null)}
+      />
     </div>
   );
 }

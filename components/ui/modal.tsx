@@ -6,10 +6,19 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  /** "wide" is for showing a document rather than asking a question — a
+   *  consent form in a max-w-lg panel is too small to read. */
+  size?: "default" | "wide";
   children: ReactNode;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  size = "default",
+  children,
+}: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -102,7 +111,9 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         // dvh, not vh: iOS measures vh against the large viewport, so with the
         // toolbar showing the bottom of the panel — usually the submit button —
         // sits below the fold with no way to reach it.
-        className="relative bg-white rounded-surface shadow-lg max-w-lg w-full max-h-[85dvh] overflow-y-auto overscroll-contain p-6"
+        className={`relative bg-white rounded-surface shadow-lg w-full max-h-[85dvh] overflow-y-auto overscroll-contain p-6 ${
+          size === "wide" ? "max-w-3xl" : "max-w-lg"
+        }`}
       >
         {title && (
           <h3
