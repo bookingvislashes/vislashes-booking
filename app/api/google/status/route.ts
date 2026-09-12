@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import {
   getConnection,
-  getCalendarSummary,
+  getCalendarHealth,
+  findUnsyncedUpcoming,
   isGoogleConfigured,
   googleConfigProblem,
 } from "@/lib/google-calendar";
@@ -40,17 +41,32 @@ export async function GET() {
     const admin = await createServiceClient();
     const connection = await getConnection(admin);
 
-    // The name of the calendar appointments actually land on. Asked for only
-    // when there is a connection to ask about, and a failure here is not a
-    // failure of the status check — the panel prints what it knows.
-    const calendarName = connection ? await getCalendarSummary(admin) : null;
+    if (!connection) {
+      return NextResponse.json({ configured: true, connected: false });
+    }
+
+    // Two questions the panel could not answer before, both of which matter
+    // more than "is it connected": which calendar do appointments land on,
+    // and is anything actually landing there. `health` asks Google directly,
+    // so a connection that is saved but no longer works — the API switched
+    // off, the permission revoked — reads as the fault it is instead of a
+    // green tick.
+    const [health, unsynced] = await Promise.all([
+      getCalendarHealth(admin),
+      findUnsyncedUpcoming(admin),
+    ]);
 
     return NextResponse.json({
       configured: true,
-      connected: Boolean(connection),
-      email: connection?.googleEmail ?? null,
-      connectedAt: connection?.connectedAt ?? null,
-      calendarName,
+      connected: true,
+      email: connection.googleEmail,
+      connectedAt: connection.connectedAt,
+      calendarName: health.name,
+      // Named `syncProblem` rather than reusing `problem`: that one means the
+      // keys are wrong and she has never been connected, and the panel says
+      // something quite different for each.
+      syncProblem: health.problem,
+      pendingSync: unsynced.length,
     });
   } catch (err) {
     console.error("Google Calendar: status check failed:", err);

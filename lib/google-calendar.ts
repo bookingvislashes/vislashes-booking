@@ -209,37 +209,99 @@ async function getCalendarClient(supabase: SupabaseClient) {
 }
 
 /**
- * The name of the calendar appointments are actually being written to —
- * "VISLashes", say — so Settings can state it rather than leaving her to
- * infer it from which Google account she thinks she connected.
+ * Turns a Google failure into something she can actually go and do.
  *
- * It comes out of an events *list* call, which is a slightly odd way to ask
- * and the only one available: naming a calendar properly means reading the
- * Calendars resource, and that needs a broader Google permission than this
- * app asks for. The events list response happens to carry the calendar's own
- * title in `summary`, so one request for a single event answers it inside the
- * permission already granted. Asking her to re-approve a wider scope just to
- * print a name would be a poor trade.
+ * Every sync in this file swallows its own errors so that a booking can never
+ * fail because of the calendar. The cost of that is a persistent fault being
+ * invisible: bookings keep confirming, Settings keeps saying "Connected", and
+ * nothing is written to the calendar until someone happens to look at their
+ * phone and finds an appointment missing. These messages are what Settings
+ * shows instead, so the fault names itself.
  *
- * Returns null when not connected, or when Google is unreachable — the panel
- * says so rather than inventing a name.
+ * Written for the salon owner, which means naming the next step rather than
+ * the fault — "accessNotConfigured" tells her nothing at all.
  */
-export async function getCalendarSummary(
+export function describeGoogleError(err: unknown): string {
+  const status =
+    (err as { code?: number; status?: number })?.code ??
+    (err as { status?: number })?.status;
+  const message = String((err as { message?: string })?.message ?? err);
+
+  // The Calendar API is switched off on the Google Cloud project behind these
+  // credentials. Google answers every read and every write this way until
+  // somebody turns it back on, so it never recovers on its own — which is
+  // exactly why it is worth spelling out where the switch is.
+  if (
+    /has not been used in project|accessNotConfigured|SERVICE_DISABLED/i.test(
+      message
+    )
+  ) {
+    return "Google has the Calendar API switched off for this app, so it can't write to your calendar. In the Google Cloud console open APIs & Services, search for Google Calendar API, and press Enable. Then come back here and press Sync now.";
+  }
+
+  if (/invalid_grant|Token has been expired or revoked/i.test(message)) {
+    return "Google has ended this connection — that happens if the account password changed or access was removed. Press Disconnect, then Connect Google Calendar again.";
+  }
+
+  if (status === 401) {
+    return "Google wouldn't accept the saved permission. Press Disconnect, then Connect Google Calendar again.";
+  }
+
+  if (status === 403 && /quota|rateLimit|usageLimits/i.test(message)) {
+    return "Google is temporarily limiting how much this app can write. It should clear on its own — press Sync now in a few minutes.";
+  }
+
+  if (status === 403) {
+    return "Google refused this request. Check that the connected account still has permission to edit the calendar.";
+  }
+
+  if (status === 404) {
+    return "The calendar this app writes to can't be found any more. Press Disconnect, then Connect Google Calendar again.";
+  }
+
+  return "Couldn't reach Google Calendar just now. Press Sync now to try again.";
+}
+
+export interface CalendarHealth {
+  /** The calendar's own name in Google, or null when it couldn't be read. */
+  name: string | null;
+  /** Plain-language fault, or null when Google answered normally. */
+  problem: string | null;
+}
+
+/**
+ * Asks Google one cheap question and gets two answers: the name of the
+ * calendar appointments actually land on, and whether this app can still
+ * write to it at all.
+ *
+ * The name comes out of an events *list* call, which is a slightly odd way to
+ * ask and the only one available: naming a calendar properly means reading the
+ * Calendars resource, and that needs a broader Google permission than this app
+ * asks for. The events list response happens to carry the calendar's own title
+ * in `summary`, so one request answers it inside the permission already
+ * granted. Asking her to re-approve a wider scope just to print a name would
+ * be a poor trade.
+ *
+ * That same request doubles as the health check, because it fails in exactly
+ * the ways a booking's sync fails — and unlike a booking's sync, something is
+ * waiting here to display the reason.
+ */
+export async function getCalendarHealth(
   supabase: SupabaseClient
-): Promise<string | null> {
+): Promise<CalendarHealth> {
   try {
     const client = await getCalendarClient(supabase);
-    if (!client) return null;
+    if (!client) return { name: null, problem: null };
 
     const res = await client.calendar.events.list({
       calendarId: client.calendarId,
       maxResults: 1,
     });
 
-    return res.data.summary ?? null;
+    return { name: res.data.summary ?? null, problem: null };
   } catch (err) {
-    console.error("Google Calendar: could not read the calendar name:", err);
-    return null;
+    console.error("Google Calendar: could not reach the calendar:", err);
+    return { name: null, problem: describeGoogleError(err) };
   }
 }
 
@@ -473,6 +535,13 @@ function buildDescription(
   return sections.join("\n\n");
 }
 
+export interface SyncResult {
+  /** True when the appointment is on the calendar, or needn't be. */
+  ok: boolean;
+  /** Plain-language reason, set only when `ok` is false. */
+  problem?: string;
+}
+
 /**
  * Puts one booking on the calendar, or brings its event back in line with the
  * booking as it now stands.
@@ -485,15 +554,20 @@ function buildDescription(
  * same appointment described itself differently depending on how it was made,
  * and a reschedule quietly dropped the deposit and the intake answers.
  *
- * Never throws — see the note at the top of this file.
+ * Never throws — see the note at the top of this file. It reports instead:
+ * the result says whether the appointment is on the calendar, and when it is
+ * not, why. Callers in the booking flow ignore that and carry on, because
+ * nothing there may fail over a calendar; `syncUpcomingBookings` is the one
+ * that reads it.
  */
 export async function syncBookingEvent(
   supabase: SupabaseClient,
   bookingId: string
-): Promise<void> {
+): Promise<SyncResult> {
   try {
     const client = await getCalendarClient(supabase);
-    if (!client) return; // Not configured or not connected — nothing to do.
+    // Not configured or not connected — nothing to do, and not a failure.
+    if (!client) return { ok: true };
 
     const { data, error } = await supabase
       .from("bookings")
@@ -512,7 +586,7 @@ export async function syncBookingEvent(
 
     if (error || !data) {
       console.error("Google Calendar: could not load booking:", error);
-      return;
+      return { ok: false, problem: "Couldn't load that appointment." };
     }
 
     const raw = data as unknown as BookingRow & {
@@ -529,14 +603,14 @@ export async function syncBookingEvent(
 
     if (!booking.services) {
       console.error(`Google Calendar: booking ${bookingId} has no service.`);
-      return;
+      return { ok: false, problem: "That appointment has no service on it." };
     }
 
     // A cancelled appointment has no business holding time on the calendar.
     // Reached when a status change syncs rather than deletes.
     if (booking.status === "cancelled") {
       await deleteBookingEvent(supabase, bookingId);
-      return;
+      return { ok: true };
     }
 
     const { data: settingsRows } = await supabase
@@ -615,7 +689,7 @@ export async function syncBookingEvent(
           eventId: booking.google_event_id,
           requestBody,
         });
-        return;
+        return { ok: true };
       } catch (err) {
         const status =
           (err as { code?: number; status?: number }).code ??
@@ -639,8 +713,11 @@ export async function syncBookingEvent(
         .update({ google_event_id: eventId })
         .eq("id", bookingId);
     }
+
+    return { ok: true };
   } catch (err) {
     console.error("Google Calendar: could not sync event:", err);
+    return { ok: false, problem: describeGoogleError(err) };
   }
 }
 
@@ -684,4 +761,99 @@ export async function deleteBookingEvent(
   } catch (err) {
     console.error("Google Calendar: could not delete event:", err);
   }
+}
+
+/** Today's date in the salon's timezone, as "YYYY-MM-DD". */
+function salonToday(): string {
+  // en-CA formats as YYYY-MM-DD, which is the shape bookings.booking_date
+  // uses. Done in the salon's zone like the reminders cron, so an appointment
+  // later today is not written off as past because UTC has already rolled
+  // over to tomorrow.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+/**
+ * The upcoming appointments that should be on the calendar and are not.
+ *
+ * "Should be" is derived rather than recorded: an appointment still going
+ * ahead, on a date that hasn't passed, with no google_event_id, is one Google
+ * never accepted. That needs no extra column and no migration to run by hand,
+ * and it corrects itself — the moment an event is written the booking stops
+ * matching.
+ *
+ * Only `confirmed`. A cancelled or no-show appointment has no business
+ * holding time on the calendar, and a completed one has already happened.
+ */
+export async function findUnsyncedUpcoming(
+  supabase: SupabaseClient
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("id")
+    .is("google_event_id", null)
+    .eq("status", "confirmed")
+    .gte("booking_date", salonToday())
+    .order("booking_date", { ascending: true });
+
+  if (error) {
+    console.error("Google Calendar: could not list unsynced bookings:", error);
+    return [];
+  }
+
+  return (data || []).map((row) => row.id as string);
+}
+
+export interface BackfillResult {
+  /** Upcoming appointments found to be missing from the calendar. */
+  missing: number;
+  /** How many of them are on it now. */
+  synced: number;
+  /** Why the rest are not, when any failed. */
+  problem: string | null;
+}
+
+/**
+ * Puts any upcoming appointment Google never accepted onto the calendar.
+ *
+ * This is what makes "every appointment lands on the calendar" true rather
+ * than merely intended. Sync at booking time is best-effort by design — the
+ * card is already charged by then, so nothing there is allowed to throw —
+ * which means an outage at Google leaves appointments off the calendar for
+ * as long as it lasts, silently. Nothing used to go back for them, so the
+ * only fix was noticing and re-entering them by hand. This goes back for
+ * them: once the fault is cleared, the backlog lands on the calendar on the
+ * next run of the daily cron, or the moment she presses Sync now.
+ *
+ * Stops at the first failure. When Google is refusing everything — the API
+ * switched off, the connection revoked — the fiftieth attempt fails exactly
+ * like the first, and walking the whole list only burns quota and time to
+ * arrive at the same answer.
+ */
+export async function syncUpcomingBookings(
+  supabase: SupabaseClient
+): Promise<BackfillResult> {
+  // No calendar connected is not a fault, and reporting a backlog she has no
+  // way to clear would be worse than saying nothing.
+  if (!(await getCalendarClient(supabase))) {
+    return { missing: 0, synced: 0, problem: null };
+  }
+
+  const ids = await findUnsyncedUpcoming(supabase);
+  if (!ids.length) return { missing: 0, synced: 0, problem: null };
+
+  let synced = 0;
+  for (const id of ids) {
+    const result = await syncBookingEvent(supabase, id);
+    if (!result.ok) {
+      return { missing: ids.length, synced, problem: result.problem ?? null };
+    }
+    synced += 1;
+  }
+
+  return { missing: ids.length, synced, problem: null };
 }

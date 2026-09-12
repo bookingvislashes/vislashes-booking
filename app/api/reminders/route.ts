@@ -9,6 +9,10 @@ import {
   twoHourText,
   SmsOptedOutError,
 } from "@/lib/sms";
+import {
+  syncUpcomingBookings,
+  type BackfillResult,
+} from "@/lib/google-calendar";
 
 /**
  * Appointment reminders, in the two windows she asked for: two days before,
@@ -126,6 +130,31 @@ export async function GET(req: NextRequest) {
 
   try {
     const supabase = await createServiceClient();
+
+    // Calendar backfill, riding the reminders cron rather than its own.
+    //
+    // Sync at booking time is best-effort and silent — it runs after the card
+    // is charged, so it is never allowed to throw — which means a spell of
+    // Google refusing writes leaves appointments off the calendar with
+    // nothing at all to notice it. This is the sweep that goes back for them,
+    // so the backlog clears itself once the fault does.
+    //
+    // It shares this cron because the Hobby plan allows very few, and it
+    // costs nothing on an ordinary day: with no gaps to fill it is a single
+    // indexed query. Wrapped because reminders are the time-critical half of
+    // this route and must not be lost to a calendar problem.
+    let calendar: BackfillResult = { missing: 0, synced: 0, problem: null };
+    try {
+      calendar = await syncUpcomingBookings(supabase);
+      if (calendar.problem) {
+        console.error(
+          "Reminders: calendar backfill blocked:",
+          calendar.problem
+        );
+      }
+    } catch (err) {
+      console.error("Reminders: calendar backfill failed:", err);
+    }
 
     // The two-hour text is the one that has to get someone to the door, so it
     // carries the address. Read from Settings rather than written here: a
@@ -292,6 +321,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         twoDay: { date: twoDayDate, sent: twoDaySent, failed: twoDayFailed },
         twoHour: { error: todayError.message },
+        calendar,
       });
     }
 
@@ -311,6 +341,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       twoDay: { date: twoDayDate, sent: twoDaySent, failed: twoDayFailed },
       twoHour: { date: today, sent: twoHourSent, failed: twoHourFailed },
+      calendar,
     });
   } catch (err) {
     console.error("Reminders: unexpected failure:", err);

@@ -13,6 +13,10 @@ interface Status {
   calendarName?: string | null;
   /** Set when the credentials are present but cannot work — see the API. */
   problem?: string | null;
+  /** Set when connected but Google is refusing to write. Plain language. */
+  syncProblem?: string | null;
+  /** Upcoming appointments that never made it onto the calendar. */
+  pendingSync?: number;
 }
 
 // Google hands control back with ?google=<result>. Anything unmapped is
@@ -33,6 +37,8 @@ const CALLBACK_MESSAGES: Record<string, string> = {
 export function GoogleCalendarConnection() {
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const callbackResult = searchParams.get("google");
@@ -50,6 +56,38 @@ export function GoogleCalendarConnection() {
   useEffect(() => {
     fetchStatus();
   }, [fetchStatus]);
+
+  // Fills in any upcoming appointment that never reached the calendar. The
+  // outcome is spelled out either way — she pressed this because something
+  // was missing, so "done" without saying what happened is no answer.
+  const syncNow = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/google/sync", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error();
+
+      if (data.problem) {
+        setSyncResult(null);
+        setError(data.problem);
+      } else if (data.synced > 0) {
+        setSyncResult(
+          data.synced === 1
+            ? "1 appointment added to your calendar."
+            : `${data.synced} appointments added to your calendar.`
+        );
+      } else {
+        setSyncResult("Everything upcoming is already on your calendar.");
+      }
+      await fetchStatus();
+    } catch {
+      setError("Couldn't run the sync. Please try again.");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const disconnect = async () => {
     setBusy(true);
@@ -106,13 +144,28 @@ export function GoogleCalendarConnection() {
       {status?.configured && status.connected && (
         <div className="flex items-start gap-4 flex-wrap">
           <div className="min-w-0">
-            <span className="flex items-center gap-2 font-sans text-[14px] text-success font-semibold">
-              <span
-                aria-hidden="true"
-                className="w-2 h-2 rounded-full bg-success"
-              />
-              Connected
-            </span>
+            {/* "Connected" used to be the whole story, and it was the wrong
+                one: the permission can be saved and valid while Google still
+                refuses every write, which is exactly how appointments went
+                missing for a week under a green tick. The dot now reports
+                whether anything is actually reaching the calendar. */}
+            {status.syncProblem ? (
+              <span className="flex items-center gap-2 font-sans text-[14px] text-danger font-semibold">
+                <span
+                  aria-hidden="true"
+                  className="w-2 h-2 rounded-full bg-danger"
+                />
+                Connected, but not saving to your calendar
+              </span>
+            ) : (
+              <span className="flex items-center gap-2 font-sans text-[14px] text-success font-semibold">
+                <span
+                  aria-hidden="true"
+                  className="w-2 h-2 rounded-full bg-success"
+                />
+                Connected
+              </span>
+            )}
             {/* Indented to clear the status dot so it reads as belonging to
                 "Connected". break-all because a long address has nowhere to go
                 on a phone, which is where she uses this. */}
@@ -121,11 +174,16 @@ export function GoogleCalendarConnection() {
                 {status.email}
               </p>
             )}
-            {/* The question this panel could never answer before: not "is it
-                connected" but "which calendar will my appointments show up
-                on". Named from Google itself rather than inferred, so if it
-                is the wrong one she can see that at a glance. */}
-            {status.calendarName ? (
+
+            {status.syncProblem ? (
+              <p className="font-sans text-[13px] text-charcoal mt-1 pl-4 max-w-[46ch]">
+                {status.syncProblem}
+              </p>
+            ) : status.calendarName ? (
+              /* The question this panel could never answer before: not "is it
+                 connected" but "which calendar will my appointments show up
+                 on". Named from Google itself rather than inferred, so if it
+                 is the wrong one she can see that at a glance. */
               <p className="font-sans text-[13px] text-muted mt-1 pl-4">
                 Appointments go to{" "}
                 <strong className="text-dark-brown font-semibold">
@@ -138,15 +196,36 @@ export function GoogleCalendarConnection() {
                 still go to this account&apos;s main calendar.
               </p>
             )}
+
+            {/* The count that matters to her: not whether a connection is
+                healthy in the abstract, but how many people are booked in and
+                nowhere on her calendar. */}
+            {Boolean(status.pendingSync) && (
+              <p className="font-sans text-[13px] text-danger font-semibold mt-2 pl-4 max-w-[46ch]">
+                {status.pendingSync === 1
+                  ? "1 upcoming appointment isn't on your calendar yet."
+                  : `${status.pendingSync} upcoming appointments aren't on your calendar yet.`}
+              </p>
+            )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={disconnect}
-            disabled={busy}
-          >
-            {busy ? "Disconnecting..." : "Disconnect"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={syncNow}
+              disabled={syncing}
+            >
+              {syncing ? "Syncing..." : "Sync now"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={disconnect}
+              disabled={busy}
+            >
+              {busy ? "Disconnecting..." : "Disconnect"}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -181,6 +260,12 @@ export function GoogleCalendarConnection() {
       {(callbackMessage || error) && (
         <p role="alert" className="font-sans text-[13px] text-danger mt-3">
           {error || callbackMessage}
+        </p>
+      )}
+
+      {syncResult && !error && (
+        <p role="status" className="font-sans text-[13px] text-success mt-3">
+          {syncResult}
         </p>
       )}
 

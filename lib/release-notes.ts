@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.50.0",
+    date: "2026-09-12",
+    changes: [
+      {
+        kind: "note",
+        text: "Your calendar has stopped accepting new appointments — Google switched off the Calendar API for this app, so nothing has been added since 6 September. To fix it: open the Google Cloud console at console.cloud.google.com, go to APIs & Services, search for \"Google Calendar API\", and press Enable. Then open Settings here and press Sync now.",
+      },
+      {
+        kind: "added",
+        text: "Settings now has a Sync now button for Google Calendar. It puts any upcoming appointment that is missing straight onto your calendar, and it is safe to press as often as you like.",
+      },
+      {
+        kind: "fixed",
+        text: "Google Calendar no longer says \"Connected\" when it is not actually saving anything. If appointments are not reaching your calendar, Settings now says so, tells you how many are missing, and explains what to do about it.",
+      },
+      {
+        kind: "added",
+        text: "Missing appointments are now picked up on their own each day, so if Google is unreachable when someone books, the appointment still lands on your calendar once it is back.",
+      },
+    ],
+  },
+  {
     version: "1.49.0",
     date: "2026-09-11",
     changes: [
