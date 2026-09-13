@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { syncBookingEvent, deleteBookingEvent } from "@/lib/google-calendar";
-import { getEmailSettings, sendCancellationEmail } from "@/lib/email";
+import {
+  getEmailSettings,
+  ownerRecipients,
+  sendCancellationEmail,
+} from "@/lib/email";
 import { cancellationText, isSmsConfigured, sendSms, toE164 } from "@/lib/sms";
 
 /**
@@ -81,19 +85,25 @@ export async function POST(req: NextRequest) {
     // failed and having her try again.
     await deleteBookingEvent(admin, input.bookingId);
 
-    if (client?.email) {
-      // Reply-To is her Business Email from Settings: a cancellation is the
-      // message a client is most likely to answer, and the answer has to
-      // reach her rather than the send-only address it came from.
-      const { businessEmail } = await getEmailSettings(admin);
+    // She is blind-copied on this one whether or not the client can be
+    // emailed: a cancelled appointment with a deposit against it is the one
+    // thing in the app that needs her to go and refund it by hand, and
+    // nothing else tells her that. When there is no client address the same
+    // notice is addressed to her alone rather than dropped.
+    const { ownerInbox, replyTo } = await getEmailSettings(admin);
+    const ownerCopy = ownerRecipients(ownerInbox);
+    const cancelRecipient = client?.email || ownerCopy[0];
+
+    if (cancelRecipient) {
       try {
         await sendCancellationEmail({
-          clientName: client.full_name,
-          clientEmail: client.email,
+          clientName: client?.full_name || "there",
+          clientEmail: cancelRecipient,
           bookingDate: booking.booking_date,
           timeSlot: booking.time_slot,
           depositPaid: Boolean(booking.deposit_paid),
-          replyTo: businessEmail,
+          replyTo,
+          bcc: client?.email ? ownerCopy : [],
         });
       } catch (err) {
         console.error("Cancellation email failed:", err);

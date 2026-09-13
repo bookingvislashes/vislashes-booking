@@ -8,6 +8,7 @@ import {
 } from "@/lib/availability-range";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { bookingIdFromToken } from "@/lib/reschedule-link";
 
 /**
  * Which dates in a range can actually be booked for one service.
@@ -50,6 +51,17 @@ function bookableDates(
   return dates.filter(
     (date) => slotsForDate(ctx, date, durationMinutes, withRemoval).length > 0
   );
+}
+
+/**
+ * A signed reschedule link makes one booking invisible to the slot engine, so
+ * the client moving it can see the times their own appointment is currently
+ * holding. The token is verified rather than trusted: a raw booking id here
+ * would let anyone free up somebody else's slot on screen and double-book it.
+ */
+function excludedBooking(searchParams: URLSearchParams): string | null {
+  const token = searchParams.get("token");
+  return token ? bookingIdFromToken(token) : null;
 }
 
 export async function GET(req: NextRequest) {
@@ -133,7 +145,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const ctx = await loadAvailabilityContext(supabase, from, to);
+    const ctx = await loadAvailabilityContext(
+      supabase,
+      from,
+      to,
+      excludedBooking(searchParams)
+    );
 
     return NextResponse.json({
       dates: bookableDates(ctx, dates, service.duration_minutes, withRemoval),

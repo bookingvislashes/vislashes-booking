@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { rescheduleUrl } from "./reschedule-link";
 
 let _resend: Resend | null = null;
 function getResend(): Resend {
@@ -29,6 +30,49 @@ const ACCENT = "#8B6F47";
 const MUTED = "#9A9A9A";
 const RULE = "#E8DDD0";
 const FONT = "Arial, Helvetica, sans-serif";
+
+/**
+ * The salon's profiles, in the footer of every email.
+ *
+ * The icons are served from the site itself rather than embedded, because
+ * Gmail strips data: URIs on images. Every mail client that blocks images by
+ * default then shows the alt text instead — still a link, still labelled — so
+ * the footer degrades to two words rather than two broken frames. When
+ * NEXT_PUBLIC_BASE_URL is not set there is nowhere to serve them from, and the
+ * footer falls back to plain text links.
+ */
+const SOCIALS = [
+  {
+    name: "Instagram",
+    url: "https://www.instagram.com/vislashesbooking",
+    icon: "instagram.png",
+  },
+  {
+    name: "TikTok",
+    url: "https://www.tiktok.com/@vislashes",
+    icon: "tiktok.png",
+  },
+] as const;
+
+function siteBase(): string {
+  return (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
+}
+
+function socialRowHtml(): string {
+  const base = siteBase();
+
+  const cells = SOCIALS.map((social) => {
+    const inner = base
+      ? `<img src="${base}/email/${social.icon}" width="22" height="22" alt="${social.name}" style="display:block;border:0;outline:none;text-decoration:none;" />`
+      : `<span style="font-family:${FONT};font-size:12px;color:${ACCENT};">${social.name}</span>`;
+    return `<td style="padding:0 9px;"><a href="${social.url}" style="text-decoration:none;color:${ACCENT};">${inner}</a></td>`;
+  }).join("");
+
+  return `
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:14px auto 0;">
+                <tr>${cells}</tr>
+              </table>`;
+}
 
 /**
  * Names, service names and notes all reach these templates from a form. A
@@ -192,10 +236,13 @@ ${cta}
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr><td style="border-top:1px solid ${RULE};font-size:0;line-height:0;">&nbsp;</td></tr>
               </table>
-              <p style="margin:20px 0 0;text-align:center;font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED};">
-                ${layout.footerLead ? `${esc(layout.footerLead)}<br />` : ""}
-                VIS LASHES &middot; Orlando &middot; Saint Cloud &middot; Kissimmee
-              </p>
+              ${
+                layout.footerLead
+                  ? `<p style="margin:20px 0 0;text-align:center;font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED};">${esc(layout.footerLead)}</p>`
+                  : ""
+              }
+              <p style="margin:${layout.footerLead ? "14px" : "20px"} 0 0;text-align:center;font-family:${FONT};font-size:12px;line-height:18px;letter-spacing:3px;color:${HEADING};font-weight:bold;">VIS LASHES</p>
+${socialRowHtml()}
             </td>
           </tr>
         </table>
@@ -227,7 +274,8 @@ function renderText(layout: Layout): string {
   if (layout.cta) parts.push("", `${layout.cta.label}: ${layout.cta.url}`);
   parts.push("", "—");
   if (layout.footerLead) parts.push(layout.footerLead);
-  parts.push("VIS LASHES · Orlando · Saint Cloud · Kissimmee");
+  parts.push("VIS LASHES");
+  parts.push(SOCIALS.map((s) => `${s.name}: ${s.url}`).join("\n"));
   return parts.join("\n");
 }
 
@@ -266,14 +314,39 @@ export interface EmailSettings {
    */
   studioAddress: string | null;
   /**
-   * Admin → Settings → Business Email. Used as the Reply-To on everything a
-   * client receives, and as the address her own copy of a booking goes to.
-   * Null when she has not filled it in.
+   * Admin → Settings → Business Email. The address clients are given on the
+   * public contact section. Null when she has not filled it in.
    */
   businessEmail: string | null;
+  /**
+   * Admin → Settings → Your Inbox. Where her blind copy of every booking goes
+   * and where a client's reply lands — deliberately separate from Business
+   * Email, because this one is a personal address that never appears on a
+   * public page. Falls back to Business Email when blank.
+   */
+  ownerInbox: string | null;
+  /**
+   * What goes in Reply-To on everything a client receives.
+   *
+   * Business Email when she has one, because Reply-To is NOT hidden — a
+   * client pressing reply sees the address in the To field of their draft.
+   * Pointing it at the public bookings@ address and forwarding that mailbox
+   * to her personal one is what keeps the personal one off their screen.
+   * Until she sets that up this falls back to Your Inbox: a reply that
+   * reaches her and shows the address beats a reply that reaches nobody.
+   *
+   * Her blind copy is unaffected either way. Bcc genuinely is invisible, so
+   * it always goes to Your Inbox.
+   */
+  replyTo: string | null;
 }
 
-const NO_SETTINGS: EmailSettings = { studioAddress: null, businessEmail: null };
+const NO_SETTINGS: EmailSettings = {
+  studioAddress: null,
+  businessEmail: null,
+  ownerInbox: null,
+  replyTo: null,
+};
 
 /**
  * One read for both values, replacing the two separate address lookups the
@@ -288,7 +361,7 @@ export async function getEmailSettings(
     const { data, error } = await supabase
       .from("settings")
       .select("key, value")
-      .in("key", ["business_address", "business_email"]);
+      .in("key", ["business_address", "business_email", "owner_inbox_email"]);
 
     if (error) {
       console.error("getEmailSettings: fetch failed:", error);
@@ -299,9 +372,14 @@ export async function getEmailSettings(
       (data || []).map((row) => [row.key, (row.value || "").trim()])
     );
 
+    const businessEmail = byKey.business_email || null;
+    const ownerInbox = byKey.owner_inbox_email || businessEmail;
+
     return {
       studioAddress: byKey.business_address || null,
-      businessEmail: byKey.business_email || null,
+      businessEmail,
+      ownerInbox,
+      replyTo: businessEmail || ownerInbox,
     };
   } catch (err) {
     console.error("getEmailSettings: threw:", err);
@@ -310,17 +388,20 @@ export async function getEmailSettings(
 }
 
 /**
- * Where her own copy of a booking goes.
+ * Where her blind copy of a booking goes.
  *
- * Business Email in Settings by default, so she changes it in the app rather
- * than asking for a deploy. OWNER_NOTIFICATION_EMAIL overrides it when she
- * wants the alerts somewhere other than the address clients see, and accepts
- * a comma-separated list. Empty when neither is set — nothing is guessed, and
- * the alert is simply skipped.
+ * Your Inbox in Settings by default, so she changes it in the app rather than
+ * asking for a deploy. OWNER_NOTIFICATION_EMAIL overrides it, and accepts a
+ * comma-separated list. Empty when neither is set — nothing is guessed at and
+ * no copy is sent.
+ *
+ * These addresses go in Bcc, never Cc: the client's confirmation is a message
+ * between the salon and them, and her personal address has no business
+ * appearing in it.
  */
-export function ownerRecipients(businessEmail: string | null): string[] {
+export function ownerRecipients(ownerInbox: string | null): string[] {
   const configured = (process.env.OWNER_NOTIFICATION_EMAIL || "").trim();
-  const source = configured || businessEmail || "";
+  const source = configured || ownerInbox || "";
   return source
     .split(",")
     .map((address) => address.trim())
@@ -355,11 +436,28 @@ interface BookingEmailData {
   /** From Settings; see EmailSettings.studioAddress. */
   studioAddress?: string | null;
   /**
-   * From Settings. Set as Reply-To so a client answering the confirmation
-   * reaches the salon rather than a no-reply void — which is both what she
-   * wants and one of the signals that keeps these out of Promotions.
+   * From Settings (Your Inbox). Set as Reply-To so a client answering the
+   * confirmation reaches her personally rather than a no-reply void — which
+   * is both what she wants and one of the signals that keeps these out of
+   * Promotions.
    */
   replyTo?: string | null;
+  /**
+   * Her blind copy. The client's confirmation is the record she wants, so she
+   * is bcc'd on the message itself rather than sent a separate one — she sees
+   * exactly what they saw, and nothing in their copy reveals she is on it.
+   */
+  bcc?: string[];
+  /**
+   * Enables the "change your date or time" button. Absent means no button:
+   * the link is signed from this id, so there is nothing to offer without it.
+   */
+  bookingId?: string;
+  /**
+   * "booked" is the confirmation sent when an appointment is first made;
+   * "moved" is the same email after the client reschedules themselves.
+   */
+  variant?: "booked" | "moved";
 }
 
 /** Everything the confirmation says about money, in one place. */
@@ -385,23 +483,44 @@ function depositSummary(data: BookingEmailData) {
 export async function sendConfirmationEmail(data: BookingEmailData) {
   const firstName = data.clientName.trim().split(" ")[0];
   const deposit = depositSummary(data);
+  const moved = data.variant === "moved";
 
   const sections: Section[] = [];
   if (data.studioAddress) {
-    sections.push(paragraphs("Location", [data.studioAddress]));
+    sections.push(paragraphs("Where to find me", [data.studioAddress]));
   }
   sections.push(
-    bullets("What to expect", [
-      "Come with clean lashes and no eye makeup.",
-      `Set aside about ${data.duration} for your appointment.`,
-      "Contact lenses out, please — and arrive a few minutes early.",
+    bullets("A few things before you come", [
+      "Come with clean lashes and no eye makeup — it helps everything bond beautifully.",
+      "Please remove your contact lenses before your appointment.",
+      "Come a few minutes early if you can, and no stress at all if you can't.",
+      "It's a cozy one-on-one space, so please come on your own — no extra guests. Thank you for understanding!",
+      `Set aside about ${data.duration}. Most clients nap right through it.`,
     ])
   );
 
+  // Only offered when the link can actually be built — a button that goes
+  // nowhere is worse than sending them to reply, which the footer already
+  // says. The deposit line is the point of it: she does not want anyone
+  // thinking a change of date costs them their deposit.
+  const reschedule = data.bookingId ? rescheduleUrl(data.bookingId) : null;
+  if (reschedule) {
+    sections.push(
+      paragraphs("Need a different day?", [
+        "Life happens — you can move your appointment yourself, any time up to the day before.",
+        "Your deposit comes with you, so there's nothing to pay again.",
+      ])
+    );
+  }
+
   const layout: Layout = {
     preheader: `${data.serviceName} · ${friendlyDate(data.bookingDate)} at ${data.timeSlot}`,
-    heading: `You're all set, ${firstName}!`,
-    intro: "Your lash appointment is confirmed. Here are the details.",
+    heading: moved
+      ? `All set, ${firstName} — you're moved!`
+      : `You're all set, ${firstName}!`,
+    intro: moved
+      ? "Your appointment has been rescheduled. Here's the new time."
+      : "Your lash appointment is confirmed. I can't wait to see you!",
     rows: [
       { label: "Service", value: data.serviceName },
       {
@@ -416,15 +535,21 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
         ? `Remaining balance: $${deposit.remainingBalance.toFixed(2)}, due at your appointment.`
         : undefined,
     sections,
-    footerLead: "Need to reschedule? Just reply to this email.",
+    cta: reschedule
+      ? { label: "Change my date or time", url: reschedule }
+      : undefined,
+    footerLead: "Questions? Just reply to this email.",
   };
 
   try {
     await getResend().emails.send({
       from: emailFrom,
       to: data.clientEmail,
+      ...(data.bcc && data.bcc.length ? { bcc: data.bcc } : {}),
       ...(data.replyTo ? { replyTo: data.replyTo } : {}),
-      subject: `You're booked — ${shortDate(data.bookingDate)} at ${data.timeSlot}`,
+      subject: moved
+        ? `Your new time — ${shortDate(data.bookingDate)} at ${data.timeSlot}`
+        : `You're booked — ${shortDate(data.bookingDate)} at ${data.timeSlot}`,
       html: renderHtml(layout),
       text: renderText(layout),
     });
@@ -461,19 +586,19 @@ export async function sendReminderEmail(
 
   const sections: Section[] = [];
   if (data.studioAddress) {
-    sections.push(paragraphs("Location", [data.studioAddress]));
+    sections.push(paragraphs("Where to find me", [data.studioAddress]));
   }
   sections.push(
-    bullets("Before you come", [
-      "Arrive with clean, makeup-free eyes.",
-      "Skip the caffeine — it helps you stay still.",
-      "Contact lenses out, please.",
+    bullets("A few reminders", [
+      "Come with clean, makeup-free eyes.",
+      "Please remove your contact lenses before your appointment.",
+      "It's a cozy one-on-one space, so please come on your own — no extra guests. Thank you for understanding!",
     ])
   );
 
   const layout: Layout = {
     preheader: `${data.serviceName} · ${friendlyDate(data.bookingDate)} at ${data.timeSlot}`,
-    heading: `Hi ${firstName}, see you soon!`,
+    heading: `See you soon, ${firstName}!`,
     intro: copy.lead,
     rows: [
       { label: "Service", value: data.serviceName },
@@ -508,6 +633,12 @@ export async function sendCancellationEmail(data: {
   timeSlot: string;
   depositPaid: boolean;
   replyTo?: string | null;
+  /**
+   * Her blind copy. This is the one email she has to act on rather than file:
+   * a cancelled appointment with a deposit against it means going into Square
+   * and refunding it by hand, and nothing else in the app tells her that.
+   */
+  bcc?: string[];
 }) {
   const firstName = data.clientName.trim().split(" ")[0];
   const base = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
@@ -518,6 +649,7 @@ export async function sendCancellationEmail(data: {
   if (data.depositPaid) {
     lines.push("Your deposit will be refunded within 5–10 business days.");
   }
+  lines.push("I'd love to see you another time whenever you're ready.");
 
   const layout: Layout = {
     preheader: `${friendlyDate(data.bookingDate)} at ${data.timeSlot} — cancelled`,
@@ -531,6 +663,7 @@ export async function sendCancellationEmail(data: {
     await getResend().emails.send({
       from: emailFrom,
       to: data.clientEmail,
+      ...(data.bcc && data.bcc.length ? { bcc: data.bcc } : {}),
       ...(data.replyTo ? { replyTo: data.replyTo } : {}),
       subject: "Your VIS Lashes appointment has been cancelled",
       html: renderHtml(layout),
@@ -538,150 +671,5 @@ export async function sendCancellationEmail(data: {
     });
   } catch (error) {
     console.error("Failed to send cancellation email:", error);
-  }
-}
-
-/* ────────────────────────────────────────────────────────────────────────
- * Her copy
- * ──────────────────────────────────────────────────────────────────────── */
-
-export interface OwnerBookingAlertData {
-  /** From ownerRecipients(). Nothing is sent when this is empty. */
-  to: string[];
-  clientName: string;
-  clientEmail: string;
-  clientPhone?: string | null;
-  /** Decided at booking time, before visit counts move. */
-  isNewClient: boolean;
-  serviceName: string;
-  bookingDate: string;
-  timeSlot: string;
-  duration: string;
-  depositAmount: number;
-  depositPaid: boolean;
-  depositMethodLabel?: string;
-  totalPrice: number;
-  paymentMethod: string;
-  /** "Booked on the website", "Added in the admin". */
-  source: string;
-  /** Links straight to the appointment when the base URL is configured. */
-  bookingId?: string;
-  notes?: string | null;
-}
-
-/**
- * Her own copy of every booking, sent the moment the client's confirmation
- * goes out.
- *
- * Deliberately not a blind copy of the client's email: the things she needs
- * from a booking — a phone number she can tap, whether this is someone new,
- * what is still owed at the chair — are exactly the things the client's copy
- * has no reason to contain. Reply-To is the client, so answering this email
- * reaches them directly.
- *
- * Best-effort on the same terms as everything else in the booking flow: the
- * appointment is already written and the card already charged, so a failure
- * here is logged and never thrown.
- */
-export async function sendOwnerBookingAlert(data: OwnerBookingAlertData) {
-  if (data.to.length === 0) {
-    console.warn(
-      "Owner booking alert skipped: no Business Email in Settings and no OWNER_NOTIFICATION_EMAIL."
-    );
-    return;
-  }
-
-  const depositLine = data.depositPaid
-    ? `$${data.depositAmount.toFixed(2)} received${
-        data.depositMethodLabel ? ` (${data.depositMethodLabel})` : ""
-      }`
-    : data.paymentMethod === "cash"
-    ? "None — paying cash at the appointment"
-    : `$${data.depositAmount.toFixed(2)} not yet received`;
-
-  const balance = Math.max(
-    0,
-    data.totalPrice - (data.depositPaid ? data.depositAmount : 0)
-  );
-
-  const base = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
-
-  // An appointment she added by hand can legitimately have no email on file —
-  // 47 of the clients imported from Acuity don't. The contact row then shows
-  // only the phone, and Reply-To is dropped rather than set to an empty
-  // string, which Resend rejects outright and would lose the whole alert.
-  const clientEmail = data.clientEmail.trim();
-  const hasEmail = clientEmail.includes("@");
-
-  const contact: string[] = [];
-  if (hasEmail) contact.push(clientEmail);
-  if (data.clientPhone) contact.push(data.clientPhone);
-
-  // The name and whether they're new are both in the heading already, so the
-  // card starts at the part she cannot get from the subject line.
-  const rows: DetailRow[] = [
-    {
-      label: "Contact",
-      value: contact.length ? contact.join(" · ") : "No email or phone on file",
-      html: contact.length
-        ? [
-            hasEmail
-              ? `<a href="mailto:${esc(clientEmail)}" style="color:${ACCENT};text-decoration:none;">${esc(clientEmail)}</a>`
-              : null,
-            data.clientPhone
-              ? `<a href="tel:${esc(data.clientPhone.replace(/[^0-9+]/g, ""))}" style="color:${ACCENT};text-decoration:none;">${esc(data.clientPhone)}</a>`
-              : null,
-          ]
-            .filter(Boolean)
-            .join(
-              ` <span style="color:${MUTED};font-weight:normal;">·</span> `
-            )
-        : undefined,
-    },
-    { label: "Service", value: `${data.serviceName} (${data.duration})` },
-    {
-      label: "Date & time",
-      value: `${friendlyDate(data.bookingDate)} at ${data.timeSlot}`,
-    },
-    { label: "Deposit", value: depositLine },
-  ];
-
-  const sections: Section[] = [];
-  if (data.notes) {
-    sections.push(paragraphs("Note on the booking", [data.notes]));
-  }
-
-  const layout: Layout = {
-    preheader: `${data.serviceName} · ${friendlyDate(data.bookingDate)} at ${data.timeSlot} · ${data.clientEmail}`,
-    heading: data.isNewClient
-      ? `New client: ${data.clientName}`
-      : `New booking: ${data.clientName}`,
-    intro: hasEmail
-      ? `${data.source}. Reply to this email to reach ${data.clientName.trim().split(" ")[0]} directly.`
-      : `${data.source}.`,
-    rows,
-    rowsNote:
-      balance > 0
-        ? `$${balance.toFixed(2)} due at the appointment (service total $${data.totalPrice.toFixed(2)}).`
-        : `Paid in full — $${data.totalPrice.toFixed(2)}.`,
-    sections,
-    cta:
-      base && data.bookingId
-        ? { label: "Open in admin", url: `${base}/admin/bookings/${data.bookingId}` }
-        : undefined,
-    footerLead: "Your copy of the client's confirmation.",
-  };
-
-  try {
-    await getResend().emails.send({
-      from: emailFrom,
-      to: data.to,
-      ...(hasEmail ? { replyTo: clientEmail } : {}),
-      subject: `${data.isNewClient ? "New client" : "New booking"}: ${data.clientName} — ${shortDate(data.bookingDate)} at ${data.timeSlot}`,
-      html: renderHtml(layout),
-      text: renderText(layout),
-    });
-  } catch (error) {
-    console.error("Failed to send owner booking alert:", error);
   }
 }

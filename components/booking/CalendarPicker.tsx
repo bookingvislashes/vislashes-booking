@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { UseFormReturn } from "react-hook-form";
-import { BookingFormData } from "@/lib/schemas";
 import {
   format,
   startOfMonth,
@@ -18,25 +16,48 @@ import {
 } from "date-fns";
 
 interface CalendarPickerProps {
-  form: UseFormReturn<BookingFormData>;
   serviceId: string;
   /** Lengthens the appointment, so it changes which start times fit. */
   hasRemoval: boolean;
+  /** The chosen date as YYYY-MM-DD, or "" for none yet. */
+  selectedDate: string;
+  /** The chosen start time as "10:00 AM", or "" for none yet. */
+  selectedTime: string;
+  /**
+   * Called with the full selection every time either half changes. Picking a
+   * date clears the time, because the times belong to the date.
+   */
+  onSelect: (date: string, timeSlot: string) => void;
+  heading?: string;
+  subheading?: string;
+  /** Shown under the grid; the booking flow passes its form errors here. */
+  error?: string | null;
+  /**
+   * A signed reschedule link. When set, the availability lookups ignore the
+   * booking it belongs to, so the client can see the times their own
+   * appointment is currently holding.
+   */
+  rescheduleToken?: string;
 }
 
 export function CalendarPicker({
-  form,
   serviceId,
   hasRemoval,
+  selectedDate,
+  selectedTime,
+  onSelect,
+  heading = "Choose Your Availability",
+  subheading = "Select a date and time for your appointment.",
+  error = null,
+  rescheduleToken,
 }: CalendarPickerProps) {
   // Opens on the month of the date already chosen. This component remounts on
   // every step change, so booking in October and pressing Back landed on the
   // current month with the selection highlighted off-screen — and clicking any
   // visible day to get oriented wiped the chosen time.
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const chosen = form.getValues("bookingDate");
-    return chosen ? new Date(`${chosen}T00:00:00`) : new Date();
-  });
+  const [currentMonth, setCurrentMonth] = useState(() =>
+    selectedDate ? new Date(`${selectedDate}T00:00:00`) : new Date()
+  );
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   // Which dates in the visible grid can actually be booked. `null` means we
@@ -46,8 +67,11 @@ export function CalendarPicker({
   const [openDates, setOpenDates] = useState<Set<string> | null>(null);
   const [loadingMonth, setLoadingMonth] = useState(false);
 
-  const selectedDate = form.watch("bookingDate");
-  const selectedTime = form.watch("timeSlot");
+  // Appended to both availability lookups so they agree about which booking,
+  // if any, is being moved out of the way.
+  const excludeParam = rescheduleToken
+    ? `&token=${encodeURIComponent(rescheduleToken)}`
+    : "";
 
   // The six weeks the grid actually draws, as ISO strings. Deriving the days
   // back out of the endpoints rather than carrying Date objects around is what
@@ -71,7 +95,7 @@ export function CalendarPicker({
       const res = await fetch(
         `/api/availability?date=${date}&serviceId=${serviceId}${
           hasRemoval ? "&removal=1" : ""
-        }`
+        }${excludeParam}`
       );
       const data = await res.json();
       setTimeSlots(data.slots || []);
@@ -80,7 +104,7 @@ export function CalendarPicker({
     } finally {
       setLoadingSlots(false);
     }
-  }, [serviceId, hasRemoval]);
+  }, [serviceId, hasRemoval, excludeParam]);
 
   useEffect(() => {
     if (selectedDate) {
@@ -104,7 +128,7 @@ export function CalendarPicker({
     fetch(
       `/api/availability/month?from=${rangeFrom}&to=${rangeTo}&serviceId=${serviceId}${
         hasRemoval ? "&removal=1" : ""
-      }`,
+      }${excludeParam}`,
       { signal: controller.signal }
     )
       .then((res) => (res.ok ? res.json() : null))
@@ -124,16 +148,14 @@ export function CalendarPicker({
       });
 
     return () => controller.abort();
-  }, [rangeFrom, rangeTo, serviceId, hasRemoval]);
+  }, [rangeFrom, rangeTo, serviceId, hasRemoval, excludeParam]);
 
   const handleDateSelect = (date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    form.setValue("bookingDate", dateStr, { shouldValidate: true });
-    form.setValue("timeSlot", "", { shouldValidate: false });
+    onSelect(format(date, "yyyy-MM-dd"), "");
   };
 
   const handleTimeSelect = (slot: string) => {
-    form.setValue("timeSlot", slot, { shouldValidate: true });
+    onSelect(selectedDate, slot);
   };
 
   const yesterday = new Date();
@@ -154,11 +176,9 @@ export function CalendarPicker({
   return (
     <div>
       <h2 className="font-display text-[24px] font-bold text-dark-brown mb-1">
-        Choose Your Availability
+        {heading}
       </h2>
-      <p className="font-sans text-[14px] text-charcoal mb-6">
-        Select a date and time for your appointment.
-      </p>
+      <p className="font-sans text-[14px] text-charcoal mb-6">{subheading}</p>
 
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-4">
@@ -290,15 +310,8 @@ export function CalendarPicker({
         </div>
       )}
 
-      {form.formState.errors.bookingDate && (
-        <p className="text-danger text-[12px] mt-3 font-sans">
-          {form.formState.errors.bookingDate.message}
-        </p>
-      )}
-      {form.formState.errors.timeSlot && (
-        <p className="text-danger text-[12px] mt-1 font-sans">
-          {form.formState.errors.timeSlot.message}
-        </p>
+      {error && (
+        <p className="text-danger text-[12px] mt-3 font-sans">{error}</p>
       )}
     </div>
   );

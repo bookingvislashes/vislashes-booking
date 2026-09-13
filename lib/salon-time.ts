@@ -22,3 +22,50 @@ export function salonDateOf(when: Date | string = new Date()): string {
     day: "2-digit",
   }).format(d);
 }
+
+/** Minutes since midnight, right now, in the salon's timezone. */
+export function salonMinutesNow(): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: SALON_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+  // en-US with hour12:false renders midnight as 24 in some runtimes.
+  return (hour % 24) * 60 + minute;
+}
+
+/** "2:30 PM" — the shape bookings.time_slot uses — as minutes since midnight. */
+export function slotToMinutes(slot: string): number | null {
+  const match = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(slot.trim());
+  if (!match) return null;
+  let hour = Number(match[1]) % 12;
+  if (match[3].toUpperCase() === "PM") hour += 12;
+  return hour * 60 + Number(match[2]);
+}
+
+/**
+ * How many hours from now until an appointment starts, in salon time.
+ * Negative once it has begun; null when the slot cannot be parsed.
+ *
+ * Calendar-day arithmetic, so a clock change inside the gap can shift the
+ * answer by an hour. Every caller uses this against a notice window measured
+ * in whole days, where an hour either way changes nothing.
+ */
+export function hoursUntilAppointment(
+  bookingDate: string,
+  timeSlot: string
+): number | null {
+  const slotMinutes = slotToMinutes(timeSlot);
+  if (slotMinutes === null) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingDate)) return null;
+
+  const [by, bm, bd] = bookingDate.split("-").map(Number);
+  const [ty, tm, td] = salonDateOf().split("-").map(Number);
+  const dayDiff =
+    (Date.UTC(by, bm - 1, bd) - Date.UTC(ty, tm - 1, td)) / 86_400_000;
+
+  return (dayDiff * 1440 + slotMinutes - salonMinutesNow()) / 60;
+}

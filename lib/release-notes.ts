@@ -31,6 +31,40 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.52.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "changed",
+        text: "You are now blind-copied on the client's own confirmation instead of getting a separate email — every booking, new or returning, full set or refill, including the ones you add yourself. Bcc means the client never sees you on it.",
+      },
+      {
+        kind: "added",
+        text: "Confirmations have a \u201cChange my date or time\u201d button. Clients pick a new slot from your real openings, their deposit carries over, and the booking, your calendar and their reminders all update on their own.",
+      },
+      {
+        kind: "added",
+        text: "You are blind-copied on cancellations too, so you know when a deposit needs refunding by hand.",
+      },
+      {
+        kind: "changed",
+        text: "Email footers no longer list the cities. They show VIS LASHES with clickable Instagram and TikTok icons.",
+      },
+      {
+        kind: "changed",
+        text: "Friendlier wording throughout: contact lenses and arriving early are now separate lines, there's a gentle note about not bringing extra guests in both the confirmation and the reminder, and the \u201cskip the caffeine\u201d line is gone.",
+      },
+      {
+        kind: "note",
+        text: "Fill in Settings \u2192 Your Inbox with bookvislashes@gmail.com and save. That is where your copy of every booking goes. If it is blank, no copy is sent.",
+      },
+      {
+        kind: "note",
+        text: "Replies show the Reply-To address to the client, so it cannot be hidden. To keep your Gmail private, put bookings@vislashes.com in Business Email and set that mailbox to forward to your Gmail. Leave Business Email blank and replies go straight to your Gmail instead.",
+      },
+    ],
+  },
+  {
     version: "1.51.0",
     date: "2026-09-13",
     changes: [

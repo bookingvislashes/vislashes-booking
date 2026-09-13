@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { getEmailSettings, sendReminderEmail } from "@/lib/email";
+import { salonMinutesNow, slotToMinutes } from "@/lib/salon-time";
 import {
   isSmsConfigured,
   sendSms,
@@ -61,29 +62,6 @@ function salonDatePlusDays(days: number): string {
   return shifted.toISOString().slice(0, 10);
 }
 
-/** Minutes since midnight, in the salon's timezone. */
-function salonMinutesNow(): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: TIMEZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date());
-  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
-  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
-  // en-US with hour12:false renders midnight as 24 in some runtimes.
-  return (hour % 24) * 60 + minute;
-}
-
-/** "2:30 PM" — the shape bookings.time_slot uses — as minutes since midnight. */
-function slotToMinutes(slot: string): number | null {
-  const match = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(slot.trim());
-  if (!match) return null;
-  let hour = Number(match[1]) % 12;
-  if (match[3].toUpperCase() === "PM") hour += 12;
-  return hour * 60 + Number(match[2]);
-}
-
 function formatDuration(mins: number): string {
   const hrs = Math.floor(mins / 60);
   const m = mins % 60;
@@ -131,10 +109,10 @@ export async function GET(req: NextRequest) {
     // The two-hour text is the one that has to get someone to the door, so it
     // carries the address. Read from Settings rather than written here: a
     // hardcoded address survives a move and sends a client to the wrong house.
-    // Absent means the text simply omits it. Business Email comes back in the
+    // Absent means the text simply omits it. Your Inbox comes back in the
     // same read and becomes the Reply-To on every reminder — a client who
-    // answers "can I move this?" has to reach her.
-    const { studioAddress: salonAddress, businessEmail } =
+    // answers "can I move this?" has to reach her personally.
+    const { studioAddress: salonAddress, replyTo } =
       await getEmailSettings(supabase);
 
     const select =
@@ -196,7 +174,7 @@ export async function GET(req: NextRequest) {
             paymentMethod: "square",
             window: windowName,
             studioAddress: salonAddress,
-            replyTo: businessEmail,
+            replyTo,
           });
           emailed = true;
         } catch (err) {

@@ -58,7 +58,7 @@ Content:
   - Appointment duration reminder
   - Location/address if applicable
 - "Need to reschedule?" with contact info
-- Footer: VIS LASHES, Instagram link, "Orlando · Saint Cloud · Kissimmee"
+- Footer: VIS LASHES, then Instagram and TikTok icons
 
 ### 2. 24-Hour Reminder
 **Trigger**: Vercel Cron Job runs daily, finds bookings for tomorrow
@@ -97,47 +97,63 @@ Content:
 - "Follow us on Instagram" link
 - Footer
 
-### 5. Owner Copy of Every Booking
-**Trigger**: Immediately after the client's confirmation, on both booking paths
-(website checkout in `lib/create-booking.ts`, and `POST /api/admin/create-booking`)
-**To**: `OWNER_NOTIFICATION_EMAIL` if set, otherwise the `business_email` row in
-`settings` — resolved by `ownerRecipients()`. Nothing is sent when both are empty.
-**Reply-To**: the client, so replying reaches them directly
-**Subject**: "New client: [Name] — Sat, Sep 19 at 10:00 AM"
+### 5. Rescheduled Confirmation
+**Trigger**: A client moves their own appointment from the link in their
+confirmation (`POST /api/reschedule`)
+**To**: Client email, Bcc the salon
+**Subject**: "Your new time — Sat, Sep 26 at 1:00 PM"
 
-Deliberately not a BCC of the client's email. What she needs from a booking —
-a tappable phone number, whether this person is new, what is still owed at the
-chair — is exactly what the client's copy has no reason to contain.
+The same template as the confirmation with `variant: "moved"` — one email, two
+headings, so the two can never drift apart.
 
-Content:
-- Heading says "New client" or "New booking" with the name
-- Contact: email and phone, both as links
-- Service (with duration), date & time, deposit received or still due
-- Balance due at the appointment, against the service total
-- Any note typed on an admin-created booking
-- "Open in admin" button → `/admin/bookings/[id]`
+## Her Blind Copy
 
-Best-effort like the others: it never throws, because by the time it runs the
-card has been charged and the booking written.
+There is no separate owner email. She is **Bcc'd on the client's own
+confirmation** (and on cancellations), so she sees exactly what they saw and
+nothing in their copy reveals she is on it. Every booking: the website
+checkout, and appointments she enters in the admin.
 
-## Shared Layout and Deliverability
+Addresses come from `getEmailSettings()`:
 
-All four emails render through one table-based layout in `lib/email.ts`
-(`renderHtml`) with a matching plain-text part (`renderText`). Both matter:
+| Field | Source | Visible to the client? |
+|---|---|---|
+| `bcc` | `owner_inbox_email`, else `business_email`; `OWNER_NOTIFICATION_EMAIL` overrides both | **No** — Bcc genuinely is hidden |
+| `replyTo` | `business_email`, else `owner_inbox_email` | **Yes** — shown in the To field of their reply |
 
-- **Tables, not divs.** Outlook renders with Word, which ignores `max-width`
-  and `border-radius` on a `div` — the old templates went full-bleed there.
-- **A `text` part on every send.** A message with no text alternative is one of
-  the cheapest things a spam filter can score against.
-- **A preheader** — the grey line after the subject in an inbox list.
-- **Reply-To** set to `business_email` on everything a client receives.
-- **Everything interpolated is HTML-escaped** (`esc()`). Client-supplied names
-  and notes reach both the client's inbox and the salon's own.
+That split is the whole point: her personal inbox gets the copy without ever
+appearing on a client's screen, provided `business_email` is a forwarding
+address at the domain. With `business_email` blank, Reply-To falls back to her
+personal address — a reply that reaches her beats a reply that reaches nobody.
 
-The remaining half of deliverability is DNS, not code: `EMAIL_FROM` has to be
-an address at a domain verified in Resend, with SPF and DKIM published and a
-DMARC record. Until then Resend sends from `onboarding@resend.dev`, which is
-the single biggest reason a confirmation lands in spam.
+One case has no client email to ride on: an admin-created booking with "send
+confirmation" unticked, or an imported client with no address. The same
+confirmation is then addressed to her alone rather than not sent, so she still
+has every appointment on record.
+
+## Self-Serve Rescheduling
+
+The confirmation carries a **Change my date or time** button
+(`/reschedule/<token>`).
+
+- **The token is signed, not stored** (`lib/reschedule-link.ts`): an HMAC of
+  the booking id, so there is no migration and no backfill — every booking,
+  past or future, already has a working link. `RESCHEDULE_LINK_SECRET`, else
+  the service-role key.
+- **Only the date and time can change.** Service, price and deposit are never
+  read from the request, so a moved appointment cannot become a cheaper one.
+- **The slot engine is the authority.** The new time has to appear in
+  `slotsForDate()`, not merely be free of a clash — that is what rules out a
+  closed Sunday, a blocked afternoon, or a start that runs past closing. The
+  booking being moved is excluded from availability so its own length does not
+  hide the times either side of it.
+- **The notice window is `advance_booking_hours`** from Settings, the same
+  number the booking calendar uses. Inside it, the page tells the client to
+  message her.
+- **The write is conditional** on the booking still being confirmed at the date
+  and time the page was drawn from, so a page left open cannot overwrite a
+  change she made in the meantime.
+- Afterwards: Google Calendar re-syncs, both reminder stamps clear, the client
+  gets the "moved" confirmation with her Bcc'd, and she gets a push alert.
 
 ## Cron Jobs for Automated Emails
 

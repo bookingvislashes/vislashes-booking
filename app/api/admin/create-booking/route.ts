@@ -6,7 +6,6 @@ import {
   getEmailSettings,
   ownerRecipients,
   sendConfirmationEmail,
-  sendOwnerBookingAlert,
 } from "@/lib/email";
 import { notifyAdmins } from "@/lib/push";
 
@@ -167,9 +166,6 @@ export async function POST(req: NextRequest) {
   // ── The client ──────────────────────────────────────────────────────────
   const email = input.email ? input.email.toLowerCase() : null;
   let clientId = input.clientId ?? null;
-  // Only true when no existing record matched and a new one was created —
-  // the same distinction her copy of a website booking draws.
-  let isNewClient = false;
 
   if (clientId) {
     const { data: existing } = await admin
@@ -248,7 +244,6 @@ export async function POST(req: NextRequest) {
         );
       }
       clientId = created.id;
-      isNewClient = true;
     }
   }
 
@@ -319,16 +314,24 @@ export async function POST(req: NextRequest) {
 
   // Same private-address contract as the site's own checkout: read fresh from
   // Settings, sent only in the confirmation, never guessed at if the lookup
-  // fails. Business Email comes back in the same read and is both the
-  // Reply-To on her client's confirmation and where her own copy goes.
-  const { studioAddress, businessEmail } = await getEmailSettings(admin);
+  // fails. Your Inbox comes back in the same read and is both the Reply-To on
+  // the client's confirmation and where her blind copy goes.
+  const { studioAddress, ownerInbox, replyTo } = await getEmailSettings(admin);
+  const ownerCopy = ownerRecipients(ownerInbox);
+
+  // She wants a record of every appointment in her inbox, including the ones
+  // she books herself. The tick box decides whether the CLIENT is emailed, so
+  // when it is off — or when an imported client has no address on file — the
+  // same confirmation is addressed to her alone rather than not sent at all.
+  const sendToClient = Boolean(input.sendConfirmation && client?.email);
+  const recipient = sendToClient ? client!.email! : ownerCopy[0];
 
   let emailed = false;
-  if (input.sendConfirmation && client?.email) {
+  if (recipient) {
     try {
       await sendConfirmationEmail({
-        clientName: client.full_name,
-        clientEmail: client.email,
+        clientName: client?.full_name || input.fullName || "there",
+        clientEmail: recipient,
         serviceName: input.hasRemoval
           ? `${service.name} + lash removal`
           : service.name,
@@ -343,43 +346,17 @@ export async function POST(req: NextRequest) {
           ? METHOD_LABELS[input.depositMethod]
           : undefined,
         studioAddress,
-        replyTo: businessEmail,
+        replyTo,
+        // Bcc only when the client is the one being written to — addressing
+        // her copy to herself and bcc'ing herself as well would land twice.
+        bcc: sendToClient ? ownerCopy : [],
+        bookingId: booking.id,
       });
-      emailed = true;
+      emailed = sendToClient;
     } catch (err) {
       console.error("Admin booking: confirmation email failed:", err);
     }
   }
-
-  // Her own copy, for the same reason the push alert below fires on an
-  // appointment she entered herself: every appointment in the business
-  // announces itself the same way, and this is the one that is still
-  // searchable in her inbox weeks later. Unlike the client's confirmation it
-  // is not gated on the "send confirmation" tick — that box decides what the
-  // client receives, not whether she gets her own record.
-  await sendOwnerBookingAlert({
-    to: ownerRecipients(businessEmail),
-    clientName: client?.full_name || input.fullName || "Client",
-    clientEmail: client?.email || email || "",
-    clientPhone: input.phone || null,
-    isNewClient,
-    serviceName: input.hasRemoval
-      ? `${service.name} + lash removal`
-      : service.name,
-    bookingDate: input.bookingDate,
-    timeSlot: normalisedSlot,
-    duration: formatDuration(appointmentMinutes),
-    depositAmount,
-    depositPaid: input.depositPaid,
-    depositMethodLabel: input.depositPaid
-      ? METHOD_LABELS[input.depositMethod]
-      : undefined,
-    totalPrice: appointmentTotal,
-    paymentMethod: input.depositPaid ? input.depositMethod : "cash",
-    source: "Added in the admin",
-    bookingId: booking.id,
-    notes: input.note || null,
-  });
 
   // The same alert a client's own booking sends. Worth having even though
   // she is the one who just pressed the button: it is the receipt that the

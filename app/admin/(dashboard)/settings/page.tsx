@@ -33,6 +33,16 @@ const FIELDS = [
   },
   { key: "business_name", label: "Business Name", type: "text", fallback: "VIS Lashes" },
   { key: "business_email", label: "Business Email", type: "email", fallback: "" },
+  // Separate from Business Email on purpose. Business Email is printed in the
+  // Contact section of the home page; this one never appears anywhere public.
+  // It is where her blind copy of every booking lands and where a client's
+  // reply goes. Blank falls back to Business Email.
+  {
+    key: "owner_inbox_email",
+    label: "Your Inbox (gets a copy of every booking)",
+    type: "email",
+    fallback: "",
+  },
   { key: "business_phone", label: "Business Phone", type: "tel", fallback: "" },
   // Shown on the client's confirmation page. Both are left blank rather than
   // guessed — the confirmation simply omits whichever is empty, so a wrong

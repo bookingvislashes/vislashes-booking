@@ -7,6 +7,18 @@ import {
 } from "@/lib/availability-range";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { bookingIdFromToken } from "@/lib/reschedule-link";
+
+/**
+ * A signed reschedule link makes one booking invisible to the slot engine, so
+ * the client moving it can see the times their own appointment is currently
+ * holding. The token is verified rather than trusted: a raw booking id here
+ * would let anyone free up somebody else's slot on screen and double-book it.
+ */
+function excludedBooking(searchParams: URLSearchParams): string | null {
+  const token = searchParams.get("token");
+  return token ? bookingIdFromToken(token) : null;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -83,7 +95,12 @@ export async function GET(req: NextRequest) {
     // engine needs — hours, overrides, blocks, bookings, buffer and advance
     // notice — comes back from the same loader the month grid uses, which is
     // what keeps a day drawn bookable and its time list in agreement.
-    const ctx = await loadAvailabilityContext(supabase, date, date);
+    const ctx = await loadAvailabilityContext(
+      supabase,
+      date,
+      date,
+      excludedBooking(searchParams)
+    );
     const slots = slotsForDate(
       ctx,
       date,

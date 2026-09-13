@@ -115,9 +115,24 @@ export function BookingFlow({
       case 2:
         return (
           <CalendarPicker
-            form={form}
             serviceId={form.watch("serviceId")}
             hasRemoval={form.watch("hasRemoval")}
+            selectedDate={form.watch("bookingDate")}
+            selectedTime={form.watch("timeSlot")}
+            onSelect={(date, timeSlot) => {
+              form.setValue("bookingDate", date, { shouldValidate: true });
+              // Validated only once a time is actually chosen, so clearing it
+              // after a date change doesn't flash "required" at someone who is
+              // mid-selection.
+              form.setValue("timeSlot", timeSlot, {
+                shouldValidate: Boolean(timeSlot),
+              });
+            }}
+            error={
+              form.formState.errors.bookingDate?.message ||
+              form.formState.errors.timeSlot?.message ||
+              null
+            }
           />
         );
       case 3:
