@@ -31,7 +31,7 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: "1.48.0",
+    version: "1.50.0",
     date: "2026-09-13",
     changes: [
       {
@@ -49,6 +49,68 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       {
         kind: "changed",
         text: "The Privacy, Terms and Text Message pages now describe that box, because Twilio rejects a campaign where agreeing to texts is a condition of booking. This was the last requirement of theirs your site did not meet.",
+      },
+    ],
+  },
+  {
+    version: "1.49.0",
+    date: "2026-09-11",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Today no longer shows a red \"column clients_1.allergy_note does not exist\" line with your appointments missing underneath it. The page was asking the database for the sensitivity flag from update 1.45, which only exists once migration 020 has been run — and when it could not find it, it gave up on the whole day instead of just that one flag.",
+      },
+      {
+        kind: "changed",
+        text: "Today now shows your appointments even when an update is waiting on a migration you have not run yet. You lose only the thing that migration adds, never the day's bookings.",
+      },
+      {
+        kind: "added",
+        text: "Contact on the website now shows real ways to reach you: a Text button that opens the client's own messages app with your number already filled in, and your email beside it. Both come straight from Settings — change them there and the website follows.",
+      },
+      {
+        kind: "added",
+        text: "A new Before You Book section on the website answers the nine questions clients ask most — how long an appointment takes, the deposit, cancelling, refills, what to do beforehand and aftercare — so she can book without messaging you first and waiting on a reply. It has its own FAQ link in the menu.",
+      },
+      {
+        kind: "changed",
+        text: "The email sign-up box in Contact is gone. It was never connected to anything: a client could type her address and press the arrow, and nothing happened and nothing reached you — so she was left waiting on a reply that was never coming.",
+      },
+      {
+        kind: "changed",
+        text: "The appointment lengths and the deposit quoted in those answers are read from your Services page, so changing a duration or a deposit there updates the website too.",
+      },
+      {
+        kind: "note",
+        text: "Read the new answers once through. Most are your Terms put in plain words, but three — whether it hurts, which set to start with, and how to look after them — are written from scratch, so tell me if any of it is not how you actually work.",
+      },
+      {
+        kind: "note",
+        text: "Your street address is deliberately not on the website. The answer says clients get the full address with their confirmation, which is already what happens. Say the word if you would rather it showed your city, or the whole address.",
+      },
+    ],
+  },
+  {
+    version: "1.48.0",
+    date: "2026-09-10",
+    changes: [
+      {
+        kind: "changed",
+        text: "On the home page, each set's price now sits under its name instead of beside it, with the number, name and price grouped tightly together.",
+      },
+      {
+        kind: "changed",
+        text: "Each set's photo and its text now sit much closer together, so a set reads as one block rather than a photo on one side and words on the other.",
+      },
+    ],
+  },
+  {
+    version: "1.47.1",
+    date: "2026-09-10",
+    changes: [
+      {
+        kind: "changed",
+        text: "On the home page, each set's price now sits right beside its name instead of out at the far right of the row, where it read as unrelated to the set.",
       },
     ],
   },
