@@ -20,6 +20,24 @@ import type { Client } from "@/lib/supabase/types";
  * notes about a client can live.
  */
 
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+/**
+ * The credit columns arrive with migration 023, which is run by hand. Until
+ * it has been, `client` simply has no such fields — every read below is
+ * optional-chained and every write reports its own failure, so the profile
+ * page keeps working rather than turning into an error screen.
+ */
+interface CreditFields {
+  credit_amount?: number | string | null;
+  credit_reason?: string | null;
+  birth_month?: number | null;
+  birth_day?: number | null;
+}
+
 interface Appointment {
   id: string;
   booking_date: string;
@@ -111,7 +129,7 @@ export default function ClientProfilePage() {
   const params = useParams<{ id: string }>();
   const clientId = params.id;
 
-  const [client, setClient] = useState<Client | null>(null);
+  const [client, setClient] = useState<(Client & CreditFields) | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [agreements, setAgreements] = useState<AgreementRow[]>([]);
@@ -128,7 +146,15 @@ export default function ClientProfilePage() {
     phone: "",
     notes: "",
     allergy_note: "",
+    birth_month: "",
+    birth_day: "",
   });
+
+  // Credits are their own control rather than part of the edit form: giving
+  // someone $10 is a decision, not a field, and it should take one tap from
+  // the profile rather than Edit → change → Save.
+  const [creditBusy, setCreditBusy] = useState(false);
+  const [creditError, setCreditError] = useState<string | null>(null);
 
   const supabase = createClient();
   const today = todayISO();
@@ -146,7 +172,7 @@ export default function ClientProfilePage() {
       return;
     }
 
-    const record = clientRow as Client;
+    const record = clientRow as Client & CreditFields;
     setClient(record);
     setForm({
       full_name: record.full_name ?? "",
@@ -154,6 +180,8 @@ export default function ClientProfilePage() {
       phone: record.phone ?? "",
       notes: record.notes ?? "",
       allergy_note: record.allergy_note ?? "",
+      birth_month: record.birth_month ? String(record.birth_month) : "",
+      birth_day: record.birth_day ? String(record.birth_day) : "",
     });
 
     const [bookingsRes, byIdRes, byNameRes, agreementsRes] = await Promise.all([
@@ -255,6 +283,8 @@ export default function ClientProfilePage() {
     };
   }, [appointments, today]);
 
+  const creditOnAccount = Number(client?.credit_amount ?? 0) || 0;
+
   const totalPaid = useMemo(
     () =>
       invoices
@@ -280,6 +310,8 @@ export default function ClientProfilePage() {
         // is one check everywhere instead of two.
         notes: form.notes.trim() || null,
         allergy_note: form.allergy_note.trim() || null,
+        birth_month: Number(form.birth_month) || null,
+        birth_day: Number(form.birth_day) || null,
       })
       .eq("id", clientId);
     setSaving(false);
@@ -290,6 +322,35 @@ export default function ClientProfilePage() {
     }
     setError(null);
     setEditing(false);
+    await fetchAll();
+  }
+
+  /**
+   * Put a credit on this client, or take it off. Written straight from here
+   * for the same reason every other edit on this page is: she is signed in,
+   * and `clients` is hers to manage.
+   */
+  async function setCredit(amount: number, reason: string | null) {
+    setCreditBusy(true);
+    setCreditError(null);
+    const { error: creditErr } = await supabase
+      .from("clients")
+      .update({
+        credit_amount: amount,
+        credit_reason: amount > 0 ? reason : null,
+        credit_granted_at: amount > 0 ? new Date().toISOString() : null,
+      })
+      .eq("id", clientId);
+    setCreditBusy(false);
+
+    if (creditErr) {
+      setCreditError(
+        creditErr.message.includes("credit_amount")
+          ? "Run migration 023 first — the credit columns don't exist yet."
+          : creditErr.message
+      );
+      return;
+    }
     await fetchAll();
   }
 
@@ -393,6 +454,77 @@ export default function ClientProfilePage() {
               )}
             </div>
 
+            {/* Birthday, shown only when there is one — a blank line reading
+                "Birthday: —" on every client is noise on a phone. */}
+            {client.birth_month && client.birth_day ? (
+              <p className="mt-3 font-sans text-[13px] text-muted">
+                Birthday: {MONTH_NAMES[client.birth_month - 1]} {client.birth_day}
+              </p>
+            ) : null}
+
+            {/* Credit. Sits on the profile rather than behind Edit, because
+                granting one is a decision she makes while looking at the
+                client, usually straight after seeing their post. */}
+            <div className="mt-3 border-t border-light-tan pt-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-sans text-[13px] text-muted">
+                  Credit on account:
+                </span>
+                <span
+                  className={`font-sans text-[15px] font-semibold tabular-nums ${
+                    creditOnAccount > 0 ? "text-success" : "text-charcoal"
+                  }`}
+                >
+                  {money(creditOnAccount)}
+                </span>
+                {creditOnAccount > 0 && client.credit_reason && (
+                  <span className="font-sans text-[13px] text-muted">
+                    &middot; {client.credit_reason}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-2">
+                <button
+                  type="button"
+                  disabled={creditBusy}
+                  onClick={() => setCredit(10, "Thanks for tagging me!")}
+                  className="inline-flex items-center h-control-sm px-4 rounded-control border border-light-tan font-sans text-[14px] text-charcoal hover:bg-light-tan transition-colors disabled:opacity-60"
+                >
+                  Give $10 tag credit
+                </button>
+                <button
+                  type="button"
+                  disabled={creditBusy}
+                  onClick={() => setCredit(15, "Happy birthday from me!")}
+                  className="inline-flex items-center h-control-sm px-4 rounded-control border border-light-tan font-sans text-[14px] text-charcoal hover:bg-light-tan transition-colors disabled:opacity-60"
+                >
+                  Give $15 birthday credit
+                </button>
+                {creditOnAccount > 0 && (
+                  <button
+                    type="button"
+                    disabled={creditBusy}
+                    onClick={() => setCredit(0, null)}
+                    className="inline-flex items-center h-control-sm px-4 rounded-control border border-light-tan font-sans text-[14px] text-muted hover:bg-light-tan transition-colors disabled:opacity-60"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              <p className="font-sans text-[12px] text-muted mt-2 leading-[1.5]">
+                Comes off the balance at their next appointment, however they
+                book it. Their confirmation will say so.
+              </p>
+
+              {creditError && (
+                <p className="font-sans text-[13px] text-danger mt-2">
+                  {creditError}
+                </p>
+              )}
+            </div>
+
             {client.notes && (
               <p className="mt-3 font-sans text-[14px] text-charcoal leading-[1.6] whitespace-pre-wrap border-t border-light-tan pt-3">
                 {client.notes}
@@ -422,6 +554,48 @@ export default function ClientProfilePage() {
                 />
               </label>
             ))}
+
+            <div>
+              <span className="font-sans text-[12px] font-semibold text-dark-brown">
+                Birthday
+              </span>
+              <div className="flex gap-2 mt-1">
+                <select
+                  aria-label="Birth month"
+                  value={form.birth_month}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, birth_month: e.target.value }))
+                  }
+                  className="h-control flex-1 min-w-0 px-3 box-border bg-white border border-light-tan rounded-control text-[16px] text-charcoal font-sans focus:border-deep-brown transition-colors"
+                >
+                  <option value="">Month</option>
+                  {MONTH_NAMES.map((name, i) => (
+                    <option key={name} value={String(i + 1)}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  aria-label="Birth day"
+                  value={form.birth_day}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, birth_day: e.target.value }))
+                  }
+                  className="h-control flex-1 min-w-0 px-3 box-border bg-white border border-light-tan rounded-control text-[16px] text-charcoal font-sans focus:border-deep-brown transition-colors"
+                >
+                  <option value="">Day</option>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                    <option key={day} value={String(day)}>
+                      {day}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <span className="font-sans text-[12px] text-muted mt-1 block leading-[1.5]">
+                They get a greeting and a credit at the start of this month,
+                once a year.
+              </span>
+            </div>
 
             <label className="block">
               <span className="font-sans text-[12px] font-semibold text-dark-brown">
@@ -476,6 +650,8 @@ export default function ClientProfilePage() {
                     phone: client.phone ?? "",
                     notes: client.notes ?? "",
                     allergy_note: client.allergy_note ?? "",
+                    birth_month: client.birth_month ? String(client.birth_month) : "",
+                    birth_day: client.birth_day ? String(client.birth_day) : "",
                   });
                 }}
               >

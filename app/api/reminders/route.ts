@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { sendReminderEmail } from "@/lib/email";
+import {
+  getEmailSettings,
+  sendBirthdayEmail,
+  sendFollowUpEmail,
+  sendReminderEmail,
+  sendWinBackEmail,
+} from "@/lib/email";
+import { grantCredit, loadCreditAmounts } from "@/lib/credits";
+import { salonMinutesNow, slotToMinutes } from "@/lib/salon-time";
 import {
   isSmsConfigured,
   sendSms,
@@ -11,8 +19,15 @@ import {
 } from "@/lib/sms";
 
 /**
- * Appointment reminders, in the two windows she asked for: two days before,
- * and two hours before. Wired to the cron in vercel.json.
+ * Everything the site sends on a schedule: the two-day and two-hour
+ * reminders before an appointment, the check-in two days after one, the
+ * birthday greeting, and the win-back six weeks after someone's last visit.
+ * Wired to the cron in vercel.json.
+ *
+ * Five passes, all in one route rather than five crons — the Hobby plan
+ * allows very few, and they all want the same daily tick. Each pass that
+ * depends on a hand-run migration is fenced in its own try/catch and its own
+ * query, so an un-run migration costs that pass and never the reminders.
  *
  * The two-hour window can only fire if this route runs more often than once a
  * day. Vercel's Hobby plan caps crons at daily, so today only the two-day
@@ -59,29 +74,6 @@ function salonDatePlusDays(days: number): string {
   // involved, so this cannot slip a day.
   const shifted = new Date(Date.UTC(y, m - 1, d + days));
   return shifted.toISOString().slice(0, 10);
-}
-
-/** Minutes since midnight, in the salon's timezone. */
-function salonMinutesNow(): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: TIMEZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date());
-  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
-  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
-  // en-US with hour12:false renders midnight as 24 in some runtimes.
-  return (hour % 24) * 60 + minute;
-}
-
-/** "2:30 PM" — the shape bookings.time_slot uses — as minutes since midnight. */
-function slotToMinutes(slot: string): number | null {
-  const match = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(slot.trim());
-  if (!match) return null;
-  let hour = Number(match[1]) % 12;
-  if (match[3].toUpperCase() === "PM") hour += 12;
-  return hour * 60 + Number(match[2]);
 }
 
 function formatDuration(mins: number): string {
@@ -131,13 +123,11 @@ export async function GET(req: NextRequest) {
     // The two-hour text is the one that has to get someone to the door, so it
     // carries the address. Read from Settings rather than written here: a
     // hardcoded address survives a move and sends a client to the wrong house.
-    // Absent means the text simply omits it.
-    const { data: addressRow } = await supabase
-      .from("settings")
-      .select("value")
-      .eq("key", "business_address")
-      .maybeSingle();
-    const salonAddress = addressRow?.value ?? null;
+    // Absent means the text simply omits it. Your Inbox comes back in the
+    // same read and becomes the Reply-To on every reminder — a client who
+    // answers "can I move this?" has to reach her personally.
+    const { studioAddress: salonAddress, replyTo } =
+      await getEmailSettings(supabase);
 
     const select =
       "id, booking_date, time_slot, deposit_amount, clients(id, full_name, email, phone, sms_consent, sms_opt_out), services(name, price, duration_minutes)";
@@ -197,6 +187,8 @@ export async function GET(req: NextRequest) {
             totalPrice: Number(booking.services.price),
             paymentMethod: "square",
             window: windowName,
+            studioAddress: salonAddress,
+            replyTo,
           });
           emailed = true;
         } catch (err) {
@@ -300,6 +292,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         twoDay: { date: twoDayDate, sent: twoDaySent, failed: twoDayFailed },
         twoHour: { error: todayError.message },
+        followUp: { skipped: "Two-hour pass failed; follow-ups run tomorrow." },
       });
     }
 
@@ -316,9 +309,231 @@ export async function GET(req: NextRequest) {
       if (result === "failed") twoHourFailed += 1;
     }
 
+    // ── Two days after ───────────────────────────────────────────────────
+    // The check-in: aftercare, when to book a fill, and a nudge to tag or
+    // recommend her.
+    //
+    // Fenced in its own try/catch and its own query on purpose.
+    // followup_sent_at arrives with migration 022, which is run by hand, so
+    // there is a window where this code is deployed and the column does not
+    // exist yet. Naming a column PostgREST cannot see fails the whole query —
+    // folding this into the passes above would have meant one unrun migration
+    // silently stopping every reminder, which is the same failure that once
+    // cost the Today page its bookings. A missing column costs the follow-up
+    // and nothing else.
+    const followUpDate = salonDatePlusDays(-2);
+    let followUp: Record<string, unknown> = { date: followUpDate, sent: 0, failed: 0 };
+
+    try {
+      const { data: pastData, error: pastError } = await supabase
+        .from("bookings")
+        .select("id, clients(full_name, email)")
+        .eq("booking_date", followUpDate)
+        // Cancellations and no-shows are excluded: asking someone how they
+        // are loving lashes they never got is worse than saying nothing.
+        .in("status", ["confirmed", "completed"])
+        .is("followup_sent_at", null);
+
+      if (pastError) throw pastError;
+
+      let sent = 0;
+      let failed = 0;
+
+      for (const row of pastData || []) {
+        const client = Array.isArray(row.clients) ? row.clients[0] : row.clients;
+        if (!client?.email) {
+          // Unreachable by email and always will be. Stamped so it is not
+          // reconsidered on every future run.
+          await supabase
+            .from("bookings")
+            .update({ followup_sent_at: new Date().toISOString() })
+            .eq("id", row.id);
+          continue;
+        }
+
+        try {
+          await sendFollowUpEmail({
+            clientName: client.full_name,
+            clientEmail: client.email,
+            replyTo,
+            bookingId: row.id,
+          });
+          await supabase
+            .from("bookings")
+            .update({ followup_sent_at: new Date().toISOString() })
+            .eq("id", row.id);
+          sent += 1;
+        } catch (err) {
+          console.error(`Follow-up failed for booking ${row.id}:`, err);
+          failed += 1;
+        }
+      }
+
+      followUp = { date: followUpDate, sent, failed };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Follow-ups skipped:", message);
+      followUp = {
+        date: followUpDate,
+        skipped: message.includes("followup_sent_at")
+          ? "Run migration 022."
+          : message,
+      };
+    }
+
+    // ── Birthdays ────────────────────────────────────────────────────────
+    // Anyone whose birth month is this month and who has not been greeted
+    // this year. Keyed on the YEAR rather than a date, so a cron that misses
+    // the 1st still greets everyone on the 2nd, and nobody is greeted twice
+    // however often it runs.
+    //
+    // The credit is granted BEFORE the email goes out. An email promising
+    // money that then failed to land on the account is worse than a credit
+    // sitting quietly on a client who never opened the email.
+    const thisYear = Number(salonDatePlusDays(0).slice(0, 4));
+    const thisMonth = Number(salonDatePlusDays(0).slice(5, 7));
+    let birthdays: Record<string, unknown> = { month: thisMonth, sent: 0, failed: 0 };
+
+    try {
+      const { data: birthdayClients, error: birthdayError } = await supabase
+        .from("clients")
+        .select("id, full_name, email, birthday_email_year")
+        .eq("birth_month", thisMonth)
+        .not("email", "is", null);
+
+      if (birthdayError) throw birthdayError;
+
+      const amounts = await loadCreditAmounts(supabase);
+      let sent = 0;
+      let failed = 0;
+
+      for (const client of birthdayClients || []) {
+        if (client.birthday_email_year === thisYear) continue;
+        if (!client.email) continue;
+
+        await grantCredit(
+          supabase,
+          client.id,
+          amounts.birthday,
+          "Happy birthday from me!"
+        );
+
+        try {
+          await sendBirthdayEmail({
+            clientName: client.full_name,
+            clientEmail: client.email,
+            amount: amounts.birthday,
+            replyTo,
+          });
+          await supabase
+            .from("clients")
+            .update({ birthday_email_year: thisYear })
+            .eq("id", client.id);
+          sent += 1;
+        } catch (err) {
+          console.error(`Birthday email failed for client ${client.id}:`, err);
+          failed += 1;
+        }
+      }
+
+      birthdays = { month: thisMonth, sent, failed };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Birthdays skipped:", message);
+      birthdays = { month: thisMonth, skipped: message.includes("birth_month") ? "Run migration 023." : message };
+    }
+
+    // ── Win-backs ────────────────────────────────────────────────────────
+    // Six weeks after an appointment, to anyone with nothing booked since.
+    //
+    // Driven off bookings on one date rather than by scanning every client,
+    // for the same reason the follow-up is: it is one query, and a client
+    // who has been back simply fails the "nothing since" check below.
+    const winbackDate = salonDatePlusDays(-42);
+    let winbacks: Record<string, unknown> = { date: winbackDate, sent: 0, failed: 0 };
+
+    try {
+      const { data: thatDay, error: thatDayError } = await supabase
+        .from("bookings")
+        .select("client_id")
+        .eq("booking_date", winbackDate)
+        .in("status", ["confirmed", "completed"]);
+
+      if (thatDayError) throw thatDayError;
+
+      const candidateIds = Array.from(
+        new Set((thatDay || []).map((b) => b.client_id).filter(Boolean))
+      ) as string[];
+
+      let sent = 0;
+      let failed = 0;
+
+      if (candidateIds.length) {
+        // One query for "has anyone here been back, or got something booked".
+        // Anything dated after that appointment counts, past or future — a
+        // client with a set next Tuesday does not need to be missed.
+        const { data: since } = await supabase
+          .from("bookings")
+          .select("client_id")
+          .in("client_id", candidateIds)
+          .gt("booking_date", winbackDate)
+          .in("status", ["confirmed", "completed"]);
+
+        const stillAway = new Set(candidateIds);
+        for (const row of since || []) stillAway.delete(row.client_id as string);
+
+        if (stillAway.size) {
+          const { data: clients } = await supabase
+            .from("clients")
+            .select("id, full_name, email, winback_sent_at")
+            .in("id", Array.from(stillAway))
+            .not("email", "is", null);
+
+          for (const client of clients || []) {
+            if (!client.email) continue;
+            // Sent since that appointment means this gap is already covered.
+            // Comparing against the appointment date rather than "ever sent"
+            // is what lets a client who returns and drifts again be missed a
+            // second time.
+            if (
+              client.winback_sent_at &&
+              client.winback_sent_at.slice(0, 10) > winbackDate
+            ) {
+              continue;
+            }
+
+            try {
+              await sendWinBackEmail({
+                clientName: client.full_name,
+                clientEmail: client.email,
+                replyTo,
+              });
+              await supabase
+                .from("clients")
+                .update({ winback_sent_at: new Date().toISOString() })
+                .eq("id", client.id);
+              sent += 1;
+            } catch (err) {
+              console.error(`Win-back failed for client ${client.id}:`, err);
+              failed += 1;
+            }
+          }
+        }
+      }
+
+      winbacks = { date: winbackDate, sent, failed };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Win-backs skipped:", message);
+      winbacks = { date: winbackDate, skipped: message.includes("winback_sent_at") ? "Run migration 023." : message };
+    }
+
     return NextResponse.json({
       twoDay: { date: twoDayDate, sent: twoDaySent, failed: twoDayFailed },
       twoHour: { date: today, sent: twoHourSent, failed: twoHourFailed },
+      followUp,
+      birthdays,
+      winbacks,
     });
   } catch (err) {
     console.error("Reminders: unexpected failure:", err);

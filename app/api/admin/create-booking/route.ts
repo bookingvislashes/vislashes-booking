@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { syncBookingEvent } from "@/lib/google-calendar";
-import { sendConfirmationEmail } from "@/lib/email";
+import {
+  getEmailSettings,
+  ownerRecipients,
+  sendConfirmationEmail,
+} from "@/lib/email";
+import { consumeCreditForBooking, loadCreditAmounts } from "@/lib/credits";
 import { notifyAdmins } from "@/lib/push";
 
 /**
@@ -308,27 +313,39 @@ export async function POST(req: NextRequest) {
     .eq("id", clientId)
     .maybeSingle();
 
-  let emailed = false;
-  if (input.sendConfirmation && client?.email) {
-    // Same private-address contract as the site's own checkout: read fresh
-    // from Settings, sent only in this confirmation, never guessed at if the
-    // lookup fails.
-    let studioAddress: string | null = null;
-    try {
-      const { data: addressRow } = await admin
-        .from("settings")
-        .select("value")
-        .eq("key", "business_address")
-        .maybeSingle();
-      studioAddress = addressRow?.value ?? null;
-    } catch {
-      // Left null.
-    }
+  // Same private-address contract as the site's own checkout: read fresh from
+  // Settings, sent only in the confirmation, never guessed at if the lookup
+  // fails. Your Inbox comes back in the same read and is both the Reply-To on
+  // the client's confirmation and where her blind copy goes.
+  const { studioAddress, ownerInbox, replyTo } = await getEmailSettings(admin);
+  const ownerCopy = ownerRecipients(ownerInbox);
 
+  // Whatever credit is sitting on this client moves onto this appointment and
+  // is cleared, exactly as it would if they had booked it themselves. Never
+  // throws — an un-run migration 023 costs the discount, not the booking she
+  // has just entered.
+  const [discount, creditAmounts] = await Promise.all([
+    // clientId is resolved or the route has already returned by here; the
+    // guard keeps TypeScript honest about the nullable it was declared as.
+    clientId
+      ? consumeCreditForBooking(admin, clientId, booking.id)
+      : Promise.resolve(null),
+    loadCreditAmounts(admin),
+  ]);
+
+  // She wants a record of every appointment in her inbox, including the ones
+  // she books herself. The tick box decides whether the CLIENT is emailed, so
+  // when it is off — or when an imported client has no address on file — the
+  // same confirmation is addressed to her alone rather than not sent at all.
+  const sendToClient = Boolean(input.sendConfirmation && client?.email);
+  const recipient = sendToClient ? client!.email! : ownerCopy[0];
+
+  let emailed = false;
+  if (recipient) {
     try {
       await sendConfirmationEmail({
-        clientName: client.full_name,
-        clientEmail: client.email,
+        clientName: client?.full_name || input.fullName || "there",
+        clientEmail: recipient,
         serviceName: input.hasRemoval
           ? `${service.name} + lash removal`
           : service.name,
@@ -343,8 +360,16 @@ export async function POST(req: NextRequest) {
           ? METHOD_LABELS[input.depositMethod]
           : undefined,
         studioAddress,
+        discountAmount: discount?.amount,
+        discountReason: discount?.reason,
+        tagCreditAmount: creditAmounts.referral,
+        replyTo,
+        // Bcc only when the client is the one being written to — addressing
+        // her copy to herself and bcc'ing herself as well would land twice.
+        bcc: sendToClient ? ownerCopy : [],
+        bookingId: booking.id,
       });
-      emailed = true;
+      emailed = sendToClient;
     } catch (err) {
       console.error("Admin booking: confirmation email failed:", err);
     }

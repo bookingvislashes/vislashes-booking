@@ -73,6 +73,12 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
           <path d="M9 8h6M9 12h6" />
         </svg>
       );
+    case "star":
+      return (
+        <svg {...props}>
+          <path d="M12 3.5l2.6 5.3 5.9.85-4.25 4.15 1 5.8L12 16.87 6.75 19.6l1-5.8L3.5 9.65l5.9-.85L12 3.5z" />
+        </svg>
+      );
     case "sparkle":
       return (
         <svg {...props}>
@@ -140,6 +146,7 @@ const navItems = [
   { label: "Invoices", href: "/admin/invoices", icon: "invoice" },
   { label: "Reports", href: "/admin/reports", icon: "chart" },
   { label: "Payments", href: "/admin/payments", icon: "receipt" },
+  { label: "Reviews", href: "/admin/reviews", icon: "star" },
   { label: "Settings", href: "/admin/settings", icon: "settings" },
   { label: "Migrations", href: "/admin/migrations", icon: "database" },
   { label: "What's New", href: "/admin/whats-new", icon: "sparkle" },

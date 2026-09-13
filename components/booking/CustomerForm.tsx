@@ -6,6 +6,16 @@ import { BookingFormData } from "@/lib/schemas";
 import { CONSENT_DISCLOSURE, CONSENT_LABEL } from "@/lib/legal";
 import { Input } from "@/components/ui/input";
 
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// 31 for every month. Validating the day against the chosen month would
+// reject 29 February in a common year, and nobody born on it wants to be
+// told their birthday is invalid.
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+
 interface CustomerFormProps {
   form: UseFormReturn<BookingFormData>;
 }
@@ -30,6 +40,46 @@ export function CustomerForm({ form }: CustomerFormProps) {
           error={errors.fullName?.message}
           {...register("fullName")}
         />
+        {/* Optional, and said so, because nothing here may block the step.
+            Two selects rather than a date field: a birthday needs no year,
+            and a native date picker on a phone opens on the current decade
+            and makes someone scroll back thirty of them. */}
+        <div>
+          <label className="block font-sans text-[13px] font-semibold text-dark-brown mb-1.5">
+            Birthday{" "}
+            <span className="font-normal text-muted">
+              &mdash; optional, so I can spoil you in your birthday month
+            </span>
+          </label>
+          <div className="flex gap-2">
+            <select
+              id="birthMonth"
+              aria-label="Birthday month"
+              className="h-control flex-1 min-w-0 rounded-control border border-light-tan bg-white px-3 font-sans text-[15px] text-charcoal"
+              {...register("birthMonth")}
+            >
+              <option value="">Month</option>
+              {MONTHS.map((name, index) => (
+                <option key={name} value={String(index + 1)}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <select
+              id="birthDay"
+              aria-label="Birthday day"
+              className="h-control flex-1 min-w-0 rounded-control border border-light-tan bg-white px-3 font-sans text-[15px] text-charcoal"
+              {...register("birthDay")}
+            >
+              <option value="">Day</option>
+              {DAYS.map((day) => (
+                <option key={day} value={String(day)}>
+                  {day}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <Input
           id="phone"
           label="Phone Number"

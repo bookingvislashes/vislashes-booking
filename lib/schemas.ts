@@ -14,6 +14,12 @@ export const bookingSchema = z.object({
 
   // Step 3
   fullName: z.string().min(2, "Name is required"),
+  // Month and day only, and optional — a birthday treat is a nice thing to
+  // offer, not a condition of booking, and a required field here would cost
+  // real appointments to gain a mailing detail. Strings because they come off
+  // two <select>s; the server coerces and range-checks them.
+  birthMonth: z.string().optional(),
+  birthDay: z.string().optional(),
   phone: z
     .string()
     .regex(
