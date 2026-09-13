@@ -152,7 +152,16 @@ export function BookingFlow({
           />
         );
       case 7:
-        return <PaymentStep form={form} services={services} />;
+        return (
+          <PaymentStep
+            form={form}
+            services={services}
+            // /book?test=1 — her own dry run of the flow. The button it shows
+            // still only appears for a signed-in admin, and the server checks
+            // the session again before it writes anything.
+            testMode={searchParams.get("test") === "1"}
+          />
+        );
       default:
         return null;
     }

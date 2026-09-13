@@ -328,15 +328,15 @@ export interface EmailSettings {
   /**
    * What goes in Reply-To on everything a client receives.
    *
-   * Business Email when she has one, because Reply-To is NOT hidden — a
-   * client pressing reply sees the address in the To field of their draft.
-   * Pointing it at the public bookings@ address and forwarding that mailbox
-   * to her personal one is what keeps the personal one off their screen.
-   * Until she sets that up this falls back to Your Inbox: a reply that
-   * reaches her and shows the address beats a reply that reaches nobody.
+   * Your Inbox — her real, monitored address — and deliberately not the
+   * bookings@ address in From. Reply-To is not hidden: a client pressing
+   * reply sees it in the To field of their draft. Routing it through the
+   * public address would hide the personal one, but only if that mailbox
+   * actually receives mail; pointed at an address nobody reads, a client's
+   * reply vanishes. She chose the address that works over the one that
+   * hides, so this is the address that works.
    *
-   * Her blind copy is unaffected either way. Bcc genuinely is invisible, so
-   * it always goes to Your Inbox.
+   * Her blind copy goes to the same place. Bcc genuinely is invisible.
    */
   replyTo: string | null;
 }
@@ -379,7 +379,7 @@ export async function getEmailSettings(
       studioAddress: byKey.business_address || null,
       businessEmail,
       ownerInbox,
-      replyTo: businessEmail || ownerInbox,
+      replyTo: ownerInbox,
     };
   } catch (err) {
     console.error("getEmailSettings: threw:", err);

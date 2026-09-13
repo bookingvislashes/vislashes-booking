@@ -118,12 +118,16 @@ Addresses come from `getEmailSettings()`:
 | Field | Source | Visible to the client? |
 |---|---|---|
 | `bcc` | `owner_inbox_email`, else `business_email`; `OWNER_NOTIFICATION_EMAIL` overrides both | **No** — Bcc genuinely is hidden |
-| `replyTo` | `business_email`, else `owner_inbox_email` | **Yes** — shown in the To field of their reply |
+| `replyTo` | `owner_inbox_email`, else `business_email` | **Yes** — shown in the To field of their reply |
 
-That split is the whole point: her personal inbox gets the copy without ever
-appearing on a client's screen, provided `business_email` is a forwarding
-address at the domain. With `business_email` blank, Reply-To falls back to her
-personal address — a reply that reaches her beats a reply that reaches nobody.
+Reply-To is deliberately her real inbox rather than the `bookings@` address in
+From. Routing replies through the public address would keep the personal one
+off a client's screen, but only if that mailbox actually receives mail —
+pointed at an address nobody reads, a reply vanishes. Working beats hidden.
+
+`EMAIL_FROM` still has to be an address at a domain verified in Resend
+(`VIS Lashes <bookings@vislashes.com>`); Resend cannot send as `@gmail.com`,
+and Gmail's own DMARC policy would reject it if it could.
 
 One case has no client email to ride on: an admin-created booking with "send
 confirmation" unticked, or an imported client with no address. The same
@@ -154,6 +158,21 @@ The confirmation carries a **Change my date or time** button
   change she made in the meantime.
 - Afterwards: Google Calendar re-syncs, both reminder stamps clear, the client
   gets the "moved" confirmation with her Bcc'd, and she gets a push alert.
+
+## Testing the Whole Flow
+
+`/book?test=1`, with an admin session, adds a **Book it without paying** button
+to the payment step (`POST /api/bookings/test`).
+
+The route requires a signed-in admin — the public pay-on-the-day endpoint was
+retired for writing confirmed bookings with nothing behind them, and its own
+note said any replacement "would need to be admin-authenticated rather than
+public". Everything downstream is the real path: the same `createBooking`, the
+same confirmation email and blind copy, the same calendar sync, the same
+confirmation page. Only the card is skipped.
+
+The booking it writes is real and holds a real slot. `booking_source` is set to
+`test` and `notes` says so, so it is obvious in the admin and easy to cancel.
 
 ## Cron Jobs for Automated Emails
 

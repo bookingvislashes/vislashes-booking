@@ -44,6 +44,12 @@ interface CreateBookingOptions {
   /** Resolved server-side from settings — never sent by the browser. */
   removalPrice?: number;
   removalMinutes?: number;
+  /**
+   * Stamped onto the booking so it can be told apart in the admin. "test" is
+   * the admin-only dry run of this whole flow; a real client booking leaves
+   * it unset.
+   */
+  bookingSource?: string;
 }
 
 export async function createBooking({
@@ -54,6 +60,7 @@ export async function createBooking({
   squarePaymentId,
   removalPrice = 0,
   removalMinutes = 0,
+  bookingSource,
 }: CreateBookingOptions) {
   // 1. Upsert client (find by email or create new)
   //
@@ -197,6 +204,7 @@ export async function createBooking({
       deposit_amount: depositAmount ?? service.deposit_amount,
       square_payment_id: squarePaymentId ?? null,
       has_removal: Boolean(formData.hasRemoval),
+      booking_source: bookingSource ?? null,
     })
     .select("id")
     .single();

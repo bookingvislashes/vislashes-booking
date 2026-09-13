@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.53.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "You can now walk through the whole booking flow without paying. Sign in to the admin, open /book?test=1, and the payment step gains a \u201cBook it without paying\u201d button. Everything else is real \u2014 the confirmation email, your blind copy, the calendar entry, the phone alert.",
+      },
+      {
+        kind: "changed",
+        text: "Client replies now go to your Inbox address directly, rather than through the bookings@ address. One less thing to set up, and a reply can never land somewhere nobody reads.",
+      },
+      {
+        kind: "note",
+        text: "A test booking is a real appointment and holds that time slot. Cancel it in the admin when you're done \u2014 it's labelled TEST BOOKING so you'll spot it.",
+      },
+    ],
+  },
+  {
     version: "1.52.0",
     date: "2026-09-13",
     changes: [
