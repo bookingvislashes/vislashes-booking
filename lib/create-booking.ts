@@ -4,6 +4,11 @@ import {
   ownerRecipients,
   sendConfirmationEmail,
 } from "./email";
+import {
+  consumeCreditForBooking,
+  loadCreditAmounts,
+  saveBirthday,
+} from "./credits";
 import { confirmationText, isSmsConfigured, sendSms, toE164 } from "./sms";
 import { syncBookingEvent } from "./google-calendar";
 
@@ -12,6 +17,9 @@ interface BookingFormData {
   bookingDate: string;
   timeSlot: string;
   fullName: string;
+  /** Month and day off the two optional selects on step 3, as typed. */
+  birthMonth?: string;
+  birthDay?: string;
   phone: string;
   email: string;
   /** The optional text-message box on step 3. False unless she ticked it. */
@@ -213,6 +221,24 @@ export async function createBooking({
     throw new Error(`Failed to create booking: ${bookingError?.message}`);
   }
 
+  // Both of these run AFTER the booking row exists and neither can throw.
+  // On the card path everything from here down happens with the deposit
+  // already captured, and migration 023 is run by hand — so a column that
+  // does not exist yet has to cost a birthday or a discount, never the
+  // appointment somebody has just paid for.
+  await saveBirthday(
+    supabase,
+    clientId,
+    Number(formData.birthMonth) || null,
+    Number(formData.birthDay) || null
+  );
+
+  // Any credit she has put on this client — the $10 for tagging her, or a
+  // birthday treat — moves onto this booking and is cleared, so it is spent
+  // exactly once. It comes off the balance settled at the appointment; the
+  // deposit Square just charged is untouched.
+  const discount = await consumeCreditForBooking(supabase, clientId, booking.id);
+
   // 4. Create intake form
   await supabase.from("intake_forms").insert({
     booking_id: booking.id,
@@ -263,7 +289,10 @@ export async function createBooking({
   // so a studio move only ever requires an edit in Settings.
   // Read once for both messages below. Anything missing comes back null and
   // is simply omitted rather than guessed at.
-  const { studioAddress, ownerInbox, replyTo } = await getEmailSettings(supabase);
+  const [{ studioAddress, ownerInbox, replyTo }, creditAmounts] = await Promise.all([
+    getEmailSettings(supabase),
+    loadCreditAmounts(supabase),
+  ]);
 
   try {
     await sendConfirmationEmail({
@@ -279,6 +308,9 @@ export async function createBooking({
       totalPrice: appointmentTotal,
       paymentMethod: formData.paymentMethod,
       studioAddress,
+      discountAmount: discount?.amount,
+      discountReason: discount?.reason,
+      tagCreditAmount: creditAmounts.referral,
       replyTo,
       // Her copy, on the client's own confirmation rather than as a separate
       // message: she sees exactly what they saw, and Bcc means nothing in

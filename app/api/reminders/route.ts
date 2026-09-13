@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   getEmailSettings,
+  sendBirthdayEmail,
   sendFollowUpEmail,
   sendReminderEmail,
+  sendWinBackEmail,
 } from "@/lib/email";
+import { grantCredit, loadCreditAmounts } from "@/lib/credits";
 import { salonMinutesNow, slotToMinutes } from "@/lib/salon-time";
 import {
   isSmsConfigured,
@@ -17,11 +20,14 @@ import {
 
 /**
  * Everything the site sends on a schedule: the two-day and two-hour
- * reminders before an appointment, and the check-in two days after one.
+ * reminders before an appointment, the check-in two days after one, the
+ * birthday greeting, and the win-back six weeks after someone's last visit.
  * Wired to the cron in vercel.json.
  *
- * Three passes, all in one route rather than three crons — the Hobby plan
- * allows very few, and they all want the same daily tick.
+ * Five passes, all in one route rather than five crons — the Hobby plan
+ * allows very few, and they all want the same daily tick. Each pass that
+ * depends on a hand-run migration is fenced in its own try/catch and its own
+ * query, so an un-run migration costs that pass and never the reminders.
  *
  * The two-hour window can only fire if this route runs more often than once a
  * day. Vercel's Hobby plan caps crons at daily, so today only the two-day
@@ -374,10 +380,159 @@ export async function GET(req: NextRequest) {
       };
     }
 
+    // ── Birthdays ────────────────────────────────────────────────────────
+    // Anyone whose birth month is this month and who has not been greeted
+    // this year. Keyed on the YEAR rather than a date, so a cron that misses
+    // the 1st still greets everyone on the 2nd, and nobody is greeted twice
+    // however often it runs.
+    //
+    // The credit is granted BEFORE the email goes out. An email promising
+    // money that then failed to land on the account is worse than a credit
+    // sitting quietly on a client who never opened the email.
+    const thisYear = Number(salonDatePlusDays(0).slice(0, 4));
+    const thisMonth = Number(salonDatePlusDays(0).slice(5, 7));
+    let birthdays: Record<string, unknown> = { month: thisMonth, sent: 0, failed: 0 };
+
+    try {
+      const { data: birthdayClients, error: birthdayError } = await supabase
+        .from("clients")
+        .select("id, full_name, email, birthday_email_year")
+        .eq("birth_month", thisMonth)
+        .not("email", "is", null);
+
+      if (birthdayError) throw birthdayError;
+
+      const amounts = await loadCreditAmounts(supabase);
+      let sent = 0;
+      let failed = 0;
+
+      for (const client of birthdayClients || []) {
+        if (client.birthday_email_year === thisYear) continue;
+        if (!client.email) continue;
+
+        await grantCredit(
+          supabase,
+          client.id,
+          amounts.birthday,
+          "Happy birthday from me!"
+        );
+
+        try {
+          await sendBirthdayEmail({
+            clientName: client.full_name,
+            clientEmail: client.email,
+            amount: amounts.birthday,
+            replyTo,
+          });
+          await supabase
+            .from("clients")
+            .update({ birthday_email_year: thisYear })
+            .eq("id", client.id);
+          sent += 1;
+        } catch (err) {
+          console.error(`Birthday email failed for client ${client.id}:`, err);
+          failed += 1;
+        }
+      }
+
+      birthdays = { month: thisMonth, sent, failed };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Birthdays skipped:", message);
+      birthdays = { month: thisMonth, skipped: message.includes("birth_month") ? "Run migration 023." : message };
+    }
+
+    // ── Win-backs ────────────────────────────────────────────────────────
+    // Six weeks after an appointment, to anyone with nothing booked since.
+    //
+    // Driven off bookings on one date rather than by scanning every client,
+    // for the same reason the follow-up is: it is one query, and a client
+    // who has been back simply fails the "nothing since" check below.
+    const winbackDate = salonDatePlusDays(-42);
+    let winbacks: Record<string, unknown> = { date: winbackDate, sent: 0, failed: 0 };
+
+    try {
+      const { data: thatDay, error: thatDayError } = await supabase
+        .from("bookings")
+        .select("client_id")
+        .eq("booking_date", winbackDate)
+        .in("status", ["confirmed", "completed"]);
+
+      if (thatDayError) throw thatDayError;
+
+      const candidateIds = Array.from(
+        new Set((thatDay || []).map((b) => b.client_id).filter(Boolean))
+      ) as string[];
+
+      let sent = 0;
+      let failed = 0;
+
+      if (candidateIds.length) {
+        // One query for "has anyone here been back, or got something booked".
+        // Anything dated after that appointment counts, past or future — a
+        // client with a set next Tuesday does not need to be missed.
+        const { data: since } = await supabase
+          .from("bookings")
+          .select("client_id")
+          .in("client_id", candidateIds)
+          .gt("booking_date", winbackDate)
+          .in("status", ["confirmed", "completed"]);
+
+        const stillAway = new Set(candidateIds);
+        for (const row of since || []) stillAway.delete(row.client_id as string);
+
+        if (stillAway.size) {
+          const { data: clients } = await supabase
+            .from("clients")
+            .select("id, full_name, email, winback_sent_at")
+            .in("id", Array.from(stillAway))
+            .not("email", "is", null);
+
+          for (const client of clients || []) {
+            if (!client.email) continue;
+            // Sent since that appointment means this gap is already covered.
+            // Comparing against the appointment date rather than "ever sent"
+            // is what lets a client who returns and drifts again be missed a
+            // second time.
+            if (
+              client.winback_sent_at &&
+              client.winback_sent_at.slice(0, 10) > winbackDate
+            ) {
+              continue;
+            }
+
+            try {
+              await sendWinBackEmail({
+                clientName: client.full_name,
+                clientEmail: client.email,
+                replyTo,
+              });
+              await supabase
+                .from("clients")
+                .update({ winback_sent_at: new Date().toISOString() })
+                .eq("id", client.id);
+              sent += 1;
+            } catch (err) {
+              console.error(`Win-back failed for client ${client.id}:`, err);
+              failed += 1;
+            }
+          }
+        }
+      }
+
+      winbacks = { date: winbackDate, sent, failed };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Win-backs skipped:", message);
+      winbacks = { date: winbackDate, skipped: message.includes("winback_sent_at") ? "Run migration 023." : message };
+    }
+
     return NextResponse.json({
       twoDay: { date: twoDayDate, sent: twoDaySent, failed: twoDayFailed },
       twoHour: { date: today, sent: twoHourSent, failed: twoHourFailed },
       followUp,
+      birthdays,
+      winbacks,
     });
   } catch (err) {
     console.error("Reminders: unexpected failure:", err);

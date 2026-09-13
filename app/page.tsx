@@ -15,6 +15,7 @@ import { createPublicClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getContactDetails } from "@/lib/contact";
 import { buildFaq, summariseTimings, EMPTY_FACTS, type ServiceTiming } from "@/lib/faq";
+import { loadCreditAmounts } from "@/lib/credits";
 
 // Re-read the menu at most once a minute, same as /book — so a price change
 // made in Services shows up here without waiting on a redeploy.
@@ -175,17 +176,45 @@ function leadSentence(description: string) {
   return match ? match[0] : description;
 }
 
+/**
+ * The two loyalty figures, for the FAQ. Read from Settings so she changes
+ * what a tag or a birthday is worth in the admin; a zero or an unreadable
+ * value comes back null and the question is dropped rather than printed with
+ * a number nobody promised.
+ */
+async function getCreditOffers(): Promise<{
+  tagCredit: string | null;
+  birthdayCredit: string | null;
+}> {
+  if (!isSupabaseConfigured()) {
+    return { tagCredit: null, birthdayCredit: null };
+  }
+  try {
+    const supabase = await createPublicClient();
+    const amounts = await loadCreditAmounts(supabase);
+    const money = (value: number) => (value > 0 ? `$${value.toFixed(0)}` : null);
+    return {
+      tagCredit: money(amounts.referral),
+      birthdayCredit: money(amounts.birthday),
+    };
+  } catch {
+    return { tagCredit: null, birthdayCredit: null };
+  }
+}
+
 export default async function HomePage() {
-  const [featuredServices, howToBookPhotos, serviceTimings, contact] =
+  const [featuredServices, howToBookPhotos, serviceTimings, contact, credits] =
     await Promise.all([
       getFeaturedServices(),
       getHowToBookPhotos(),
       getServiceTimings(),
       getContactDetails(),
+      getCreditOffers(),
     ]);
-  const faqItems = buildFaq(
-    serviceTimings.length > 0 ? summariseTimings(serviceTimings) : EMPTY_FACTS
-  );
+  const faqItems = buildFaq({
+    ...(serviceTimings.length > 0 ? summariseTimings(serviceTimings) : EMPTY_FACTS),
+    ...credits,
+  });
   const featureSections = featuredServices.map((service, i) => ({
     ...sectionVisuals[i],
     id: service.id,

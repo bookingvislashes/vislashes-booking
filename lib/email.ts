@@ -290,7 +290,7 @@ function renderText(layout: Layout): string {
  */
 const PREP_NOTES = [
   "Clean lashes, no eye makeup.",
-  "Contacts out before you arrive.",
+  "Please remove contacts before arrival.",
   "Running late? No stress — there's a 15-minute grace period.",
   "It's a cozy one-on-one space, so please come solo.",
 ];
@@ -474,6 +474,20 @@ interface BookingEmailData {
    * "moved" is the same email after the client reschedules themselves.
    */
   variant?: "booked" | "moved";
+  /**
+   * A credit spent on this appointment — the $10 for tagging her, or a
+   * birthday treat. Comes off the balance due at the chair, never off the
+   * deposit, so it changes what the email says is still owed and nothing
+   * about what was charged.
+   */
+  discountAmount?: number;
+  /** "Thanks for tagging me!" — shown to the client beside the amount. */
+  discountReason?: string;
+  /**
+   * What tagging her is worth, from Settings. Absent means the offer is not
+   * mentioned at all rather than mentioned with a guessed figure.
+   */
+  tagCreditAmount?: number;
 }
 
 /** Everything the confirmation says about money, in one place. */
@@ -481,9 +495,10 @@ function depositSummary(data: BookingEmailData) {
   const isCash = data.paymentMethod === "cash";
   const depositPaid = data.depositPaid ?? !isCash;
   const depositHeld = depositPaid ? data.depositAmount : 0;
-  // Floored at zero. A deposit larger than the service price would otherwise
-  // print a negative balance as though the salon owed the client money.
-  const remainingBalance = Math.max(0, data.totalPrice - depositHeld);
+  const discount = Math.max(0, data.discountAmount ?? 0);
+  // Floored at zero. A deposit and a credit together can exceed the service
+  // price, and a negative balance would read as the salon owing them money.
+  const remainingBalance = Math.max(0, data.totalPrice - depositHeld - discount);
 
   const line = depositPaid
     ? `$${data.depositAmount.toFixed(2)} paid${
@@ -493,7 +508,7 @@ function depositSummary(data: BookingEmailData) {
     ? "Cash payment due at appointment"
     : `$${data.depositAmount.toFixed(2)} due to hold your spot`;
 
-  return { depositPaid, remainingBalance, line };
+  return { depositPaid, remainingBalance, line, discount };
 }
 
 export async function sendConfirmationEmail(data: BookingEmailData) {
@@ -515,6 +530,19 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
   // nowhere is worse than sending them to reply, which the footer already
   // says. The deposit line is the point of it: she does not want anyone
   // thinking a change of date costs them their deposit.
+  // The loyalty offer, said once and said short. It belongs here rather than
+  // in the follow-up because the window is 24 hours from the appointment —
+  // a follow-up two days later would be telling them about something they
+  // have already missed. Only on a new booking; someone rescheduling has
+  // read it already.
+  if (!moved && data.tagCreditAmount) {
+    sections.push(
+      paragraphs("Want $" + data.tagCreditAmount.toFixed(0) + " off next time?", [
+        `Post a selfie within 24 hours of your appointment and tag me @vislashesbooking — I'll put $${data.tagCreditAmount.toFixed(0)} toward your next visit.`,
+      ])
+    );
+  }
+
   const reschedule = data.bookingId ? rescheduleUrl(data.bookingId) : null;
   if (reschedule) {
     sections.push(
@@ -540,6 +568,16 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
       },
       { label: "Duration", value: data.duration },
       { label: "Deposit", value: deposit.line },
+      ...(deposit.discount > 0
+        ? [
+            {
+              label: "Your credit",
+              value: `−$${deposit.discount.toFixed(2)}${
+                data.discountReason ? ` · ${data.discountReason}` : ""
+              }`,
+            },
+          ]
+        : []),
     ],
     rowsNote:
       deposit.remainingBalance > 0
@@ -746,6 +784,97 @@ export async function sendFollowUpEmail(data: FollowUpEmailData) {
     });
   } catch (error) {
     console.error("Failed to send follow-up email:", error);
+    throw error;
+  }
+}
+
+/**
+ * The birthday greeting, sent once at the start of a client's birth month.
+ *
+ * The credit is already on their account by the time this arrives — the cron
+ * grants it first and only then sends — so the email is telling them about
+ * something that is true rather than promising something a later step might
+ * fail to deliver.
+ */
+export async function sendBirthdayEmail(data: {
+  clientName: string;
+  clientEmail: string;
+  amount: number;
+  replyTo?: string | null;
+}) {
+  const firstName = data.clientName.trim().split(" ")[0];
+  const base = siteBase();
+  const amount = `$${data.amount.toFixed(0)}`;
+
+  const layout: Layout = {
+    preheader: `${amount} off any service, all month long`,
+    heading: `Happy birthday, ${firstName}!`,
+    intro: "It's your month, so here's a little something from me.",
+    sections: [
+      paragraphs(undefined, [
+        `${amount} off any service, yours to use any time this month. It's already on your account — book in and it comes off automatically.`,
+      ]),
+    ],
+    cta: base ? { label: "Book my birthday set", url: `${base}/book` } : undefined,
+    footerLead: "Have the loveliest day.",
+  };
+
+  try {
+    await getResend().emails.send({
+      from: emailFrom,
+      to: data.clientEmail,
+      ...(data.replyTo ? { replyTo: data.replyTo } : {}),
+      subject: `Happy birthday, ${firstName}! ${amount} off this month`,
+      html: renderHtml(layout),
+      text: renderText(layout),
+    });
+  } catch (error) {
+    console.error("Failed to send birthday email:", error);
+    throw error;
+  }
+}
+
+/**
+ * The nudge six weeks after an appointment, to someone with nothing booked.
+ *
+ * Six weeks is roughly two missed fill cycles — long enough that they have
+ * drifted rather than merely being late, and early enough that their lashes
+ * are a memory rather than a bad one. No discount attached: this is a warm
+ * "I'd love to see you", and leading with money teaches clients to wait for
+ * a sale before rebooking.
+ */
+export async function sendWinBackEmail(data: {
+  clientName: string;
+  clientEmail: string;
+  replyTo?: string | null;
+}) {
+  const firstName = data.clientName.trim().split(" ")[0];
+  const base = siteBase();
+
+  const layout: Layout = {
+    preheader: "Your chair is still here whenever you want it",
+    heading: `Miss you, ${firstName}!`,
+    intro: "It's been about six weeks since I last saw you.",
+    sections: [
+      paragraphs(undefined, [
+        "No pressure at all — I just wanted you to know your spot is here whenever you're ready. A full set, a refill, or a lift if you fancy a change.",
+      ]),
+    ],
+    cta: base ? { label: "Find me a time", url: `${base}/book` } : undefined,
+    footerLead: "Just reply if you'd rather I found you a time.",
+  };
+
+  try {
+    await getResend().emails.send({
+      from: emailFrom,
+      to: data.clientEmail,
+      ...(data.replyTo ? { replyTo: data.replyTo } : {}),
+      subject: `We miss you, ${firstName}`,
+      html: renderHtml(layout),
+      text: renderText(layout),
+    });
+  } catch (error) {
+    console.error("Failed to send win-back email:", error);
     throw error;
   }
 }

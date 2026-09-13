@@ -155,6 +155,24 @@ export async function POST(req: NextRequest) {
 
   const { studioAddress, ownerInbox, replyTo } = await getEmailSettings(admin);
 
+  // Read on its own rather than as part of loadReschedulable, because
+  // discount_amount arrives with migration 023 and naming a column PostgREST
+  // cannot see would fail that whole query — and with it the reschedule.
+  // Absent simply means the new confirmation prints the full balance.
+  let discountAmount = 0;
+  let discountReason: string | undefined;
+  try {
+    const { data: row } = await admin
+      .from("bookings")
+      .select("discount_amount, discount_reason")
+      .eq("id", bookingId)
+      .maybeSingle();
+    discountAmount = Number(row?.discount_amount ?? 0) || 0;
+    discountReason = row?.discount_reason || undefined;
+  } catch {
+    // Left at zero.
+  }
+
   if (booking.client?.email) {
     await sendConfirmationEmail({
       variant: "moved",
@@ -171,6 +189,8 @@ export async function POST(req: NextRequest) {
       totalPrice: appointmentTotal,
       paymentMethod: booking.payment_method || "square",
       studioAddress,
+      discountAmount,
+      discountReason,
       replyTo,
       bcc: ownerRecipients(ownerInbox),
       bookingId,

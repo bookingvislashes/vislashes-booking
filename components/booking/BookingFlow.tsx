@@ -50,6 +50,8 @@ export function BookingFlow({
       bookingDate: "",
       timeSlot: "",
       fullName: "",
+      birthMonth: "",
+      birthDay: "",
       phone: "",
       email: "",
       hasHadExtensions: undefined as unknown as boolean,

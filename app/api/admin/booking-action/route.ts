@@ -7,6 +7,7 @@ import {
   ownerRecipients,
   sendCancellationEmail,
 } from "@/lib/email";
+import { returnCreditFromBooking } from "@/lib/credits";
 import { cancellationText, isSmsConfigured, sendSms, toE164 } from "@/lib/sms";
 
 /**
@@ -84,6 +85,10 @@ export async function POST(req: NextRequest) {
     // stale calendar entry nor an unsent email is worth reporting it as
     // failed and having her try again.
     await deleteBookingEvent(admin, input.bookingId);
+
+    // A credit spent on this appointment goes back on the client's account.
+    // Earning $10 and then having to cancel should not cost them the $10.
+    await returnCreditFromBooking(admin, input.bookingId);
 
     // She is blind-copied on this one whether or not the client can be
     // emailed: a cancelled appointment with a deposit against it is the one

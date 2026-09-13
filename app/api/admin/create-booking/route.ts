@@ -7,6 +7,7 @@ import {
   ownerRecipients,
   sendConfirmationEmail,
 } from "@/lib/email";
+import { consumeCreditForBooking, loadCreditAmounts } from "@/lib/credits";
 import { notifyAdmins } from "@/lib/push";
 
 /**
@@ -319,6 +320,19 @@ export async function POST(req: NextRequest) {
   const { studioAddress, ownerInbox, replyTo } = await getEmailSettings(admin);
   const ownerCopy = ownerRecipients(ownerInbox);
 
+  // Whatever credit is sitting on this client moves onto this appointment and
+  // is cleared, exactly as it would if they had booked it themselves. Never
+  // throws — an un-run migration 023 costs the discount, not the booking she
+  // has just entered.
+  const [discount, creditAmounts] = await Promise.all([
+    // clientId is resolved or the route has already returned by here; the
+    // guard keeps TypeScript honest about the nullable it was declared as.
+    clientId
+      ? consumeCreditForBooking(admin, clientId, booking.id)
+      : Promise.resolve(null),
+    loadCreditAmounts(admin),
+  ]);
+
   // She wants a record of every appointment in her inbox, including the ones
   // she books herself. The tick box decides whether the CLIENT is emailed, so
   // when it is off — or when an imported client has no address on file — the
@@ -346,6 +360,9 @@ export async function POST(req: NextRequest) {
           ? METHOD_LABELS[input.depositMethod]
           : undefined,
         studioAddress,
+        discountAmount: discount?.amount,
+        discountReason: discount?.reason,
+        tagCreditAmount: creditAmounts.referral,
         replyTo,
         // Bcc only when the client is the one being written to — addressing
         // her copy to herself and bcc'ing herself as well would land twice.

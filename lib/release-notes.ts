@@ -31,6 +31,40 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.55.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "Give a client credit from their profile \u2014 $10 for tagging you, or $15 for a birthday. It sits on their account and comes off automatically at their next appointment, whether they book online or you enter it. Their confirmation shows it. If they cancel, it goes back.",
+      },
+      {
+        kind: "added",
+        text: "Every confirmation now tells clients about the tag offer: post within 24 hours, tag you, get $10 off next time. It's also answered on your home page under \u201cDo you have any offers for returning clients?\u201d",
+      },
+      {
+        kind: "added",
+        text: "Birthdays. The booking form asks for month and day (optional), and clients get a greeting plus their credit at the start of their birthday month. You can also add a birthday on any client's profile.",
+      },
+      {
+        kind: "added",
+        text: "A \u201cwe miss you\u201d email six weeks after someone's last appointment \u2014 skipped entirely if they've been back or have anything booked.",
+      },
+      {
+        kind: "changed",
+        text: "The contacts line now reads \u201cPlease remove contacts before arrival.\u201d in both the confirmation and the reminder.",
+      },
+      {
+        kind: "note",
+        text: "Run migrations 022 and 023 (Migrations page). Until they do, the new emails and the credits can't work \u2014 everything else keeps running normally.",
+      },
+      {
+        kind: "note",
+        text: "The two amounts live in Settings as referral_credit_amount ($10) and birthday_credit_amount ($15). Change either and the emails, the website and the admin buttons all follow.",
+      },
+    ],
+  },
+  {
     version: "1.54.0",
     date: "2026-09-13",
     changes: [
