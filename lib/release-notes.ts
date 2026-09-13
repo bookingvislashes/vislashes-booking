@@ -31,6 +31,32 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.56.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "Your own review page. The two-day follow-up email now has a \u201cLeave a review\u201d link \u2014 five stars to tap and a box to type in. Only real clients with an appointment can leave one, and only once each.",
+      },
+      {
+        kind: "added",
+        text: "4 and 5 star reviews go straight onto your home page. Anything lower is kept just for you and can never reach the public site \u2014 you get a phone alert so you can put it right.",
+      },
+      {
+        kind: "added",
+        text: "A Reviews page in the admin, split into \u201cOn your website\u201d and \u201cJust for you\u201d. One tap to take a review down or put it back.",
+      },
+      {
+        kind: "changed",
+        text: "What Clients Say is now a slideshow \u2014 one quote at a time, advancing on its own, with arrows and dots. It fills with real reviews as they come in, and shows your original four until then.",
+      },
+      {
+        kind: "note",
+        text: "Run migration 024 (Migrations page) before reviews can be left or shown. Migrations 022 and 023 are still outstanding too \u2014 run them in order.",
+      },
+    ],
+  },
+  {
     version: "1.55.0",
     date: "2026-09-13",
     changes: [

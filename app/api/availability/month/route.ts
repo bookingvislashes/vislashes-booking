@@ -8,7 +8,7 @@ import {
 } from "@/lib/availability-range";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { bookingIdFromToken } from "@/lib/reschedule-link";
+import { bookingIdFromToken } from "@/lib/booking-links";
 
 /**
  * Which dates in a range can actually be booked for one service.

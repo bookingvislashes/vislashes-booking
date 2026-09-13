@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { rescheduleUrl } from "./reschedule-link";
+import { rescheduleUrl, reviewUrl } from "./booking-links";
 
 let _resend: Resend | null = null;
 function getResend(): Resend {
@@ -725,6 +725,8 @@ export interface FollowUpEmailData {
   clientName: string;
   clientEmail: string;
   replyTo?: string | null;
+  /** Enables the review link. Absent means no review section at all. */
+  bookingId?: string;
 }
 
 /**
@@ -751,6 +753,7 @@ export interface FollowUpEmailData {
 export async function sendFollowUpEmail(data: FollowUpEmailData) {
   const firstName = data.clientName.trim().split(" ")[0];
   const base = siteBase();
+  const review = data.bookingId ? reviewUrl(data.bookingId) : null;
 
   const layout: Layout = {
     preheader: "Keeping them looking new, and when to book your fill",
@@ -768,6 +771,19 @@ export async function sendFollowUpEmail(data: FollowUpEmailData) {
       paragraphs("One little favour", [
         "If you're loving them, tag me in a selfie @vislashesbooking — and if a friend asks who did your lashes, send them my way. Word of mouth means everything to me.",
       ]),
+      // A linked line rather than the button, because the button belongs to
+      // the refill — that is the one that pays for itself. Sits below the
+      // tag ask: a review is the bigger favour of the two, and leading with
+      // it would make the whole email read as a request.
+      ...(review
+        ? [
+            {
+              title: "Or leave me a review",
+              html: `<p style="margin:0;">It takes about thirty seconds and it helps other people find me. <a href="${esc(review)}" style="color:${ACCENT};font-weight:bold;text-decoration:underline;">Leave a review</a></p>`,
+              text: `It takes about thirty seconds and it helps other people find me: ${review}`,
+            },
+          ]
+        : []),
     ],
     cta: base ? { label: "Book my fill", url: `${base}/book` } : undefined,
     footerLead: "Any questions about your lashes? Just reply.",

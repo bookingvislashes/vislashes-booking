@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { bookingIdFromToken } from "@/lib/reschedule-link";
+import { bookingIdFromToken } from "@/lib/booking-links";
 import { loadReschedulable, rescheduleBlock } from "@/lib/reschedule";
 import { RescheduleFlow } from "@/components/reschedule/RescheduleFlow";
 

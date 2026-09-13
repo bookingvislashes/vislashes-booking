@@ -16,6 +16,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getContactDetails } from "@/lib/contact";
 import { buildFaq, summariseTimings, EMPTY_FACTS, type ServiceTiming } from "@/lib/faq";
 import { loadCreditAmounts } from "@/lib/credits";
+import { firstName, loadPublishedReviews } from "@/lib/reviews";
 
 // Re-read the menu at most once a minute, same as /book — so a price change
 // made in Services shows up here without waiting on a redeploy.
@@ -202,15 +203,45 @@ async function getCreditOffers(): Promise<{
   }
 }
 
+/**
+ * Published client reviews for the What Clients Say slideshow.
+ *
+ * Read with the anon client on purpose: the RLS policy added in migration 024
+ * is what restricts this to published reviews, so the filtering is enforced by
+ * the database rather than by remembering to write `.eq("status", ...)` here.
+ * Empty on any failure, including before the migration has been run — the
+ * section then shows her original four quotes.
+ */
+async function getReviewQuotes(): Promise<{ quote: string; name: string }[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const supabase = await createPublicClient();
+    const reviews = await loadPublishedReviews(supabase);
+    return reviews.map((review) => ({
+      quote: (review.comment || "").trim(),
+      name: firstName(review.client_name),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export default async function HomePage() {
-  const [featuredServices, howToBookPhotos, serviceTimings, contact, credits] =
-    await Promise.all([
-      getFeaturedServices(),
-      getHowToBookPhotos(),
-      getServiceTimings(),
-      getContactDetails(),
-      getCreditOffers(),
-    ]);
+  const [
+    featuredServices,
+    howToBookPhotos,
+    serviceTimings,
+    contact,
+    credits,
+    reviewQuotes,
+  ] = await Promise.all([
+    getFeaturedServices(),
+    getHowToBookPhotos(),
+    getServiceTimings(),
+    getContactDetails(),
+    getCreditOffers(),
+    getReviewQuotes(),
+  ]);
   const faqItems = buildFaq({
     ...(serviceTimings.length > 0 ? summariseTimings(serviceTimings) : EMPTY_FACTS),
     ...credits,
@@ -344,7 +375,7 @@ export default async function HomePage() {
       )}
 
       <Reveal>
-        <Testimonials />
+        <Testimonials quotes={reviewQuotes} />
       </Reveal>
 
       {/* Answers the questions that otherwise arrive as a DM and hold up a

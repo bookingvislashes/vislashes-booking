@@ -356,6 +356,7 @@ export async function GET(req: NextRequest) {
             clientName: client.full_name,
             clientEmail: client.email,
             replyTo,
+            bookingId: row.id,
           });
           await supabase
             .from("bookings")

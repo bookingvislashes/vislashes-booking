@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 
 /**
- * The link in a client's confirmation that lets them move their own
- * appointment.
+ * The links a client gets emailed: one to move their own appointment, one to
+ * leave a review.
  *
  * Signed rather than stored. A token column on `bookings` would mean a
  * migration she has to run by hand before a single confirmation could carry
@@ -17,7 +17,17 @@ import crypto from "node:crypto";
  * cannot be worked back into the key it was signed with.
  */
 
-const LABEL = "vislashes:reschedule:v1";
+/**
+ * The purpose is baked into the signature, so a reschedule link cannot be
+ * pasted in as a review link or the other way round. Same booking, same
+ * secret, different token.
+ */
+const LABELS = {
+  reschedule: "vislashes:reschedule:v1",
+  review: "vislashes:review:v1",
+} as const;
+
+export type LinkPurpose = keyof typeof LABELS;
 
 function signingKey(): string | null {
   const explicit = (process.env.RESCHEDULE_LINK_SECRET || "").trim();
@@ -26,22 +36,28 @@ function signingKey(): string | null {
   return fallback || null;
 }
 
-function sign(bookingId: string, key: string): string {
+function sign(bookingId: string, key: string, purpose: LinkPurpose): string {
   return crypto
-    .createHmac("sha256", `${LABEL}:${key}`)
+    .createHmac("sha256", `${LABELS[purpose]}:${key}`)
     .update(bookingId)
     .digest("hex")
     .slice(0, 32);
 }
 
 /** `<booking id>.<signature>`, or null when no secret is configured. */
-export function rescheduleToken(bookingId: string): string | null {
+export function signedToken(
+  bookingId: string,
+  purpose: LinkPurpose
+): string | null {
   const key = signingKey();
-  return key ? `${bookingId}.${sign(bookingId, key)}` : null;
+  return key ? `${bookingId}.${sign(bookingId, key, purpose)}` : null;
 }
 
 /** The booking id a token proves ownership of, or null if it proves nothing. */
-export function bookingIdFromToken(token: string): string | null {
+export function bookingIdFromToken(
+  token: string,
+  purpose: LinkPurpose = "reschedule"
+): string | null {
   const key = signingKey();
   if (!key) return null;
 
@@ -63,7 +79,7 @@ export function bookingIdFromToken(token: string): string | null {
     return null;
   }
 
-  const expected = sign(bookingId, key);
+  const expected = sign(bookingId, key, purpose);
   const a = Buffer.from(expected, "utf8");
   const b = Buffer.from(provided, "utf8");
   if (a.length !== b.length) return null;
@@ -72,8 +88,16 @@ export function bookingIdFromToken(token: string): string | null {
 }
 
 /** The full link for an email, or null when it cannot be built. */
-export function rescheduleUrl(bookingId: string): string | null {
+function linkFor(bookingId: string, purpose: LinkPurpose): string | null {
   const base = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
-  const token = rescheduleToken(bookingId);
-  return base && token ? `${base}/reschedule/${token}` : null;
+  const token = signedToken(bookingId, purpose);
+  return base && token ? `${base}/${purpose}/${token}` : null;
+}
+
+export function rescheduleUrl(bookingId: string): string | null {
+  return linkFor(bookingId, "reschedule");
+}
+
+export function reviewUrl(bookingId: string): string | null {
+  return linkFor(bookingId, "review");
 }

@@ -7,7 +7,7 @@ import {
 } from "@/lib/availability-range";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { bookingIdFromToken } from "@/lib/reschedule-link";
+import { bookingIdFromToken } from "@/lib/booking-links";
 
 /**
  * A signed reschedule link makes one booking invisible to the slot engine, so

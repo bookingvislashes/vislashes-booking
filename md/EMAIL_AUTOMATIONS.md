@@ -217,6 +217,39 @@ before rebooking.
 merely being non-null, so a client who returns and drifts again is eligible a
 second time.
 
+## Reviews
+
+The follow-up email carries a **Leave a review** link to `/review/<token>`,
+signed exactly like the reschedule link but with its own label, so one cannot
+be used as the other.
+
+There is no open review form on the site. The only people who can leave one
+are people who had an appointment, and only once each — a unique index on
+`booking_id` enforces that rather than the route trusting itself.
+
+**Where a review ends up is decided from the rating alone**, in
+`statusForRating()`, never from the request:
+
+| Rating | Status | Visible where |
+|---|---|---|
+| 4–5 | `published` | The home page slideshow, immediately |
+| 1–3 | `private` | Admin → Reviews only. She gets a push alert. |
+
+The gate is an RLS policy (`using (status = 'published')`), not a filter in a
+query: an anonymous visitor cannot read a one-star review even by asking for
+it directly. That is deliberate — the home page is her shop window and "only
+the positive ones" was the ask, but a low rating is still worth having,
+because it tells her something before the client tells everyone else.
+
+`Testimonials` renders published reviews as a slideshow and falls back to her
+four curated quotes when there are none or the read fails, so the section is
+never a hole. Reviews with no comment are skipped: five stars and nothing to
+read is a rating, not a testimonial.
+
+**Trade-off worth knowing:** a 4- or 5-star review appears on the home page
+before she has seen it. That is what makes it effortless. Flipping to
+approve-first is a change to `statusForRating()` and the admin page's buttons.
+
 ## Credits
 
 `lib/credits.ts`. A credit is money owed to a client against their next

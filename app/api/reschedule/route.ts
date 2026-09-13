@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { bookingIdFromToken } from "@/lib/reschedule-link";
+import { bookingIdFromToken } from "@/lib/booking-links";
 import { loadAvailabilityContext, slotsForDate } from "@/lib/availability-range";
 import { syncBookingEvent } from "@/lib/google-calendar";
 import {
