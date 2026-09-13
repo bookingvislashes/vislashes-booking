@@ -289,7 +289,8 @@ export async function createBooking({
   // so a studio move only ever requires an edit in Settings.
   // Read once for both messages below. Anything missing comes back null and
   // is simply omitted rather than guessed at.
-  const [{ studioAddress, ownerInbox, replyTo }, creditAmounts] = await Promise.all([
+  const [{ studioAddress, ownerInbox, replyTo, noticeHours }, creditAmounts] =
+    await Promise.all([
     getEmailSettings(supabase),
     loadCreditAmounts(supabase),
   ]);
@@ -312,6 +313,7 @@ export async function createBooking({
       discountReason: discount?.reason,
       tagCreditAmount: creditAmounts.referral,
       replyTo,
+      rescheduleNoticeHours: noticeHours,
       // Her copy, on the client's own confirmation rather than as a separate
       // message: she sees exactly what they saw, and Bcc means nothing in
       // their copy reveals she is on it. Every appointment, new client or

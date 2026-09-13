@@ -397,13 +397,24 @@ export interface EmailSettings {
    * Her blind copy goes to the same place. Bcc genuinely is invisible.
    */
   replyTo: string | null;
+  /**
+   * Settings → advance booking hours. The same number the calendar uses to
+   * decide how late a slot can be taken, and therefore how late a client may
+   * move their own appointment — so the confirmation has to quote THIS rather
+   * than a figure written into the copy. Hers is 10, not 24, and an email
+   * promising "up to the day before" would have been wrong.
+   */
+  noticeHours: number;
 }
+
+const DEFAULT_NOTICE_HOURS = 24;
 
 const NO_SETTINGS: EmailSettings = {
   studioAddress: null,
   businessEmail: null,
   ownerInbox: null,
   replyTo: null,
+  noticeHours: DEFAULT_NOTICE_HOURS,
 };
 
 /**
@@ -419,7 +430,12 @@ export async function getEmailSettings(
     const { data, error } = await supabase
       .from("settings")
       .select("key, value")
-      .in("key", ["business_address", "business_email", "owner_inbox_email"]);
+      .in("key", [
+        "business_address",
+        "business_email",
+        "owner_inbox_email",
+        "advance_booking_hours",
+      ]);
 
     if (error) {
       console.error("getEmailSettings: fetch failed:", error);
@@ -433,11 +449,15 @@ export async function getEmailSettings(
     const businessEmail = byKey.business_email || null;
     const ownerInbox = byKey.owner_inbox_email || businessEmail;
 
+    const notice = Number(byKey.advance_booking_hours);
+
     return {
       studioAddress: byKey.business_address || null,
       businessEmail,
       ownerInbox,
       replyTo: ownerInbox,
+      noticeHours:
+        Number.isFinite(notice) && notice > 0 ? notice : DEFAULT_NOTICE_HOURS,
     };
   } catch (err) {
     console.error("getEmailSettings: threw:", err);
@@ -526,10 +546,30 @@ interface BookingEmailData {
   /** "Thanks for tagging me!" — shown to the client beside the amount. */
   discountReason?: string;
   /**
+   * How much notice the reschedule page actually requires, from Settings.
+   * Quoted rather than described, so the promise in the email and the rule
+   * the page enforces cannot disagree.
+   */
+  rescheduleNoticeHours?: number;
+  /**
    * What tagging her is worth, from Settings. Absent means the offer is not
    * mentioned at all rather than mentioned with a guessed figure.
    */
   tagCreditAmount?: number;
+}
+
+/**
+ * How to say the reschedule cut-off in a sentence.
+ *
+ * A day or more reads better as "the day before" than as "24 hours before";
+ * anything shorter has to be stated in hours, because "the day before" would
+ * be a promise the page then refuses to keep.
+ */
+function noticeWindow(hours: number | undefined): string {
+  const h = Math.round(hours ?? DEFAULT_NOTICE_HOURS);
+  if (h >= 24) return "any time up to the day before";
+  if (h === 1) return "up to an hour before";
+  return `up to ${h} hours before`;
 }
 
 /** Everything the confirmation says about money, in one place. */
@@ -576,7 +616,7 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
   if (reschedule) {
     sections.push(
       paragraphs("Need a different day?", [
-        "Move it yourself any time up to the day before — your deposit comes with you.",
+        `Move it yourself ${noticeWindow(data.rescheduleNoticeHours)} — your deposit comes with you.`,
       ])
     );
   }

@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.57.1",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "fixed",
+        text: "The confirmation email said clients could move their appointment \u201cup to the day before\u201d. Your advance-booking setting is 10 hours, so that was a promise the page would have refused. It now quotes your real setting \u2014 change the number in Settings and the email follows.",
+      },
+    ],
+  },
+  {
     version: "1.57.0",
     date: "2026-09-13",
     changes: [

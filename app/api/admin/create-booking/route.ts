@@ -317,7 +317,8 @@ export async function POST(req: NextRequest) {
   // Settings, sent only in the confirmation, never guessed at if the lookup
   // fails. Your Inbox comes back in the same read and is both the Reply-To on
   // the client's confirmation and where her blind copy goes.
-  const { studioAddress, ownerInbox, replyTo } = await getEmailSettings(admin);
+  const { studioAddress, ownerInbox, replyTo, noticeHours } =
+    await getEmailSettings(admin);
   const ownerCopy = ownerRecipients(ownerInbox);
 
   // Whatever credit is sitting on this client moves onto this appointment and
@@ -364,6 +365,7 @@ export async function POST(req: NextRequest) {
         discountReason: discount?.reason,
         tagCreditAmount: creditAmounts.referral,
         replyTo,
+        rescheduleNoticeHours: noticeHours,
         // Bcc only when the client is the one being written to — addressing
         // her copy to herself and bcc'ing herself as well would land twice.
         bcc: sendToClient ? ownerCopy : [],

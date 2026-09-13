@@ -153,7 +153,8 @@ export async function POST(req: NextRequest) {
   const appointmentTotal =
     Number(booking.service.price) + booking.removalPrice;
 
-  const { studioAddress, ownerInbox, replyTo } = await getEmailSettings(admin);
+  const { studioAddress, ownerInbox, replyTo, noticeHours } =
+    await getEmailSettings(admin);
 
   // Read on its own rather than as part of loadReschedulable, because
   // discount_amount arrives with migration 023 and naming a column PostgREST
@@ -192,6 +193,7 @@ export async function POST(req: NextRequest) {
       discountAmount,
       discountReason,
       replyTo,
+      rescheduleNoticeHours: noticeHours,
       bcc: ownerRecipients(ownerInbox),
       bookingId,
     });
