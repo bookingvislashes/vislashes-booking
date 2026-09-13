@@ -593,7 +593,20 @@ function depositSummary(data: BookingEmailData) {
   return { depositPaid, remainingBalance, line, discount };
 }
 
-export async function sendConfirmationEmail(data: BookingEmailData) {
+/**
+ * What a send did, for the one caller that needs to know.
+ *
+ * Every automatic send ignores this and carries on, which is the contract
+ * that keeps a booking from failing because Resend had a bad minute. But a
+ * human pressing "send confirmation again" is owed the truth: silently
+ * swallowing "your domain is not verified" there would have her pressing the
+ * button and wondering why nothing arrives.
+ */
+export type EmailResult = { ok: true } | { ok: false; error: string };
+
+export async function sendConfirmationEmail(
+  data: BookingEmailData
+): Promise<EmailResult> {
   const firstName = data.clientName.trim().split(" ")[0];
   const deposit = depositSummary(data);
   const moved = data.variant === "moved";
@@ -689,9 +702,33 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
       html: renderHtml(layout),
       text: renderText(layout),
     });
+    return { ok: true };
   } catch (error) {
     console.error("Failed to send confirmation email:", error);
+    return { ok: false, error: describeSendError(error) };
   }
+}
+
+/**
+ * Turn whatever Resend threw into something she can act on.
+ *
+ * The two failures that actually happen here are an unverified domain and a
+ * missing API key, and both are fixable in about a minute once named. Anything
+ * else is passed through rather than flattened into "something went wrong".
+ */
+function describeSendError(error: unknown): string {
+  const raw =
+    error && typeof error === "object" && "message" in error
+      ? String((error as { message?: unknown }).message)
+      : String(error);
+
+  if (/not verified|domain is not/i.test(raw)) {
+    return `${emailFrom} can't send yet — that domain isn't verified in Resend. Verify it, or set EMAIL_FROM to onboarding@resend.dev for now.`;
+  }
+  if (/api[_ ]?key|unauthor|401|403/i.test(raw)) {
+    return "Resend refused the API key. Check RESEND_API_KEY in Vercel.";
+  }
+  return raw || "The email service didn't say why.";
 }
 
 /** Which reminder this is. The wording is the only difference. */

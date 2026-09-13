@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.58.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "Open any confirmed appointment and there's now a \u201cSend Confirmation Again\u201d button. The client gets the full confirmation email and you get your blind copy \u2014 for when someone says it never arrived.",
+      },
+      {
+        kind: "changed",
+        text: "If that send fails, it now tells you why on screen (for example, that your domain isn't verified in Resend yet) instead of quietly doing nothing. Automatic emails still fail silently on purpose, so a booking can never fail because of one.",
+      },
+    ],
+  },
+  {
     version: "1.57.1",
     date: "2026-09-13",
     changes: [

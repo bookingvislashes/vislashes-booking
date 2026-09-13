@@ -6,7 +6,9 @@ import {
   getEmailSettings,
   ownerRecipients,
   sendCancellationEmail,
+  sendConfirmationEmail,
 } from "@/lib/email";
+import { loadCreditAmounts } from "@/lib/credits";
 import { returnCreditFromBooking } from "@/lib/credits";
 import { cancellationText, isSmsConfigured, sendSms, toE164 } from "@/lib/sms";
 
@@ -32,6 +34,10 @@ const schema = z.discriminatedUnion("action", [
     bookingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     timeSlot: z.string().min(1),
   }),
+  z.object({
+    action: z.literal("resend-confirmation"),
+    bookingId: z.string().uuid(),
+  }),
 ]);
 
 export async function POST(req: NextRequest) {
@@ -56,7 +62,7 @@ export async function POST(req: NextRequest) {
   const { data: booking, error: loadError } = await admin
     .from("bookings")
     .select(
-      "id, booking_date, time_slot, status, deposit_paid, client:clients(full_name, email, phone, sms_consent, sms_opt_out)"
+      "id, booking_date, time_slot, status, deposit_paid, deposit_amount, payment_method, has_removal, client:clients(full_name, email, phone, sms_consent, sms_opt_out), service:services(name, price, duration_minutes)"
     )
     .eq("id", input.bookingId)
     .maybeSingle();
@@ -66,6 +72,80 @@ export async function POST(req: NextRequest) {
   }
 
   const client = Array.isArray(booking.client) ? booking.client[0] : booking.client;
+  const service = Array.isArray(booking.service)
+    ? booking.service[0]
+    : booking.service;
+
+  // ---- send the confirmation again ----
+  //
+  // For a client who says it never arrived, and for her to prove to herself
+  // that email is working at all. Unlike every automatic send, this one
+  // reports what went wrong: pressing a button and getting silence is worse
+  // than pressing it and being told the domain is not verified yet.
+  if (input.action === "resend-confirmation") {
+    if (!client?.email) {
+      return NextResponse.json(
+        { error: "That client has no email address on file." },
+        { status: 400 }
+      );
+    }
+    if (!service) {
+      return NextResponse.json(
+        { error: "That booking's service no longer exists." },
+        { status: 400 }
+      );
+    }
+
+    const { studioAddress, ownerInbox, replyTo, noticeHours } =
+      await getEmailSettings(admin);
+    const [removalRes, creditAmounts] = await Promise.all([
+      admin.from("settings").select("value").eq("key", "removal_price").maybeSingle(),
+      loadCreditAmounts(admin),
+    ]);
+
+    const removalPrice = booking.has_removal
+      ? Number(removalRes.data?.value ?? 0) || 0
+      : 0;
+
+    const minutes = (mins: number) => {
+      const hrs = Math.floor(mins / 60);
+      const m = mins % 60;
+      if (hrs && m) return `${hrs} hr ${m} min`;
+      if (hrs) return `${hrs} hr`;
+      return `${m} min`;
+    };
+
+    const result = await sendConfirmationEmail({
+      clientName: client.full_name,
+      clientEmail: client.email,
+      serviceName: booking.has_removal
+        ? `${service.name} + lash removal`
+        : service.name,
+      bookingDate: booking.booking_date,
+      timeSlot: booking.time_slot,
+      duration: minutes(service.duration_minutes),
+      depositAmount: Number(booking.deposit_amount ?? 0),
+      depositPaid: Boolean(booking.deposit_paid),
+      totalPrice: Number(service.price) + removalPrice,
+      paymentMethod: booking.payment_method || "square",
+      studioAddress,
+      replyTo,
+      rescheduleNoticeHours: noticeHours,
+      tagCreditAmount: creditAmounts.referral,
+      // Her blind copy, exactly as on the original.
+      bcc: ownerRecipients(ownerInbox),
+      bookingId: booking.id,
+    });
+
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: "EMAIL_FAILED", message: result.error },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, sentTo: client.email });
+  }
 
   if (input.action === "cancel") {
     const { error } = await admin

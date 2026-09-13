@@ -175,9 +175,14 @@ export default function BookingDetailPage() {
     fetchBooking();
   };
 
+  // Confirmation of a send, shown until the next action. Separate from
+  // actionError so a success doesn't have to borrow the error slot.
+  const [sentNote, setSentNote] = useState<string | null>(null);
+
   const runAction = async (body: Record<string, unknown>) => {
     setBusy(true);
     setActionError(null);
+    setSentNote(null);
     try {
       const res = await fetch("/api/admin/booking-action", {
         method: "POST",
@@ -280,6 +285,15 @@ export default function BookingDetailPage() {
           className="font-sans text-[16px] text-danger font-semibold mb-4"
         >
           {actionError}
+        </p>
+      )}
+
+      {sentNote && (
+        <p
+          role="status"
+          className="font-sans text-[15px] text-success font-semibold mb-4"
+        >
+          {sentNote}
         </p>
       )}
 
@@ -439,6 +453,26 @@ export default function BookingDetailPage() {
                 }}
               >
                 Reschedule
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={busy || !booking.client?.email}
+                onClick={async () => {
+                  setSentNote(null);
+                  const ok = await runAction({
+                    action: "resend-confirmation",
+                    bookingId: booking.id,
+                  });
+                  if (ok) {
+                    setSentNote(
+                      `Confirmation sent to ${booking.client?.email}. Your copy is on its way too.`
+                    );
+                  }
+                }}
+              >
+                {booking.client?.email
+                  ? "Send Confirmation Again"
+                  : "No Email On File"}
               </Button>
               <Button
                 variant="secondary"
