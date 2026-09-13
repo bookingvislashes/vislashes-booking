@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.58.2",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Emails that the email service REFUSED were being treated as sent. Nothing was ever logged and the screen said \u201csent\u201d, which is why confirmations appeared to go out while Resend recorded none. Every email now checks whether it was actually accepted.",
+      },
+      {
+        kind: "note",
+        text: "This means no client confirmation has actually been delivered yet. Sending starts working the moment vislashes.com is verified in Resend \u2014 that's the DNS records step, and it is now the only thing standing in the way.",
+      },
+    ],
+  },
+  {
     version: "1.58.1",
     date: "2026-09-13",
     changes: [

@@ -12,6 +12,33 @@ function getResend(): Resend {
 
 const emailFrom = process.env.EMAIL_FROM || "onboarding@resend.dev";
 
+/**
+ * Hand a message to Resend, and fail loudly if Resend refuses it.
+ *
+ * THIS IS THE WHOLE POINT OF THIS FUNCTION. Resend's SDK does NOT throw when
+ * the API rejects a send — `emails.send()` resolves with `{ data, error }`
+ * and puts the failure in `error`. Every call site here used to be a bare
+ * `await ...send(...)` inside a try/catch, which catches an exception that is
+ * never thrown. The result: an unverified sending domain, a bad API key, a
+ * suppressed address — all of it looked like success, nothing was logged, and
+ * the salon's own "confirmation sent" screen said so too, while Resend's
+ * dashboard recorded no sent email at all.
+ *
+ * Throwing here restores what every caller already assumed: their try/catch
+ * means what it says, the reminder cron stops stamping bookings it never
+ * reminded, and the resend button reports the real reason.
+ */
+async function deliver(
+  payload: Parameters<Resend["emails"]["send"]>[0]
+): Promise<void> {
+  const { error } = await getResend().emails.send(payload);
+  if (error) {
+    throw new Error(
+      `${error.name || "send_failed"}: ${error.message || "Resend rejected the message."}`
+    );
+  }
+}
+
 /* ────────────────────────────────────────────────────────────────────────
  * Brand
  *
@@ -691,7 +718,7 @@ export async function sendConfirmationEmail(
   };
 
   try {
-    await getResend().emails.send({
+    await deliver({
       from: emailFrom,
       to: data.clientEmail,
       ...(data.bcc && data.bcc.length ? { bcc: data.bcc } : {}),
@@ -722,7 +749,7 @@ function describeSendError(error: unknown): string {
       ? String((error as { message?: unknown }).message)
       : String(error);
 
-  if (/not verified|domain is not/i.test(raw)) {
+  if (/not verified|domain is not|validation_error/i.test(raw)) {
     return `${emailFrom} can't send yet — that domain isn't verified in Resend. Verify it, or set EMAIL_FROM to onboarding@resend.dev for now.`;
   }
   if (/api[_ ]?key|unauthor|401|403/i.test(raw)) {
@@ -779,7 +806,7 @@ export async function sendReminderEmail(
   };
 
   try {
-    await getResend().emails.send({
+    await deliver({
       from: emailFrom,
       to: data.clientEmail,
       ...(data.replyTo ? { replyTo: data.replyTo } : {}),
@@ -827,7 +854,7 @@ export async function sendCancellationEmail(data: {
   };
 
   try {
-    await getResend().emails.send({
+    await deliver({
       from: emailFrom,
       to: data.clientEmail,
       ...(data.bcc && data.bcc.length ? { bcc: data.bcc } : {}),
@@ -914,7 +941,7 @@ export async function sendFollowUpEmail(data: FollowUpEmailData) {
   };
 
   try {
-    await getResend().emails.send({
+    await deliver({
       from: emailFrom,
       to: data.clientEmail,
       ...(data.replyTo ? { replyTo: data.replyTo } : {}),
@@ -966,7 +993,7 @@ export async function sendBirthdayEmail(data: {
   };
 
   try {
-    await getResend().emails.send({
+    await deliver({
       from: emailFrom,
       to: data.clientEmail,
       ...(data.replyTo ? { replyTo: data.replyTo } : {}),
@@ -1011,7 +1038,7 @@ export async function sendWinBackEmail(data: {
   };
 
   try {
-    await getResend().emails.send({
+    await deliver({
       from: emailFrom,
       to: data.clientEmail,
       ...(data.replyTo ? { replyTo: data.replyTo } : {}),
