@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 let _resend: Resend | null = null;
 function getResend(): Resend {
@@ -9,6 +10,326 @@ function getResend(): Resend {
 }
 
 const emailFrom = process.env.EMAIL_FROM || "onboarding@resend.dev";
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Brand
+ *
+ * The salon's palette, repeated here rather than imported from globals.css
+ * because an email cannot load a stylesheet — every colour has to be inline
+ * on the element that uses it. Playfair is the brand face on the site, but
+ * webfonts do not render in Outlook or most desktop clients, so the wordmark
+ * is Arial with wide letter-spacing (the same treatment the design notes in
+ * md/EMAIL_AUTOMATIONS.md call for).
+ * ──────────────────────────────────────────────────────────────────────── */
+const PAGE = "#F5F0EB";
+const CARD = "#FFFFFF";
+const INK = "#2C2C2C";
+const HEADING = "#3D2B1F";
+const ACCENT = "#8B6F47";
+const MUTED = "#9A9A9A";
+const RULE = "#E8DDD0";
+const FONT = "Arial, Helvetica, sans-serif";
+
+/**
+ * Names, service names and notes all reach these templates from a form. A
+ * client called "Renée & Co <3" used to break the markup around her; worse,
+ * anything a client typed was interpolated into HTML that lands in the
+ * salon's own inbox. Everything interpolated below goes through this first.
+ */
+function esc(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** "2026-09-08" reads as a database row, not a date. */
+function friendlyDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  const [, y, m, d] = match;
+  return new Date(Number(y), Number(m) - 1, Number(d), 12).toLocaleDateString(
+    "en-US",
+    { weekday: "long", month: "long", day: "numeric" }
+  );
+}
+
+/** The same date, short enough to survive a subject line on a phone. */
+function shortDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  const [, y, m, d] = match;
+  return new Date(Number(y), Number(m) - 1, Number(d), 12).toLocaleDateString(
+    "en-US",
+    { weekday: "short", month: "short", day: "numeric" }
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Layout
+ *
+ * One shell for every email the site sends, so the four of them cannot drift
+ * apart. Built from tables rather than divs: Outlook's rendering engine is
+ * Word, which ignores max-width and border-radius on a div and would print
+ * the confirmation full-bleed across a desktop monitor.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+interface DetailRow {
+  label: string;
+  /** Plain text. Escaped on the way in and reused verbatim in the text part. */
+  value: string;
+  /** Optional richer rendering (a mailto: link, say). Must already be escaped. */
+  html?: string;
+}
+
+interface Section {
+  title?: string;
+  /** Already-escaped HTML. */
+  html: string;
+  /** The same section as plain text, for the text/plain part. */
+  text: string;
+}
+
+interface Layout {
+  /** The grey line after the subject in an inbox list. Worth writing. */
+  preheader: string;
+  heading: string;
+  intro?: string;
+  rows?: DetailRow[];
+  /** A small line directly under the details card. */
+  rowsNote?: string;
+  sections?: Section[];
+  cta?: { label: string; url: string };
+  /** Sits above the wordmark in the footer. */
+  footerLead?: string;
+}
+
+function renderRows(rows: DetailRow[]): string {
+  return rows
+    .map(
+      (row, i) => `
+              <tr>
+                <td style="padding:${i === 0 ? "0" : "14px"} 0 0;">
+                  <p style="margin:0 0 4px;font-family:${FONT};font-size:12px;line-height:16px;letter-spacing:1px;color:${MUTED};text-transform:uppercase;">${esc(row.label)}</p>
+                  <p style="margin:0;font-family:${FONT};font-size:16px;line-height:22px;color:${HEADING};font-weight:bold;">${row.html ?? esc(row.value)}</p>
+                </td>
+              </tr>`
+    )
+    .join("");
+}
+
+function renderHtml(layout: Layout): string {
+  const rowsCard = layout.rows?.length
+    ? `
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:${PAGE};border-radius:8px;margin:0 0 24px;">
+            <tr>
+              <td style="padding:20px 22px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  ${renderRows(layout.rows)}
+                </table>
+                ${
+                  layout.rowsNote
+                    ? `<p style="margin:14px 0 0;font-family:${FONT};font-size:13px;line-height:18px;color:${MUTED};">${esc(layout.rowsNote)}</p>`
+                    : ""
+                }
+              </td>
+            </tr>
+          </table>`
+    : "";
+
+  const sections = (layout.sections || [])
+    .map(
+      (section) => `
+          ${
+            section.title
+              ? `<h3 style="margin:0 0 8px;font-family:${FONT};font-size:15px;line-height:20px;color:${HEADING};">${esc(section.title)}</h3>`
+              : ""
+          }
+          <div style="margin:0 0 22px;font-family:${FONT};font-size:14px;line-height:21px;color:${INK};">${section.html}</div>`
+    )
+    .join("");
+
+  const cta = layout.cta
+    ? `
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+            <tr>
+              <td style="background-color:${ACCENT};border-radius:6px;">
+                <a href="${esc(layout.cta.url)}" style="display:inline-block;padding:12px 26px;font-family:${FONT};font-size:14px;line-height:18px;font-weight:bold;color:#FFFFFF;text-decoration:none;">${esc(layout.cta.label)}</a>
+              </td>
+            </tr>
+          </table>`
+    : "";
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="x-apple-disable-message-reformatting" />
+<meta name="color-scheme" content="light" />
+<meta name="supported-color-schemes" content="light" />
+<title>VIS Lashes</title>
+</head>
+<body style="margin:0;padding:0;background-color:${PAGE};">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${esc(layout.preheader)}</div>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:${PAGE};">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:520px;background-color:${CARD};border-radius:10px;">
+          <tr>
+            <td style="padding:32px 28px;">
+              <p style="margin:0 0 26px;text-align:center;font-family:${FONT};font-size:13px;line-height:18px;letter-spacing:4px;color:${HEADING};font-weight:bold;">VIS <span style="font-style:italic;font-weight:normal;">LASHES</span></p>
+              <h1 style="margin:0 0 8px;font-family:${FONT};font-size:22px;line-height:29px;color:${HEADING};font-weight:bold;">${esc(layout.heading)}</h1>
+              ${
+                layout.intro
+                  ? `<p style="margin:0 0 24px;font-family:${FONT};font-size:14px;line-height:21px;color:${INK};">${esc(layout.intro)}</p>`
+                  : `<div style="height:16px;line-height:16px;">&nbsp;</div>`
+              }
+${rowsCard}
+${sections}
+${cta}
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr><td style="border-top:1px solid ${RULE};font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
+              <p style="margin:20px 0 0;text-align:center;font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED};">
+                ${layout.footerLead ? `${esc(layout.footerLead)}<br />` : ""}
+                VIS LASHES &middot; Orlando &middot; Saint Cloud &middot; Kissimmee
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+/**
+ * The same message as text/plain. Sent alongside every HTML body: a message
+ * with no text part is one of the cheapest things a spam filter can score
+ * against, and it is what a watch or a screen reader falls back to.
+ */
+function renderText(layout: Layout): string {
+  const parts: string[] = ["VIS LASHES", "", layout.heading];
+  if (layout.intro) parts.push("", layout.intro);
+  if (layout.rows?.length) {
+    parts.push("");
+    for (const row of layout.rows) parts.push(`${row.label}: ${row.value}`);
+  }
+  if (layout.rowsNote) parts.push(layout.rowsNote);
+  for (const section of layout.sections || []) {
+    parts.push("");
+    if (section.title) parts.push(section.title);
+    parts.push(section.text);
+  }
+  if (layout.cta) parts.push("", `${layout.cta.label}: ${layout.cta.url}`);
+  parts.push("", "—");
+  if (layout.footerLead) parts.push(layout.footerLead);
+  parts.push("VIS LASHES · Orlando · Saint Cloud · Kissimmee");
+  return parts.join("\n");
+}
+
+/** A paragraph section from plain text, escaped. */
+function paragraphs(title: string | undefined, lines: string[]): Section {
+  return {
+    title,
+    html: lines
+      .map((line) => `<p style="margin:0 0 8px;">${esc(line)}</p>`)
+      .join(""),
+    text: lines.join("\n"),
+  };
+}
+
+/** A bulleted section from plain text, escaped. */
+function bullets(title: string, items: string[]): Section {
+  return {
+    title,
+    html: `<ul style="margin:0;padding-left:20px;">${items
+      .map((item) => `<li style="margin:0 0 6px;">${esc(item)}</li>`)
+      .join("")}</ul>`,
+    text: items.map((item) => `• ${item}`).join("\n"),
+  };
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Settings the emails need
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface EmailSettings {
+  /**
+   * The studio's street address. Private: it never appears on a public page
+   * and only ever reaches someone in a confirmation, after they have booked
+   * and paid a deposit. Null when Settings could not be read or the field is
+   * blank — the location section is then omitted rather than guessed at.
+   */
+  studioAddress: string | null;
+  /**
+   * Admin → Settings → Business Email. Used as the Reply-To on everything a
+   * client receives, and as the address her own copy of a booking goes to.
+   * Null when she has not filled it in.
+   */
+  businessEmail: string | null;
+}
+
+const NO_SETTINGS: EmailSettings = { studioAddress: null, businessEmail: null };
+
+/**
+ * One read for both values, replacing the two separate address lookups the
+ * booking paths used to do. Never throws: an email is best-effort everywhere
+ * it is sent from, and by the time these are needed a card has usually
+ * already been charged.
+ */
+export async function getEmailSettings(
+  supabase: SupabaseClient
+): Promise<EmailSettings> {
+  try {
+    const { data, error } = await supabase
+      .from("settings")
+      .select("key, value")
+      .in("key", ["business_address", "business_email"]);
+
+    if (error) {
+      console.error("getEmailSettings: fetch failed:", error);
+      return NO_SETTINGS;
+    }
+
+    const byKey = Object.fromEntries(
+      (data || []).map((row) => [row.key, (row.value || "").trim()])
+    );
+
+    return {
+      studioAddress: byKey.business_address || null,
+      businessEmail: byKey.business_email || null,
+    };
+  } catch (err) {
+    console.error("getEmailSettings: threw:", err);
+    return NO_SETTINGS;
+  }
+}
+
+/**
+ * Where her own copy of a booking goes.
+ *
+ * Business Email in Settings by default, so she changes it in the app rather
+ * than asking for a deploy. OWNER_NOTIFICATION_EMAIL overrides it when she
+ * wants the alerts somewhere other than the address clients see, and accepts
+ * a comma-separated list. Empty when neither is set — nothing is guessed, and
+ * the alert is simply skipped.
+ */
+export function ownerRecipients(businessEmail: string | null): string[] {
+  const configured = (process.env.OWNER_NOTIFICATION_EMAIL || "").trim();
+  const source = configured || businessEmail || "";
+  return source
+    .split(",")
+    .map((address) => address.trim())
+    .filter((address) => address.includes("@"));
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Client emails
+ * ──────────────────────────────────────────────────────────────────────── */
 
 interface BookingEmailData {
   clientName: string;
@@ -31,18 +352,18 @@ interface BookingEmailData {
   depositPaid?: boolean;
   /** "Zelle", "Apple Cash" — named so the client can recognise her own payment. */
   depositMethodLabel?: string;
-  /**
-   * The studio's street address, read fresh from Settings by the caller.
-   * Deliberately not baked into this template as a constant: the address is
-   * private — it never appears on a public page — and only ever reaches
-   * someone through this email, sent once she has actually booked and paid a
-   * deposit. Null when Settings could not be read; the location section is
-   * then simply omitted rather than printing a placeholder.
-   */
+  /** From Settings; see EmailSettings.studioAddress. */
   studioAddress?: string | null;
+  /**
+   * From Settings. Set as Reply-To so a client answering the confirmation
+   * reaches the salon rather than a no-reply void — which is both what she
+   * wants and one of the signals that keeps these out of Promotions.
+   */
+  replyTo?: string | null;
 }
 
-export async function sendConfirmationEmail(data: BookingEmailData) {
+/** Everything the confirmation says about money, in one place. */
+function depositSummary(data: BookingEmailData) {
   const isCash = data.paymentMethod === "cash";
   const depositPaid = data.depositPaid ?? !isCash;
   const depositHeld = depositPaid ? data.depositAmount : 0;
@@ -50,7 +371,7 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
   // print a negative balance as though the salon owed the client money.
   const remainingBalance = Math.max(0, data.totalPrice - depositHeld);
 
-  const depositLine = depositPaid
+  const line = depositPaid
     ? `$${data.depositAmount.toFixed(2)} paid${
         data.depositMethodLabel ? ` (${data.depositMethodLabel})` : ""
       }`
@@ -58,49 +379,54 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
     ? "Cash payment due at appointment"
     : `$${data.depositAmount.toFixed(2)} due to hold your spot`;
 
+  return { depositPaid, remainingBalance, line };
+}
+
+export async function sendConfirmationEmail(data: BookingEmailData) {
+  const firstName = data.clientName.trim().split(" ")[0];
+  const deposit = depositSummary(data);
+
+  const sections: Section[] = [];
+  if (data.studioAddress) {
+    sections.push(paragraphs("Location", [data.studioAddress]));
+  }
+  sections.push(
+    bullets("What to expect", [
+      "Come with clean lashes and no eye makeup.",
+      `Set aside about ${data.duration} for your appointment.`,
+      "Contact lenses out, please — and arrive a few minutes early.",
+    ])
+  );
+
+  const layout: Layout = {
+    preheader: `${data.serviceName} · ${friendlyDate(data.bookingDate)} at ${data.timeSlot}`,
+    heading: `You're all set, ${firstName}!`,
+    intro: "Your lash appointment is confirmed. Here are the details.",
+    rows: [
+      { label: "Service", value: data.serviceName },
+      {
+        label: "Date & time",
+        value: `${friendlyDate(data.bookingDate)} at ${data.timeSlot}`,
+      },
+      { label: "Duration", value: data.duration },
+      { label: "Deposit", value: deposit.line },
+    ],
+    rowsNote:
+      deposit.remainingBalance > 0
+        ? `Remaining balance: $${deposit.remainingBalance.toFixed(2)}, due at your appointment.`
+        : undefined,
+    sections,
+    footerLead: "Need to reschedule? Just reply to this email.",
+  };
+
   try {
     await getResend().emails.send({
       from: emailFrom,
       to: data.clientEmail,
-      subject: "Your VIS Lashes Appointment is Confirmed",
-      html: `
-        <div style="background-color:#F5F0EB;padding:40px 20px;font-family:Arial,sans-serif;">
-          <div style="max-width:500px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-            <h1 style="text-align:center;color:#3D2B1F;font-size:14px;letter-spacing:3px;margin-bottom:24px;">
-              VIS <em>LASHES</em>
-            </h1>
-            <h2 style="color:#3D2B1F;font-size:22px;margin-bottom:8px;">You're all set, ${data.clientName.split(" ")[0]}!</h2>
-            <p style="color:#2C2C2C;font-size:14px;margin-bottom:24px;">Your lash appointment has been confirmed.</p>
-            <div style="background:#F5F0EB;border-radius:8px;padding:20px;margin-bottom:24px;">
-              <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">SERVICE</p>
-              <p style="margin:0 0 16px;font-size:16px;color:#3D2B1F;font-weight:600;">${data.serviceName}</p>
-              <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">DATE & TIME</p>
-              <p style="margin:0 0 16px;font-size:16px;color:#3D2B1F;font-weight:600;">${friendlyDate(data.bookingDate)} at ${data.timeSlot}</p>
-              <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">DURATION</p>
-              <p style="margin:0 0 16px;font-size:16px;color:#3D2B1F;font-weight:600;">${data.duration}</p>
-              <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">DEPOSIT</p>
-              <p style="margin:0;font-size:16px;color:#3D2B1F;font-weight:600;">
-                ${depositLine}
-              </p>
-              ${remainingBalance > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:#9A9A9A;">Remaining balance: $${remainingBalance.toFixed(2)} due at appointment</p>` : ""}
-            </div>
-            ${data.studioAddress ? `
-            <h3 style="color:#3D2B1F;font-size:16px;margin-bottom:8px;">Location</h3>
-            <p style="color:#2C2C2C;font-size:14px;margin-bottom:24px;">${data.studioAddress}</p>
-            ` : ""}
-            <h3 style="color:#3D2B1F;font-size:16px;margin-bottom:8px;">What to Expect</h3>
-            <ul style="color:#2C2C2C;font-size:14px;padding-left:20px;">
-              <li>Come with clean lashes, no eye makeup</li>
-              <li>Your appointment will take approximately ${data.duration}</li>
-            </ul>
-            <hr style="border:none;border-top:1px solid #E8DDD0;margin:24px 0;" />
-            <p style="text-align:center;color:#9A9A9A;font-size:12px;">
-              Need to reschedule? Contact us directly.<br/>
-              VIS LASHES &middot; Orlando &middot; Saint Cloud &middot; Kissimmee
-            </p>
-          </div>
-        </div>
-      `,
+      ...(data.replyTo ? { replyTo: data.replyTo } : {}),
+      subject: `You're booked — ${shortDate(data.bookingDate)} at ${data.timeSlot}`,
+      html: renderHtml(layout),
+      text: renderText(layout),
     });
   } catch (error) {
     console.error("Failed to send confirmation email:", error);
@@ -121,17 +447,6 @@ const REMINDER_COPY: Record<ReminderWindow, { subject: string; lead: string }> =
   },
 };
 
-/** "2026-09-08" reads as a database row, not a date. */
-function friendlyDate(value: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return value;
-  const [, y, m, d] = match;
-  return new Date(Number(y), Number(m) - 1, Number(d), 12).toLocaleDateString(
-    "en-US",
-    { weekday: "long", month: "long", day: "numeric" }
-  );
-}
-
 /**
  * Unlike the confirmation email, this one rethrows. Its caller stamps the
  * booking as reminded only when the send resolves, so swallowing the error
@@ -142,37 +457,43 @@ export async function sendReminderEmail(
   data: BookingEmailData & { window?: ReminderWindow }
 ) {
   const copy = REMINDER_COPY[data.window ?? "twoDay"];
+  const firstName = data.clientName.trim().split(" ")[0];
+
+  const sections: Section[] = [];
+  if (data.studioAddress) {
+    sections.push(paragraphs("Location", [data.studioAddress]));
+  }
+  sections.push(
+    bullets("Before you come", [
+      "Arrive with clean, makeup-free eyes.",
+      "Skip the caffeine — it helps you stay still.",
+      "Contact lenses out, please.",
+    ])
+  );
+
+  const layout: Layout = {
+    preheader: `${data.serviceName} · ${friendlyDate(data.bookingDate)} at ${data.timeSlot}`,
+    heading: `Hi ${firstName}, see you soon!`,
+    intro: copy.lead,
+    rows: [
+      { label: "Service", value: data.serviceName },
+      {
+        label: "Date & time",
+        value: `${friendlyDate(data.bookingDate)} at ${data.timeSlot}`,
+      },
+    ],
+    sections,
+    footerLead: "Need to reschedule? Just reply to this email.",
+  };
+
   try {
     await getResend().emails.send({
       from: emailFrom,
       to: data.clientEmail,
+      ...(data.replyTo ? { replyTo: data.replyTo } : {}),
       subject: copy.subject,
-      html: `
-        <div style="background-color:#F5F0EB;padding:40px 20px;font-family:Arial,sans-serif;">
-          <div style="max-width:500px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-            <h1 style="text-align:center;color:#3D2B1F;font-size:14px;letter-spacing:3px;margin-bottom:24px;">
-              VIS <em>LASHES</em>
-            </h1>
-            <h2 style="color:#3D2B1F;font-size:22px;margin-bottom:8px;">Hi ${data.clientName.split(" ")[0]}, just a friendly reminder!</h2>
-            <p style="color:#2C2C2C;font-size:14px;margin-bottom:24px;">${copy.lead}</p>
-            <div style="background:#F5F0EB;border-radius:8px;padding:20px;margin-bottom:24px;">
-              <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">SERVICE</p>
-              <p style="margin:0 0 16px;font-size:16px;color:#3D2B1F;font-weight:600;">${data.serviceName}</p>
-              <p style="margin:0 0 8px;font-size:13px;color:#9A9A9A;">DATE & TIME</p>
-              <p style="margin:0;font-size:16px;color:#3D2B1F;font-weight:600;">${friendlyDate(data.bookingDate)} at ${data.timeSlot}</p>
-            </div>
-            <h3 style="color:#3D2B1F;font-size:16px;margin-bottom:8px;">Prep Tips</h3>
-            <ul style="color:#2C2C2C;font-size:14px;padding-left:20px;">
-              <li>Arrive with clean, makeup-free eyes</li>
-              <li>Avoid caffeine beforehand (helps you stay still!)</li>
-            </ul>
-            <hr style="border:none;border-top:1px solid #E8DDD0;margin:24px 0;" />
-            <p style="text-align:center;color:#9A9A9A;font-size:12px;">
-              VIS LASHES &middot; Orlando &middot; Saint Cloud &middot; Kissimmee
-            </p>
-          </div>
-        </div>
-      `,
+      html: renderHtml(layout),
+      text: renderText(layout),
     });
   } catch (error) {
     console.error("Failed to send reminder email:", error);
@@ -186,35 +507,181 @@ export async function sendCancellationEmail(data: {
   bookingDate: string;
   timeSlot: string;
   depositPaid: boolean;
+  replyTo?: string | null;
 }) {
+  const firstName = data.clientName.trim().split(" ")[0];
+  const base = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
+
+  const lines = [
+    `Hi ${firstName}, your appointment on ${friendlyDate(data.bookingDate)} at ${data.timeSlot} has been cancelled.`,
+  ];
+  if (data.depositPaid) {
+    lines.push("Your deposit will be refunded within 5–10 business days.");
+  }
+
+  const layout: Layout = {
+    preheader: `${friendlyDate(data.bookingDate)} at ${data.timeSlot} — cancelled`,
+    heading: "Your appointment has been cancelled",
+    sections: [paragraphs(undefined, lines)],
+    cta: base ? { label: "Book a new appointment", url: `${base}/book` } : undefined,
+    footerLead: "Questions? Just reply to this email.",
+  };
+
   try {
     await getResend().emails.send({
       from: emailFrom,
       to: data.clientEmail,
-      subject: "Your VIS Lashes Appointment Has Been Cancelled",
-      html: `
-        <div style="background-color:#F5F0EB;padding:40px 20px;font-family:Arial,sans-serif;">
-          <div style="max-width:500px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-            <h1 style="text-align:center;color:#3D2B1F;font-size:14px;letter-spacing:3px;margin-bottom:24px;">
-              VIS <em>LASHES</em>
-            </h1>
-            <h2 style="color:#3D2B1F;font-size:22px;margin-bottom:8px;">Appointment Cancelled</h2>
-            <p style="color:#2C2C2C;font-size:14px;">
-              Hi ${data.clientName.split(" ")[0]}, your appointment on ${friendlyDate(data.bookingDate)} at ${data.timeSlot} has been cancelled.
-            </p>
-            ${data.depositPaid ? '<p style="color:#2C2C2C;font-size:14px;">Your deposit will be refunded within 5-10 business days.</p>' : ""}
-            <p style="color:#2C2C2C;font-size:14px;">
-              Want to rebook? <a href="${process.env.NEXT_PUBLIC_BASE_URL}/book" style="color:#8B6F47;font-weight:600;">Book a new appointment</a>
-            </p>
-            <hr style="border:none;border-top:1px solid #E8DDD0;margin:24px 0;" />
-            <p style="text-align:center;color:#9A9A9A;font-size:12px;">
-              VIS LASHES &middot; Orlando &middot; Saint Cloud &middot; Kissimmee
-            </p>
-          </div>
-        </div>
-      `,
+      ...(data.replyTo ? { replyTo: data.replyTo } : {}),
+      subject: "Your VIS Lashes appointment has been cancelled",
+      html: renderHtml(layout),
+      text: renderText(layout),
     });
   } catch (error) {
     console.error("Failed to send cancellation email:", error);
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Her copy
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface OwnerBookingAlertData {
+  /** From ownerRecipients(). Nothing is sent when this is empty. */
+  to: string[];
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string | null;
+  /** Decided at booking time, before visit counts move. */
+  isNewClient: boolean;
+  serviceName: string;
+  bookingDate: string;
+  timeSlot: string;
+  duration: string;
+  depositAmount: number;
+  depositPaid: boolean;
+  depositMethodLabel?: string;
+  totalPrice: number;
+  paymentMethod: string;
+  /** "Booked on the website", "Added in the admin". */
+  source: string;
+  /** Links straight to the appointment when the base URL is configured. */
+  bookingId?: string;
+  notes?: string | null;
+}
+
+/**
+ * Her own copy of every booking, sent the moment the client's confirmation
+ * goes out.
+ *
+ * Deliberately not a blind copy of the client's email: the things she needs
+ * from a booking — a phone number she can tap, whether this is someone new,
+ * what is still owed at the chair — are exactly the things the client's copy
+ * has no reason to contain. Reply-To is the client, so answering this email
+ * reaches them directly.
+ *
+ * Best-effort on the same terms as everything else in the booking flow: the
+ * appointment is already written and the card already charged, so a failure
+ * here is logged and never thrown.
+ */
+export async function sendOwnerBookingAlert(data: OwnerBookingAlertData) {
+  if (data.to.length === 0) {
+    console.warn(
+      "Owner booking alert skipped: no Business Email in Settings and no OWNER_NOTIFICATION_EMAIL."
+    );
+    return;
+  }
+
+  const depositLine = data.depositPaid
+    ? `$${data.depositAmount.toFixed(2)} received${
+        data.depositMethodLabel ? ` (${data.depositMethodLabel})` : ""
+      }`
+    : data.paymentMethod === "cash"
+    ? "None — paying cash at the appointment"
+    : `$${data.depositAmount.toFixed(2)} not yet received`;
+
+  const balance = Math.max(
+    0,
+    data.totalPrice - (data.depositPaid ? data.depositAmount : 0)
+  );
+
+  const base = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
+
+  // An appointment she added by hand can legitimately have no email on file —
+  // 47 of the clients imported from Acuity don't. The contact row then shows
+  // only the phone, and Reply-To is dropped rather than set to an empty
+  // string, which Resend rejects outright and would lose the whole alert.
+  const clientEmail = data.clientEmail.trim();
+  const hasEmail = clientEmail.includes("@");
+
+  const contact: string[] = [];
+  if (hasEmail) contact.push(clientEmail);
+  if (data.clientPhone) contact.push(data.clientPhone);
+
+  // The name and whether they're new are both in the heading already, so the
+  // card starts at the part she cannot get from the subject line.
+  const rows: DetailRow[] = [
+    {
+      label: "Contact",
+      value: contact.length ? contact.join(" · ") : "No email or phone on file",
+      html: contact.length
+        ? [
+            hasEmail
+              ? `<a href="mailto:${esc(clientEmail)}" style="color:${ACCENT};text-decoration:none;">${esc(clientEmail)}</a>`
+              : null,
+            data.clientPhone
+              ? `<a href="tel:${esc(data.clientPhone.replace(/[^0-9+]/g, ""))}" style="color:${ACCENT};text-decoration:none;">${esc(data.clientPhone)}</a>`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(
+              ` <span style="color:${MUTED};font-weight:normal;">·</span> `
+            )
+        : undefined,
+    },
+    { label: "Service", value: `${data.serviceName} (${data.duration})` },
+    {
+      label: "Date & time",
+      value: `${friendlyDate(data.bookingDate)} at ${data.timeSlot}`,
+    },
+    { label: "Deposit", value: depositLine },
+  ];
+
+  const sections: Section[] = [];
+  if (data.notes) {
+    sections.push(paragraphs("Note on the booking", [data.notes]));
+  }
+
+  const layout: Layout = {
+    preheader: `${data.serviceName} · ${friendlyDate(data.bookingDate)} at ${data.timeSlot} · ${data.clientEmail}`,
+    heading: data.isNewClient
+      ? `New client: ${data.clientName}`
+      : `New booking: ${data.clientName}`,
+    intro: hasEmail
+      ? `${data.source}. Reply to this email to reach ${data.clientName.trim().split(" ")[0]} directly.`
+      : `${data.source}.`,
+    rows,
+    rowsNote:
+      balance > 0
+        ? `$${balance.toFixed(2)} due at the appointment (service total $${data.totalPrice.toFixed(2)}).`
+        : `Paid in full — $${data.totalPrice.toFixed(2)}.`,
+    sections,
+    cta:
+      base && data.bookingId
+        ? { label: "Open in admin", url: `${base}/admin/bookings/${data.bookingId}` }
+        : undefined,
+    footerLead: "Your copy of the client's confirmation.",
+  };
+
+  try {
+    await getResend().emails.send({
+      from: emailFrom,
+      to: data.to,
+      ...(hasEmail ? { replyTo: clientEmail } : {}),
+      subject: `${data.isNewClient ? "New client" : "New booking"}: ${data.clientName} — ${shortDate(data.bookingDate)} at ${data.timeSlot}`,
+      html: renderHtml(layout),
+      text: renderText(layout),
+    });
+  } catch (error) {
+    console.error("Failed to send owner booking alert:", error);
   }
 }

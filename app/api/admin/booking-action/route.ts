@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { syncBookingEvent, deleteBookingEvent } from "@/lib/google-calendar";
-import { sendCancellationEmail } from "@/lib/email";
+import { getEmailSettings, sendCancellationEmail } from "@/lib/email";
 import { cancellationText, isSmsConfigured, sendSms, toE164 } from "@/lib/sms";
 
 /**
@@ -82,6 +82,10 @@ export async function POST(req: NextRequest) {
     await deleteBookingEvent(admin, input.bookingId);
 
     if (client?.email) {
+      // Reply-To is her Business Email from Settings: a cancellation is the
+      // message a client is most likely to answer, and the answer has to
+      // reach her rather than the send-only address it came from.
+      const { businessEmail } = await getEmailSettings(admin);
       try {
         await sendCancellationEmail({
           clientName: client.full_name,
@@ -89,6 +93,7 @@ export async function POST(req: NextRequest) {
           bookingDate: booking.booking_date,
           timeSlot: booking.time_slot,
           depositPaid: Boolean(booking.deposit_paid),
+          replyTo: businessEmail,
         });
       } catch (err) {
         console.error("Cancellation email failed:", err);

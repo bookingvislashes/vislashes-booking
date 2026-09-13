@@ -209,6 +209,7 @@ connected to her repository, and nothing breaks if Jerry's accounts go away.
    | `SQUARE_WEBHOOK_SIGNATURE_KEY` | from Phase C |
    | `RESEND_API_KEY` | from Phase D |
    | `EMAIL_FROM` | `onboarding@resend.dev`, or her own domain address |
+   | `OWNER_NOTIFICATION_EMAIL` | optional — leave out and her copy of each booking goes to Business Email in Settings |
    | `NEXT_PUBLIC_BASE_URL` | her live site URL — fill in after the first deploy |
    | `TWILIO_ACCOUNT_SID` | from Phase H — leave out until the campaign is approved |
    | `TWILIO_AUTH_TOKEN` | from Phase H — leave out until the campaign is approved |

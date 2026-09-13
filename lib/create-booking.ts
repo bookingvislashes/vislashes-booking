@@ -1,5 +1,10 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import { sendConfirmationEmail } from "./email";
+import {
+  getEmailSettings,
+  ownerRecipients,
+  sendConfirmationEmail,
+  sendOwnerBookingAlert,
+} from "./email";
 import { confirmationText, isSmsConfigured, sendSms, toE164 } from "./sms";
 import { syncBookingEvent } from "./google-calendar";
 
@@ -76,6 +81,10 @@ export async function createBooking({
   }
 
   let clientId: string;
+  // Whether this person is booking with her for the first time. Decided here,
+  // before anything is written: her copy of the booking says "New client" or
+  // "Returning client", and after the upsert below every client looks alike.
+  let isNewClient = false;
 
   // Ticking the box is the opt-in, and it is only ever written when true.
   // An untick on a later booking is not a withdrawal of an earlier consent —
@@ -150,6 +159,7 @@ export async function createBooking({
       }
       clientId = adoptedId;
     } else {
+      isNewClient = true;
       const { data: newClient, error: clientError } = await supabase
         .from("clients")
         .insert({
@@ -249,17 +259,9 @@ export async function createBooking({
   // are that moment: both go out once, to the person who just paid, and never
   // anywhere public. Read fresh per booking rather than baked into a template,
   // so a studio move only ever requires an edit in Settings.
-  let studioAddress: string | null = null;
-  try {
-    const { data: addressRow } = await supabase
-      .from("settings")
-      .select("value")
-      .eq("key", "business_address")
-      .maybeSingle();
-    studioAddress = addressRow?.value ?? null;
-  } catch {
-    // Left null: both messages simply omit the address rather than guessing.
-  }
+  // Read once for both messages below. Anything missing comes back null and
+  // is simply omitted rather than guessed at.
+  const { studioAddress, businessEmail } = await getEmailSettings(supabase);
 
   try {
     await sendConfirmationEmail({
@@ -275,11 +277,35 @@ export async function createBooking({
       totalPrice: appointmentTotal,
       paymentMethod: formData.paymentMethod,
       studioAddress,
+      replyTo: businessEmail,
     });
   } catch (emailErr) {
     // Log but don't fail the booking if email fails
     console.error("Failed to send confirmation email:", emailErr);
   }
+
+  // Her own copy of the same booking, to the Business Email in Settings.
+  // Sent for every appointment, not only the ones from someone new: the push
+  // alert is a line on a lock screen that disappears, and this is the record
+  // she can search for a client's number six weeks later. Best-effort on
+  // exactly the same terms as the client's confirmation above.
+  await sendOwnerBookingAlert({
+    to: ownerRecipients(businessEmail),
+    clientName: fullName,
+    clientEmail: email,
+    clientPhone: formData.phone,
+    isNewClient,
+    serviceName: removalAdded ? `${service.name} + lash removal` : service.name,
+    bookingDate: formData.bookingDate,
+    timeSlot: formData.timeSlot,
+    duration: formatDuration(appointmentMinutes),
+    depositAmount: service.deposit_amount,
+    depositPaid,
+    totalPrice: appointmentTotal,
+    paymentMethod: formData.paymentMethod,
+    source: "Booked on the website",
+    bookingId: booking.id,
+  });
 
   // The same confirmation as a text. Best-effort on exactly the same terms as
   // the email above: the card is already charged and the booking already

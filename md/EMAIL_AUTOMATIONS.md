@@ -97,6 +97,48 @@ Content:
 - "Follow us on Instagram" link
 - Footer
 
+### 5. Owner Copy of Every Booking
+**Trigger**: Immediately after the client's confirmation, on both booking paths
+(website checkout in `lib/create-booking.ts`, and `POST /api/admin/create-booking`)
+**To**: `OWNER_NOTIFICATION_EMAIL` if set, otherwise the `business_email` row in
+`settings` — resolved by `ownerRecipients()`. Nothing is sent when both are empty.
+**Reply-To**: the client, so replying reaches them directly
+**Subject**: "New client: [Name] — Sat, Sep 19 at 10:00 AM"
+
+Deliberately not a BCC of the client's email. What she needs from a booking —
+a tappable phone number, whether this person is new, what is still owed at the
+chair — is exactly what the client's copy has no reason to contain.
+
+Content:
+- Heading says "New client" or "New booking" with the name
+- Contact: email and phone, both as links
+- Service (with duration), date & time, deposit received or still due
+- Balance due at the appointment, against the service total
+- Any note typed on an admin-created booking
+- "Open in admin" button → `/admin/bookings/[id]`
+
+Best-effort like the others: it never throws, because by the time it runs the
+card has been charged and the booking written.
+
+## Shared Layout and Deliverability
+
+All four emails render through one table-based layout in `lib/email.ts`
+(`renderHtml`) with a matching plain-text part (`renderText`). Both matter:
+
+- **Tables, not divs.** Outlook renders with Word, which ignores `max-width`
+  and `border-radius` on a `div` — the old templates went full-bleed there.
+- **A `text` part on every send.** A message with no text alternative is one of
+  the cheapest things a spam filter can score against.
+- **A preheader** — the grey line after the subject in an inbox list.
+- **Reply-To** set to `business_email` on everything a client receives.
+- **Everything interpolated is HTML-escaped** (`esc()`). Client-supplied names
+  and notes reach both the client's inbox and the salon's own.
+
+The remaining half of deliverability is DNS, not code: `EMAIL_FROM` has to be
+an address at a domain verified in Resend, with SPF and DKIM published and a
+DMARC record. Until then Resend sends from `onboarding@resend.dev`, which is
+the single biggest reason a confirmation lands in spam.
+
 ## Cron Jobs for Automated Emails
 
 ```json

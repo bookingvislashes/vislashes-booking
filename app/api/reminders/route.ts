@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { sendReminderEmail } from "@/lib/email";
+import { getEmailSettings, sendReminderEmail } from "@/lib/email";
 import {
   isSmsConfigured,
   sendSms,
@@ -131,13 +131,11 @@ export async function GET(req: NextRequest) {
     // The two-hour text is the one that has to get someone to the door, so it
     // carries the address. Read from Settings rather than written here: a
     // hardcoded address survives a move and sends a client to the wrong house.
-    // Absent means the text simply omits it.
-    const { data: addressRow } = await supabase
-      .from("settings")
-      .select("value")
-      .eq("key", "business_address")
-      .maybeSingle();
-    const salonAddress = addressRow?.value ?? null;
+    // Absent means the text simply omits it. Business Email comes back in the
+    // same read and becomes the Reply-To on every reminder — a client who
+    // answers "can I move this?" has to reach her.
+    const { studioAddress: salonAddress, businessEmail } =
+      await getEmailSettings(supabase);
 
     const select =
       "id, booking_date, time_slot, deposit_amount, clients(id, full_name, email, phone, sms_consent, sms_opt_out), services(name, price, duration_minutes)";
@@ -197,6 +195,8 @@ export async function GET(req: NextRequest) {
             totalPrice: Number(booking.services.price),
             paymentMethod: "square",
             window: windowName,
+            studioAddress: salonAddress,
+            replyTo: businessEmail,
           });
           emailed = true;
         } catch (err) {

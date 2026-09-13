@@ -31,6 +31,36 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.51.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "You now get your own copy of every appointment by email — the client's name, phone, email, service, time, deposit and what's still owed at the chair. It says whether they're new or returning, and hitting reply writes straight back to the client.",
+      },
+      {
+        kind: "changed",
+        text: "The confirmation, reminder and cancellation emails were rebuilt so they look the same in Gmail, Apple Mail and Outlook, on a phone or a laptop.",
+      },
+      {
+        kind: "changed",
+        text: "When a client replies to any email from the site, it now comes to your Business Email instead of going nowhere.",
+      },
+      {
+        kind: "changed",
+        text: "Reminder emails now include the studio address, the same way the confirmation and the 2-hour text already did.",
+      },
+      {
+        kind: "note",
+        text: "Your copy goes to the Business Email in Settings. If that box is blank, no copy is sent — fill it in and save.",
+      },
+      {
+        kind: "note",
+        text: "For emails to land in the inbox rather than spam, vislashes.com has to be verified in Resend (its SPF and DKIM records, plus a DMARC record) and the from-address has to use that domain. Worth checking before the next busy week.",
+      },
+    ],
+  },
+  {
     version: "1.50.0",
     date: "2026-09-13",
     changes: [
