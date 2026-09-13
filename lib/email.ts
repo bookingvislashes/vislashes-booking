@@ -145,6 +145,21 @@ interface Layout {
   rowsNote?: string;
   sections?: Section[];
   cta?: { label: string; url: string };
+  /**
+   * Sections placed AFTER the button.
+   *
+   * The confirmation's loyalty offer lives here: it is the one thing in that
+   * email nobody needs in order to turn up on the right day, so it sits below
+   * everything that is, rather than pushing the reschedule button further
+   * down the message.
+   */
+  postCta?: Section[];
+  /**
+   * A decorative strip under the wordmark. Served from the site like the
+   * social icons, and carries alt text, so a client blocking images loses a
+   * flourish and nothing else.
+   */
+  banner?: { file: string; alt: string; height: number };
   /** Sits above the wordmark in the footer. */
   footerLead?: string;
 }
@@ -182,17 +197,37 @@ function renderHtml(layout: Layout): string {
           </table>`
     : "";
 
-  const sections = (layout.sections || [])
-    .map(
-      (section) => `
+  const renderSections = (list: Section[]) =>
+    list
+      .map(
+        (section) => `
           ${
             section.title
               ? `<h3 style="margin:0 0 8px;font-family:${FONT};font-size:15px;line-height:20px;color:${HEADING};">${esc(section.title)}</h3>`
               : ""
           }
           <div style="margin:0 0 22px;font-family:${FONT};font-size:14px;line-height:21px;color:${INK};">${section.html}</div>`
-    )
-    .join("");
+      )
+      .join("");
+
+  const sections = renderSections(layout.sections || []);
+
+  // Separated from the body above by a hairline, so it reads as a postscript
+  // rather than as one more thing to get through.
+  const postCta = layout.postCta?.length
+    ? `
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 22px;">
+                <tr><td style="border-top:1px solid ${RULE};font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
+${renderSections(layout.postCta)}`
+    : "";
+
+  const bannerBase = siteBase();
+  const banner =
+    layout.banner && bannerBase
+      ? `
+              <img src="${bannerBase}/email/${layout.banner.file}" width="520" height="${layout.banner.height}" alt="${esc(layout.banner.alt)}" style="display:block;width:100%;max-width:520px;height:auto;border:0;margin:0 0 20px;" />`
+      : "";
 
   const cta = layout.cta
     ? `
@@ -223,7 +258,8 @@ function renderHtml(layout: Layout): string {
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:520px;background-color:${CARD};border-radius:10px;">
           <tr>
             <td style="padding:32px 28px;">
-              <p style="margin:0 0 26px;text-align:center;font-family:${FONT};font-size:13px;line-height:18px;letter-spacing:4px;color:${HEADING};font-weight:bold;">VIS <span style="font-style:italic;font-weight:normal;">LASHES</span></p>
+              <p style="margin:0 0 ${layout.banner ? "18px" : "26px"};text-align:center;font-family:${FONT};font-size:13px;line-height:18px;letter-spacing:4px;color:${HEADING};font-weight:bold;">VIS <span style="font-style:italic;font-weight:normal;">LASHES</span></p>
+${banner}
               <h1 style="margin:0 0 8px;font-family:${FONT};font-size:22px;line-height:29px;color:${HEADING};font-weight:bold;">${esc(layout.heading)}</h1>
               ${
                 layout.intro
@@ -233,6 +269,7 @@ function renderHtml(layout: Layout): string {
 ${rowsCard}
 ${sections}
 ${cta}
+${postCta}
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr><td style="border-top:1px solid ${RULE};font-size:0;line-height:0;">&nbsp;</td></tr>
               </table>
@@ -272,6 +309,11 @@ function renderText(layout: Layout): string {
     parts.push(section.text);
   }
   if (layout.cta) parts.push("", `${layout.cta.label}: ${layout.cta.url}`);
+  for (const section of layout.postCta || []) {
+    parts.push("");
+    if (section.title) parts.push(section.title);
+    parts.push(section.text);
+  }
   parts.push("", "—");
   if (layout.footerLead) parts.push(layout.footerLead);
   parts.push("VIS LASHES");
@@ -530,19 +572,6 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
   // nowhere is worse than sending them to reply, which the footer already
   // says. The deposit line is the point of it: she does not want anyone
   // thinking a change of date costs them their deposit.
-  // The loyalty offer, said once and said short. It belongs here rather than
-  // in the follow-up because the window is 24 hours from the appointment —
-  // a follow-up two days later would be telling them about something they
-  // have already missed. Only on a new booking; someone rescheduling has
-  // read it already.
-  if (!moved && data.tagCreditAmount) {
-    sections.push(
-      paragraphs("Want $" + data.tagCreditAmount.toFixed(0) + " off next time?", [
-        `Post a selfie within 24 hours of your appointment and tag me @vislashesbooking — I'll put $${data.tagCreditAmount.toFixed(0)} toward your next visit.`,
-      ])
-    );
-  }
-
   const reschedule = data.bookingId ? rescheduleUrl(data.bookingId) : null;
   if (reschedule) {
     sections.push(
@@ -587,6 +616,24 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
     cta: reschedule
       ? { label: "Change my date or time", url: reschedule }
       : undefined,
+    // Below the button, behind a rule. The loyalty offer is the one thing in
+    // this email nobody needs in order to turn up on the right day, so it
+    // does not get to crowd the things they do. It belongs in the
+    // confirmation rather than the follow-up all the same: the window is 24
+    // hours from the appointment, and a follow-up two days later would be
+    // telling them about something already missed. Skipped on a reschedule —
+    // they read it the first time.
+    postCta:
+      !moved && data.tagCreditAmount
+        ? [
+            paragraphs(
+              `Want $${data.tagCreditAmount.toFixed(0)} off next time?`,
+              [
+                `Post a selfie within 24 hours of your appointment and tag me @vislashesbooking — I'll put $${data.tagCreditAmount.toFixed(0)} toward your next visit.`,
+              ]
+            ),
+          ]
+        : undefined,
     footerLead: "Questions? Just reply to this email.",
   };
 
@@ -824,7 +871,13 @@ export async function sendBirthdayEmail(data: {
 
   const layout: Layout = {
     preheader: `${amount} off any service, all month long`,
-    heading: `Happy birthday, ${firstName}!`,
+    // The one email on this site that gets an emoji. Everywhere else they are
+    // left off because they cost a little deliverability for nothing; here
+    // the whole point is that it should feel like a card rather than a
+    // notification, and the emoji is the part that lands even when a client's
+    // inbox blocks the confetti above it.
+    heading: `Happy birthday, ${firstName}! 🎉`,
+    banner: { file: "confetti.gif", alt: "", height: 85 },
     intro: "It's your month, so here's a little something from me.",
     sections: [
       paragraphs(undefined, [
@@ -840,7 +893,7 @@ export async function sendBirthdayEmail(data: {
       from: emailFrom,
       to: data.clientEmail,
       ...(data.replyTo ? { replyTo: data.replyTo } : {}),
-      subject: `Happy birthday, ${firstName}! ${amount} off this month`,
+      subject: `Happy birthday, ${firstName}! 🎉 ${amount} off this month`,
       html: renderHtml(layout),
       text: renderText(layout),
     });

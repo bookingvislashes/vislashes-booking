@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.57.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "changed",
+        text: "The birthday email now opens with animated confetti and a 🎉 in the subject line, so it feels like a card rather than a notification.",
+      },
+      {
+        kind: "changed",
+        text: "The \u201c$10 off next time\u201d offer has moved below the reschedule button in the confirmation, behind a divider, so the appointment details aren't crowded.",
+      },
+    ],
+  },
+  {
     version: "1.56.0",
     date: "2026-09-13",
     changes: [
