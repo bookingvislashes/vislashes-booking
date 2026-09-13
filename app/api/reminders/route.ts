@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { getEmailSettings, sendReminderEmail } from "@/lib/email";
+import {
+  getEmailSettings,
+  sendFollowUpEmail,
+  sendReminderEmail,
+} from "@/lib/email";
 import { salonMinutesNow, slotToMinutes } from "@/lib/salon-time";
 import {
   isSmsConfigured,
@@ -12,8 +16,12 @@ import {
 } from "@/lib/sms";
 
 /**
- * Appointment reminders, in the two windows she asked for: two days before,
- * and two hours before. Wired to the cron in vercel.json.
+ * Everything the site sends on a schedule: the two-day and two-hour
+ * reminders before an appointment, and the check-in two days after one.
+ * Wired to the cron in vercel.json.
+ *
+ * Three passes, all in one route rather than three crons — the Hobby plan
+ * allows very few, and they all want the same daily tick.
  *
  * The two-hour window can only fire if this route runs more often than once a
  * day. Vercel's Hobby plan caps crons at daily, so today only the two-day
@@ -278,6 +286,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         twoDay: { date: twoDayDate, sent: twoDaySent, failed: twoDayFailed },
         twoHour: { error: todayError.message },
+        followUp: { skipped: "Two-hour pass failed; follow-ups run tomorrow." },
       });
     }
 
@@ -294,9 +303,81 @@ export async function GET(req: NextRequest) {
       if (result === "failed") twoHourFailed += 1;
     }
 
+    // ── Two days after ───────────────────────────────────────────────────
+    // The check-in: aftercare, when to book a fill, and a nudge to tag or
+    // recommend her.
+    //
+    // Fenced in its own try/catch and its own query on purpose.
+    // followup_sent_at arrives with migration 022, which is run by hand, so
+    // there is a window where this code is deployed and the column does not
+    // exist yet. Naming a column PostgREST cannot see fails the whole query —
+    // folding this into the passes above would have meant one unrun migration
+    // silently stopping every reminder, which is the same failure that once
+    // cost the Today page its bookings. A missing column costs the follow-up
+    // and nothing else.
+    const followUpDate = salonDatePlusDays(-2);
+    let followUp: Record<string, unknown> = { date: followUpDate, sent: 0, failed: 0 };
+
+    try {
+      const { data: pastData, error: pastError } = await supabase
+        .from("bookings")
+        .select("id, clients(full_name, email)")
+        .eq("booking_date", followUpDate)
+        // Cancellations and no-shows are excluded: asking someone how they
+        // are loving lashes they never got is worse than saying nothing.
+        .in("status", ["confirmed", "completed"])
+        .is("followup_sent_at", null);
+
+      if (pastError) throw pastError;
+
+      let sent = 0;
+      let failed = 0;
+
+      for (const row of pastData || []) {
+        const client = Array.isArray(row.clients) ? row.clients[0] : row.clients;
+        if (!client?.email) {
+          // Unreachable by email and always will be. Stamped so it is not
+          // reconsidered on every future run.
+          await supabase
+            .from("bookings")
+            .update({ followup_sent_at: new Date().toISOString() })
+            .eq("id", row.id);
+          continue;
+        }
+
+        try {
+          await sendFollowUpEmail({
+            clientName: client.full_name,
+            clientEmail: client.email,
+            replyTo,
+          });
+          await supabase
+            .from("bookings")
+            .update({ followup_sent_at: new Date().toISOString() })
+            .eq("id", row.id);
+          sent += 1;
+        } catch (err) {
+          console.error(`Follow-up failed for booking ${row.id}:`, err);
+          failed += 1;
+        }
+      }
+
+      followUp = { date: followUpDate, sent, failed };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Follow-ups skipped:", message);
+      followUp = {
+        date: followUpDate,
+        skipped: message.includes("followup_sent_at")
+          ? "Run migration 022."
+          : message,
+      };
+    }
+
     return NextResponse.json({
       twoDay: { date: twoDayDate, sent: twoDaySent, failed: twoDayFailed },
       twoHour: { date: today, sent: twoHourSent, failed: twoHourFailed },
+      followUp,
     });
   } catch (err) {
     console.error("Reminders: unexpected failure:", err);

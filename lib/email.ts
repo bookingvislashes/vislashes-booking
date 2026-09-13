@@ -279,6 +279,22 @@ function renderText(layout: Layout): string {
   return parts.join("\n");
 }
 
+/**
+ * The four things a client needs to know before she sees them.
+ *
+ * Deliberately short and deliberately shared: the confirmation and the
+ * two-day reminder print exactly this list, so the reminder is a glance
+ * rather than a second read. The grace period is here rather than buried in
+ * a policy page because "am I allowed to be five minutes late" is the
+ * question, and answering it warmly is worth more than the line costs.
+ */
+const PREP_NOTES = [
+  "Clean lashes, no eye makeup.",
+  "Contacts out before you arrive.",
+  "Running late? No stress — there's a 15-minute grace period.",
+  "It's a cozy one-on-one space, so please come solo.",
+];
+
 /** A paragraph section from plain text, escaped. */
 function paragraphs(title: string | undefined, lines: string[]): Section {
   return {
@@ -489,15 +505,11 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
   if (data.studioAddress) {
     sections.push(paragraphs("Where to find me", [data.studioAddress]));
   }
-  sections.push(
-    bullets("A few things before you come", [
-      "Come with clean lashes and no eye makeup — it helps everything bond beautifully.",
-      "Please remove your contact lenses before your appointment.",
-      "Come a few minutes early if you can, and no stress at all if you can't.",
-      "It's a cozy one-on-one space, so please come on your own — no extra guests. Thank you for understanding!",
-      `Set aside about ${data.duration}. Most clients nap right through it.`,
-    ])
-  );
+  // The same four lines as the reminder, word for word. Two emails saying the
+  // same thing differently is two things to read; saying it identically means
+  // the second one is already familiar. The appointment length is not among
+  // them — it is in the details card two inches above.
+  sections.push(bullets("Before you come", PREP_NOTES));
 
   // Only offered when the link can actually be built — a button that goes
   // nowhere is worse than sending them to reply, which the footer already
@@ -507,8 +519,7 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
   if (reschedule) {
     sections.push(
       paragraphs("Need a different day?", [
-        "Life happens — you can move your appointment yourself, any time up to the day before.",
-        "Your deposit comes with you, so there's nothing to pay again.",
+        "Move it yourself any time up to the day before — your deposit comes with you.",
       ])
     );
   }
@@ -519,8 +530,8 @@ export async function sendConfirmationEmail(data: BookingEmailData) {
       ? `All set, ${firstName} — you're moved!`
       : `You're all set, ${firstName}!`,
     intro: moved
-      ? "Your appointment has been rescheduled. Here's the new time."
-      : "Your lash appointment is confirmed. I can't wait to see you!",
+      ? "All moved. Here's your new time."
+      : "You're confirmed — I can't wait to see you!",
     rows: [
       { label: "Service", value: data.serviceName },
       {
@@ -563,12 +574,12 @@ export type ReminderWindow = "twoDay" | "twoHour";
 
 const REMINDER_COPY: Record<ReminderWindow, { subject: string; lead: string }> = {
   twoDay: {
-    subject: "Reminder: your lash appointment is in 2 days",
-    lead: "Your lash appointment is in two days.",
+    subject: "Your lash appointment is in 2 days",
+    lead: "Just a quick reminder — see you in two days!",
   },
   twoHour: {
-    subject: "See you soon — your lash appointment is in 2 hours",
-    lead: "Your lash appointment is in about two hours.",
+    subject: "See you in a couple of hours",
+    lead: "Your appointment is in about two hours.",
   },
 };
 
@@ -588,13 +599,7 @@ export async function sendReminderEmail(
   if (data.studioAddress) {
     sections.push(paragraphs("Where to find me", [data.studioAddress]));
   }
-  sections.push(
-    bullets("A few reminders", [
-      "Come with clean, makeup-free eyes.",
-      "Please remove your contact lenses before your appointment.",
-      "It's a cozy one-on-one space, so please come on your own — no extra guests. Thank you for understanding!",
-    ])
-  );
+  sections.push(bullets("Before you come", PREP_NOTES));
 
   const layout: Layout = {
     preheader: `${data.serviceName} · ${friendlyDate(data.bookingDate)} at ${data.timeSlot}`,
@@ -649,7 +654,7 @@ export async function sendCancellationEmail(data: {
   if (data.depositPaid) {
     lines.push("Your deposit will be refunded within 5–10 business days.");
   }
-  lines.push("I'd love to see you another time whenever you're ready.");
+  lines.push("I'd love to see you whenever you're ready.");
 
   const layout: Layout = {
     preheader: `${friendlyDate(data.bookingDate)} at ${data.timeSlot} — cancelled`,
@@ -671,5 +676,76 @@ export async function sendCancellationEmail(data: {
     });
   } catch (error) {
     console.error("Failed to send cancellation email:", error);
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * After the appointment
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface FollowUpEmailData {
+  clientName: string;
+  clientEmail: string;
+  replyTo?: string | null;
+}
+
+/**
+ * The check-in two days after an appointment.
+ *
+ * Three jobs in about a hundred words, in the order they earn their place:
+ *
+ * 1. Aftercare. Poor retention is the most common reason a lash client does
+ *    not come back, and it is usually aftercare rather than application — so
+ *    the tips are not filler, they are the thing that protects the work.
+ * 2. The refill nudge. Two to three weeks is the industry window, and saying
+ *    it plainly is what turns one appointment into a standing one.
+ * 3. The ask. A client is never happier about their lashes than in the first
+ *    few days, which is exactly when a tag or a recommendation costs them
+ *    nothing to give.
+ *
+ * Rethrows, like the reminders: the caller only stamps the booking as
+ * followed up once the send resolves, so swallowing an outage here would mark
+ * everyone done and nobody would ever get one.
+ *
+ * She is deliberately not blind-copied. Her copy exists for bookings, which
+ * are things she has to act on; a copy of every follow-up would be noise.
+ */
+export async function sendFollowUpEmail(data: FollowUpEmailData) {
+  const firstName = data.clientName.trim().split(" ")[0];
+  const base = siteBase();
+
+  const layout: Layout = {
+    preheader: "Keeping them looking new, and when to book your fill",
+    heading: `How are they holding up, ${firstName}?`,
+    intro: "It's been a couple of days — I hope you're loving them!",
+    sections: [
+      bullets("Keeping them looking new", [
+        "Brush them each morning with your spoolie.",
+        "Skip oil-based makeup and cleansers around your eyes.",
+        "Sleep on your back or side where you can.",
+      ]),
+      paragraphs("Ready for your fill?", [
+        "Most clients come back every 2–3 weeks. That's the sweet spot for keeping them full.",
+      ]),
+      paragraphs("One little favour", [
+        "If you're loving them, tag me in a selfie @vislashesbooking — and if a friend asks who did your lashes, send them my way. Word of mouth means everything to me.",
+      ]),
+    ],
+    cta: base ? { label: "Book my fill", url: `${base}/book` } : undefined,
+    footerLead: "Any questions about your lashes? Just reply.",
+  };
+
+  try {
+    await getResend().emails.send({
+      from: emailFrom,
+      to: data.clientEmail,
+      ...(data.replyTo ? { replyTo: data.replyTo } : {}),
+      subject: `How are your lashes, ${firstName}?`,
+      html: renderHtml(layout),
+      text: renderText(layout),
+    });
+  } catch (error) {
+    console.error("Failed to send follow-up email:", error);
+    throw error;
   }
 }

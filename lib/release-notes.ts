@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.54.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "Clients now get a check-in two days after any appointment: three aftercare tips, a nudge that most people rebook at 2\u20133 weeks, and a friendly ask to tag you or pass your name on. About a hundred words, with a \u201cBook my fill\u201d button.",
+      },
+      {
+        kind: "changed",
+        text: "Your 15-minute grace period is now in the confirmation and the reminder \u2014 \u201cRunning late? No stress \u2014 there's a 15-minute grace period.\u201d The old \u201ccome a few minutes early\u201d line is gone.",
+      },
+      {
+        kind: "changed",
+        text: "Every email is shorter. The confirmation and the reminder now show the same four short lines, so the reminder is a glance rather than a second read.",
+      },
+      {
+        kind: "note",
+        text: "Run migration 022 (Migrations page). Until it does, the two-day follow-up cannot send \u2014 everything else keeps working normally.",
+      },
+    ],
+  },
+  {
     version: "1.53.0",
     date: "2026-09-13",
     changes: [

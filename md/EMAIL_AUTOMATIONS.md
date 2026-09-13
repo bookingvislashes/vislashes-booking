@@ -53,10 +53,12 @@ Content:
   - Duration
   - Deposit paid: $10.00 ✓ (or "Cash payment due at appointment")
   - Remaining balance: $XX.00
-- "What to expect" section:
-  - Come with clean lashes, no makeup
-  - Appointment duration reminder
-  - Location/address if applicable
+- "Before you come" — the four PREP_NOTES lines, shared verbatim with the
+  reminder so the second email is a glance rather than a second read. The
+  15-minute grace period is one of them: "am I allowed to be five minutes
+  late" is the question clients actually have, and answering it warmly is
+  worth more than the line costs.
+- Location, when Settings has one
 - "Need to reschedule?" with contact info
 - Footer: VIS LASHES, then Instagram and TikTok icons
 
@@ -85,17 +87,33 @@ Content:
 - "Want to rebook?" with link to /book
 - Footer
 
-### 4. Post-Appointment Follow-Up (Optional / Phase 2)
-**Trigger**: Cron job runs daily, finds bookings completed yesterday
-**To**: Client email
-**Subject**: "Thanks for Visiting VIS Lashes! 💕"
+### 4. Post-Appointment Follow-Up
+**Trigger**: The daily cron, two days after an appointment (`/api/reminders`)
+**To**: Client email. She is **not** blind-copied — her copies exist for
+bookings, which she acts on; a copy of every follow-up would be noise.
+**Subject**: "How are your lashes, [First Name]?"
 
-Content:
-- "Hi [First Name], hope you're loving your new lashes!"
-- Aftercare tips (brief)
-- "Book your refill" CTA button → /book
-- "Follow us on Instagram" link
-- Footer
+Three sections, in the order they earn their place, and under a hundred words:
+
+1. **Aftercare.** Poor retention is the most common reason a lash client does
+   not come back, and it is usually aftercare rather than application. Three
+   tips, on day two, while there is still time for them to matter.
+2. **The refill window.** Two to three weeks is the accepted rhythm; clients
+   who are not told simply drift. Saying it plainly is what turns one
+   appointment into a standing one.
+3. **The ask.** A client is never more in love with their lashes than in the
+   first few days, which is when a tag or a recommendation costs them nothing.
+   Deliberately no discount attached — that is the salon's money to decide.
+
+Sent for any appointment whose status is `confirmed` or `completed`;
+`cancelled` and `no_show` are skipped, because asking someone how they are
+loving lashes they never got is worse than saying nothing.
+
+`bookings.followup_sent_at` (migration 022) is what stops it going twice, and
+is stamped only once a send resolves — the same contract the two `reminder_*`
+columns use. The pass is fenced in its own try/catch and its own query, so the
+window where the code is deployed and the migration has not run costs the
+follow-up and never the reminders.
 
 ### 5. Rescheduled Confirmation
 **Trigger**: A client moves their own appointment from the link in their
