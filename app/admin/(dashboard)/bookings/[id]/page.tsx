@@ -194,7 +194,7 @@ export default function BookingDetailPage() {
         setActionError(data.message || data.error || "Something went wrong.");
         return false;
       }
-      return true;
+      return data as Record<string, unknown>;
     } catch {
       setActionError("Something went wrong.");
       return false;
@@ -459,15 +459,19 @@ export default function BookingDetailPage() {
                 disabled={busy || !booking.client?.email}
                 onClick={async () => {
                   setSentNote(null);
-                  const ok = await runAction({
+                  const result = await runAction({
                     action: "resend-confirmation",
                     bookingId: booking.id,
                   });
-                  if (ok) {
-                    setSentNote(
-                      `Confirmation sent to ${booking.client?.email}. Your copy is on its way too.`
-                    );
-                  }
+                  if (!result) return;
+                  const copied = Array.isArray(result.copiedTo)
+                    ? (result.copiedTo as string[])
+                    : [];
+                  setSentNote(
+                    copied.length
+                      ? `Handed to the email service for ${result.sentTo}, copied to ${copied.join(", ")}. If it doesn't arrive, check Resend → Emails for the delivery status.`
+                      : `Handed to the email service for ${result.sentTo}. No copy was sent — Settings → Your Inbox is empty.`
+                  );
                 }}
               >
                 {booking.client?.email

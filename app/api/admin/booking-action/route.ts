@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
 
     const { studioAddress, ownerInbox, replyTo, noticeHours } =
       await getEmailSettings(admin);
+    const ownerCopy = ownerRecipients(ownerInbox);
     const [removalRes, creditAmounts] = await Promise.all([
       admin.from("settings").select("value").eq("key", "removal_price").maybeSingle(),
       loadCreditAmounts(admin),
@@ -133,7 +134,7 @@ export async function POST(req: NextRequest) {
       rescheduleNoticeHours: noticeHours,
       tagCreditAmount: creditAmounts.referral,
       // Her blind copy, exactly as on the original.
-      bcc: ownerRecipients(ownerInbox),
+      bcc: ownerCopy,
       bookingId: booking.id,
     });
 
@@ -144,7 +145,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ ok: true, sentTo: client.email });
+    // The addresses are returned rather than assumed, so the screen can say
+    // who was actually copied. "Your copy is on its way" printed whether or
+    // not anyone was on Bcc, which is exactly the sentence you cannot trust
+    // when a copy does not turn up.
+    return NextResponse.json({
+      ok: true,
+      sentTo: client.email,
+      copiedTo: ownerCopy,
+    });
   }
 
   if (input.action === "cancel") {

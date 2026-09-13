@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.58.1",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "fixed",
+        text: "\u201cSend Confirmation Again\u201d now names the address it copied you at, and says so plainly if no copy went because Settings \u2192 Your Inbox is empty. It used to promise a copy either way.",
+      },
+      {
+        kind: "changed",
+        text: "It also now says the email was handed to the email service rather than \u201csent\u201d \u2014 delivery is the inbox provider's call, and Resend \u2192 Emails is where you see whether it landed.",
+      },
+    ],
+  },
+  {
     version: "1.58.0",
     date: "2026-09-13",
     changes: [
