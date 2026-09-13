@@ -71,7 +71,7 @@ export function buildSmsTerms(details: {
   return `TEXT MESSAGE TERMS
 
 1. Programme name: ${details.businessName} appointment texts.
-2. By entering your mobile number when you book, you agree to receive appointment text messages from ${details.businessName} at that number. This is how you opt in; we never add a number from any other source and we never buy or import phone lists.
+2. You opt in by ticking the optional text message box when you book. It is unticked by default and is never required: you can book without it and be texted nothing. We never add a number from any other source and we never buy or import phone lists.
 3. You will receive up to three messages per appointment - a booking confirmation, a reminder two days before, and a reminder two hours before - plus one message if ${details.businessName} has to cancel your appointment.
 4. These messages are transactional and relate only to your own appointment. ${details.businessName} does not send marketing or promotional text messages.
 5. Message frequency varies with how often you book. Message and data rates may apply.
@@ -120,7 +120,7 @@ MOBILE INFORMATION AND TEXT MESSAGING CONSENT
 No mobile information will be sold, rented, or shared with third parties or affiliates for marketing or promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information won't be shared with any third parties. Your phone number is used only to send you messages about your own appointments.
 
 HOW YOU OPT IN TO TEXT MESSAGES
-You opt in by entering your own mobile number on the booking form at vislashes.com. The form tells you, at the point where the number is entered, exactly which messages you will receive and how to stop them. We never add a number from any other source, and we never buy, rent, or import phone lists.
+You opt in by ticking an optional box on the booking form at vislashes.com, next to where your mobile number is entered. The box is unticked by default, and leaving it unticked does not affect your booking — you simply are not texted, and your email confirmations and reminders carry on as normal. We never add a number from any other source, and we never buy, rent, or import phone lists.
 
 TEXT MESSAGES
 If you book with us you may receive up to three text messages per appointment: a confirmation, a reminder two days before, and a reminder two hours before. You will also receive one message if we have to cancel your appointment. These are transactional messages about your own appointment, never marketing. Message frequency varies with how often you book, and message and data rates may apply. Reply STOP at any time to stop them; your appointment and your email reminders are unaffected. Reply HELP for help.
@@ -167,12 +167,17 @@ ${contact}`;
  * and CustomerForm both render it, so the page cannot quote a promise the
  * booking form no longer makes.
  */
+export const CONSENT_LABEL =
+  "Text me about my appointment (optional)";
+
 export const CONSENT_DISCLOSURE =
-  "By entering your number you agree to receive appointment texts from VIS " +
-  "Lashes: a confirmation, a reminder two days before, one two hours before, " +
-  "and a notice if we have to cancel. No marketing, ever, and your number is " +
-  "never shared. Reply STOP any time to stop them - your appointment is " +
-  "unaffected - or HELP for help. Message and data rates may apply.";
+  "Tick the box above to get appointment texts from VIS Lashes: a " +
+  "confirmation, a reminder two days before, one two hours before, and a " +
+  "notice if we have to cancel. Message frequency varies with how often you " +
+  "book. Message and data rates may apply. No marketing, ever, and your " +
+  "number is never shared. Reply STOP any time to stop them or HELP for " +
+  "help. This is optional - leaving it unticked does not affect your " +
+  "booking, and you still get every confirmation and reminder by email.";
 
 export function buildMessagingPolicy(details: {
   businessName: string;
@@ -192,14 +197,14 @@ WHAT THIS PROGRAMME SENDS
 Appointment messages, and nothing else. If you book an appointment you may receive a booking confirmation, a reminder two days before, a reminder two hours before, and a notice if we have to cancel. That is up to four messages per appointment, and how often you get them depends only on how often you book. We do not send marketing or promotional texts, and there is no way to subscribe to any that we do not send.
 
 HOW YOU OPT IN
-You opt in by typing your own mobile number into the booking form at vislashes.com/book, on the step that asks for your name, email and phone number. Nobody is added any other way: we never buy, rent, import or upload phone lists, and we never add a number we were given for something else.
+You opt in by ticking a box on the booking form at vislashes.com/book, on the step that asks for your name, email and phone number. The box is optional and is unticked when the page loads. Leaving it unticked does not affect your booking in any way: you still get every confirmation and reminder by email, and you are never texted. Nobody is added any other way: we never buy, rent, import or upload phone lists, and we never add a number we were given for something else.
 
 WHAT THE BOOKING FORM SAYS
-This sentence is shown directly beneath the phone field, before you submit anything:
+Directly beneath the phone field, before you submit anything, there is an unticked checkbox labelled "${CONSENT_LABEL}" and this wording:
 
 "${CONSENT_DISCLOSURE}"
 
-Links to our Terms, our Privacy Policy and this page appear immediately beneath that sentence, on the same step.
+Links to our Terms, our Privacy Policy and this page appear immediately beneath, on the same step.
 
 HOW TO STOP
 Reply STOP to any message and they stop immediately. Your appointment is not affected, and you will still receive the same confirmations and reminders by email. Reply START to turn them back on. Reply HELP at any time and you will get our contact details back.

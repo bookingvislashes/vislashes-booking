@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.48.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "note",
+        text: "Run migration 021 (Migrations page, or supabase/migrations/021_sms_consent.sql in Supabase). Until it runs, the new text message box cannot save and nobody will be texted.",
+      },
+      {
+        kind: "added",
+        text: "The booking form now has a tick box for appointment texts, next to the phone number. It starts unticked, and a client can book perfectly normally without it.",
+      },
+      {
+        kind: "changed",
+        text: "Nobody is texted unless they ticked that box - confirmations, both reminders and cancellation notices all check it. Everyone still gets the same emails either way.",
+      },
+      {
+        kind: "changed",
+        text: "The Privacy, Terms and Text Message pages now describe that box, because Twilio rejects a campaign where agreeing to texts is a condition of booking. This was the last requirement of theirs your site did not meet.",
+      },
+    ],
+  },
+  {
     version: "1.47.0",
     date: "2026-09-11",
     changes: [

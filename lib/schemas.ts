@@ -21,6 +21,11 @@ export const bookingSchema = z.object({
       "Enter a valid phone number"
     ),
   email: z.string().email("Enter a valid email"),
+  // Optional, and deliberately not validated into being true. Twilio's A2P
+  // guide rejects a campaign whose consent is a condition of the purchase, so
+  // this must be possible to leave unticked and still book. It is absent from
+  // stepFields below for the same reason — nothing about it can block step 3.
+  smsConsent: z.boolean().default(false),
 
   // Step 4
   hasHadExtensions: z.boolean({ message: "Please answer this question" }),

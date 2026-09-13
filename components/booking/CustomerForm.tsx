@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { UseFormReturn } from "react-hook-form";
 import { BookingFormData } from "@/lib/schemas";
-import { CONSENT_DISCLOSURE } from "@/lib/legal";
+import { CONSENT_DISCLOSURE, CONSENT_LABEL } from "@/lib/legal";
 import { Input } from "@/components/ui/input";
 
 interface CustomerFormProps {
@@ -49,32 +49,51 @@ export function CustomerForm({ form }: CustomerFormProps) {
       </div>
 
       {/* Consent, shown where the number is actually collected.
-          US carriers require A2P senders to disclose at the point of capture
-          what the number will be used for and how to stop — and the 10DLC
-          campaign review asks for the page this appears on. It says texts only,
-          names every message that gets sent, and promises no marketing, because
-          that is exactly what the site does.
 
-          The sentence itself lives in lib/legal.ts, because /sms quotes it word
-          for word as the disclosure shown at the point of capture. Written out
-          twice it would eventually be true in only one of them, and the page
-          would be quoting a promise this form no longer makes. Change it there
-          and both move together — and if the messages change, it has to. */}
-      <p className="font-sans text-[12px] text-muted leading-[1.6] mt-4">
-        {CONSENT_DISCLOSURE} See our{" "}
-        <Link href="/terms" className="underline">
-          Terms
-        </Link>
-        ,{" "}
-        <Link href="/privacy" className="underline">
-          Privacy Policy
-        </Link>{" "}
-        and{" "}
-        <Link href="/sms" className="underline">
-          Text Message Policy
-        </Link>
-        .
-      </p>
+          This is a separate, optional, unticked checkbox rather than a line of
+          small print, because Twilio's A2P guide rejects a campaign whose
+          consent is a condition of the purchase: "Consent controls (checkboxes,
+          toggles) must be blank or off by default", and a booking must be
+          completable without it. It is deliberately absent from stepFields, so
+          nothing about it can block the step.
+
+          defaultChecked is never set, and nothing writes to it on mount — the
+          box is off until she ticks it herself. The label and the wording
+          below live in lib/legal.ts because /sms quotes both word for word as
+          the disclosure shown at the point of capture; written out twice they
+          would eventually disagree, and the page would be quoting a promise
+          this form no longer makes. */}
+      <div className="mt-4 flex gap-3">
+        <input
+          id="smsConsent"
+          type="checkbox"
+          className="mt-[3px] h-4 w-4 flex-none accent-deep-brown"
+          {...register("smsConsent")}
+        />
+        <div>
+          <label
+            htmlFor="smsConsent"
+            className="font-sans text-[14px] text-charcoal"
+          >
+            {CONSENT_LABEL}
+          </label>
+          <p className="font-sans text-[12px] text-muted leading-[1.6] mt-1">
+            {CONSENT_DISCLOSURE} See our{" "}
+            <Link href="/terms" className="underline">
+              Terms
+            </Link>
+            ,{" "}
+            <Link href="/privacy" className="underline">
+              Privacy Policy
+            </Link>{" "}
+            and{" "}
+            <Link href="/sms" className="underline">
+              Text Message Policy
+            </Link>
+            .
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

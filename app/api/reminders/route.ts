@@ -102,6 +102,7 @@ interface ReminderRow {
     full_name: string;
     email: string | null;
     phone: string | null;
+    sms_consent: boolean | null;
     sms_opt_out: boolean | null;
   } | null;
   services: { name: string; price: number | string; duration_minutes: number } | null;
@@ -139,7 +140,7 @@ export async function GET(req: NextRequest) {
     const salonAddress = addressRow?.value ?? null;
 
     const select =
-      "id, booking_date, time_slot, deposit_amount, clients(id, full_name, email, phone, sms_opt_out), services(name, price, duration_minutes)";
+      "id, booking_date, time_slot, deposit_amount, clients(id, full_name, email, phone, sms_consent, sms_opt_out), services(name, price, duration_minutes)";
 
     const normalise = (rows: unknown[]): ReminderRow[] =>
       (rows || []).map((row) => {
@@ -161,7 +162,14 @@ export async function GET(req: NextRequest) {
           .eq("id", booking.id);
 
       const client = booking.clients;
-      const phone = client?.sms_opt_out ? null : toE164(client?.phone);
+      // Two separate gates, and both have to pass. sms_consent is the yes she
+      // gave at booking; sms_opt_out is a later STOP that overrides it. Without
+      // the consent check the reminders would text people who never asked,
+      // which is the thing the whole registration turns on.
+      const phone =
+        client?.sms_consent && !client?.sms_opt_out
+          ? toE164(client?.phone)
+          : null;
 
       if (!booking.services || !client || (!client.email && !phone)) {
         // No way to reach this person at all. Stamped anyway so a permanently

@@ -55,7 +55,7 @@ export default async function TermsPage() {
   return (
     <LegalPage
       title="Terms & Conditions"
-      updated="September 11, 2026"
+      updated="September 13, 2026"
       sections={[
         buildTerms(deposit),
         buildSmsTerms({

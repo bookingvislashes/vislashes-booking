@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   const { data: booking, error: loadError } = await admin
     .from("bookings")
     .select(
-      "id, booking_date, time_slot, status, deposit_paid, client:clients(full_name, email, phone, sms_opt_out)"
+      "id, booking_date, time_slot, status, deposit_paid, client:clients(full_name, email, phone, sms_consent, sms_opt_out)"
     )
     .eq("id", input.bookingId)
     .maybeSingle();
@@ -98,8 +98,10 @@ export async function POST(req: NextRequest) {
     // Also by text. Of all the messages this site sends, this is the one a
     // client most needs to see today rather than whenever she next opens her
     // email — otherwise she drives to an appointment that is not happening.
-    // Best-effort, like the email: the cancellation is already saved.
-    if (isSmsConfigured() && !client?.sms_opt_out) {
+    // Best-effort, like the email: the cancellation is already saved. Still
+    // gated on consent — a cancellation being urgent is not a reason to text
+    // someone who never agreed to be texted; her email still goes out.
+    if (client?.sms_consent && !client?.sms_opt_out && isSmsConfigured()) {
       const phone = toE164(client?.phone);
       if (phone) {
         try {

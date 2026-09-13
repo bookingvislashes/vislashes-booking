@@ -43,7 +43,7 @@ export default async function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="September 11, 2026"
+      updated="September 13, 2026"
       sections={[
         buildPrivacyPolicy({
           businessName: get("business_name") ?? "VIS Lashes",

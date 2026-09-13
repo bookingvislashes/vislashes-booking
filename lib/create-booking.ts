@@ -10,6 +10,8 @@ interface BookingFormData {
   fullName: string;
   phone: string;
   email: string;
+  /** The optional text-message box on step 3. False unless she ticked it. */
+  smsConsent?: boolean;
   hasHadExtensions: boolean;
   isSpecialOccasion: boolean;
   occasionDetails?: string;
@@ -75,6 +77,14 @@ export async function createBooking({
 
   let clientId: string;
 
+  // Ticking the box is the opt-in, and it is only ever written when true.
+  // An untick on a later booking is not a withdrawal of an earlier consent —
+  // that is what STOP is for — so this spreads into the update rather than
+  // setting the column back to false and silently revoking it.
+  const smsConsentFields = formData.smsConsent
+    ? { sms_consent: true, sms_consent_at: new Date().toISOString() }
+    : {};
+
   if (existingClient) {
     clientId = existingClient.id;
     // This error was discarded while the insert branch below checked properly.
@@ -90,6 +100,7 @@ export async function createBooking({
       .update({
         full_name: fullName,
         phone: formData.phone,
+        ...smsConsentFields,
         updated_at: new Date().toISOString(),
       })
       .eq("id", clientId);
@@ -129,6 +140,7 @@ export async function createBooking({
           full_name: fullName,
           email,
           phone: formData.phone,
+          ...smsConsentFields,
           updated_at: new Date().toISOString(),
         })
         .eq("id", adoptedId);
@@ -144,6 +156,7 @@ export async function createBooking({
           full_name: fullName,
           email,
           phone: formData.phone,
+          ...smsConsentFields,
         })
         .select("id")
         .single();
@@ -271,8 +284,10 @@ export async function createBooking({
   // The same confirmation as a text. Best-effort on exactly the same terms as
   // the email above: the card is already charged and the booking already
   // written, so nothing here is allowed to fail the booking. Skipped silently
-  // when Twilio is not configured, or when the number cannot be parsed.
-  if (isSmsConfigured()) {
+  // when she did not tick the box, when Twilio is not configured, or when the
+  // number cannot be parsed. The consent check comes first deliberately: no
+  // text is sent to anyone who did not ask for one, whatever else is true.
+  if (formData.smsConsent && isSmsConfigured()) {
     const phone = toE164(formData.phone);
     if (phone) {
       try {
