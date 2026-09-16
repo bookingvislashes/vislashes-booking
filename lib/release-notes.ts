@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.59.0",
+    date: "2026-09-16",
+    changes: [
+      {
+        kind: "changed",
+        text: "Reviews on the home page now fade gently from one to the next instead of snapping over.",
+      },
+      {
+        kind: "changed",
+        text: "The Before You Book questions now slide open and closed instead of jumping, and the answer stays on screen while it closes.",
+      },
+    ],
+  },
+  {
     version: "1.58.2",
     date: "2026-09-13",
     changes: [

@@ -133,12 +133,18 @@ export function Testimonials({ quotes }: TestimonialsProps) {
           aria-atomic="true"
           className="min-h-[220px] sm:min-h-[200px] flex flex-col justify-center border-y border-light-tan py-8 sm:py-10"
         >
-          <blockquote className="font-display text-[22px] sm:text-[28px] lg:text-[32px] leading-[1.4] text-dark-brown text-pretty text-center">
-            &ldquo;{current.quote}&rdquo;
-          </blockquote>
-          <p className="font-sans text-[15px] font-semibold text-dark-brown text-center mt-5">
-            {current.name}
-          </p>
+          {/* Keyed on the index so React replaces this subtree rather than
+              editing the text in place, which is what lets the entrance
+              animation run again on every advance. The fixed minimum height
+              on the parent means the swap never moves the page. */}
+          <div key={index} className="animate-quote-in">
+            <blockquote className="font-display text-[22px] sm:text-[28px] lg:text-[32px] leading-[1.4] text-dark-brown text-pretty text-center">
+              &ldquo;{current.quote}&rdquo;
+            </blockquote>
+            <p className="font-sans text-[15px] font-semibold text-dark-brown text-center mt-5">
+              {current.name}
+            </p>
+          </div>
         </div>
 
         {slides.length > 1 && (

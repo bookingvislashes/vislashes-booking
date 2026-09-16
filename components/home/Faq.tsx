@@ -48,7 +48,7 @@ export function Faq({ items }: { items: FaqItem[] }) {
           {items.map((item) => (
             <details
               key={item.question}
-              className="group border-b border-light-tan"
+              className="faq-disclosure group border-b border-light-tan"
             >
               {/* list-none plus the webkit selector removes the default
                   disclosure triangle in both engines; without the second one
