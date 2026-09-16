@@ -1,6 +1,30 @@
 import Link from "next/link";
+import { legalEntityLine } from "@/lib/legal";
+import { createPublicClient } from "@/lib/supabase/server";
 
-export function Footer() {
+export async function Footer() {
+  // Who the business legally is, on every page rather than only the legal
+  // ones. A carrier reviewing the messaging campaign lands on the home page
+  // first, and the whole A2P rejection came down to nobody being able to tell
+  // that vislashes.com and the name on the Twilio account were one business.
+  // Same contract as everywhere else: unset renders nothing.
+  let entity = "";
+  try {
+    const supabase = await createPublicClient();
+    const { data } = await supabase
+      .from("settings")
+      .select("key, value")
+      .in("key", ["business_name", "business_legal_name"]);
+    const get = (key: string) =>
+      (data ?? []).find((row) => row.key === key)?.value ?? null;
+    entity = legalEntityLine({
+      businessName: get("business_name") ?? "VIS Lashes",
+      legalName: get("business_legal_name"),
+    });
+  } catch {
+    // Left blank: the footer renders without the line rather than failing.
+  }
+
   return (
     <footer className="w-full bg-black py-[22px] px-6">
       <div className="max-w-[1440px] mx-auto flex flex-col items-center gap-2">
@@ -54,6 +78,12 @@ export function Footer() {
             Texts
           </Link>
         </div>
+
+        {entity && (
+          <p className="font-sans text-[11px] leading-[1.6] text-white/40 text-center max-w-[640px]">
+            {entity}
+          </p>
+        )}
 
         {/* Staff entry point. Deliberately quiet and in the footer rather than
             the header — it is for the salon, not for clients. */}

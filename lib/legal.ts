@@ -63,14 +63,19 @@ export const buildTerms = (depositAmount: number | null) => `TERMS AND CONDITION
  */
 export function buildSmsTerms(details: {
   businessName: string;
+  legalName?: string | null;
   email: string | null;
   phone: string | null;
 }) {
   const support = [details.email, details.phone].filter(Boolean).join(" or ");
+  const entity = legalEntityLine({
+    businessName: details.businessName,
+    legalName: details.legalName ?? null,
+  });
 
   return `TEXT MESSAGE TERMS
 
-1. Programme name: ${details.businessName} appointment texts.
+1. Programme name: ${details.businessName} appointment texts.${entity ? `\n${entity}` : ""}
 2. You opt in by ticking the optional text message box when you book. It is unticked by default and is never required: you can book without it and be texted nothing. We never add a number from any other source and we never buy or import phone lists.
 3. You will receive up to three messages per appointment - a booking confirmation, a reminder two days before, and a reminder two hours before - plus one message if ${details.businessName} has to cancel your appointment.
 4. These messages are transactional and relate only to your own appointment. ${details.businessName} does not send marketing or promotional text messages.
@@ -97,9 +102,14 @@ export function buildSmsTerms(details: {
  */
 export function buildPrivacyPolicy(details: {
   businessName: string;
+  legalName?: string | null;
   email: string | null;
   phone: string | null;
 }) {
+  const entity = legalEntityLine({
+    businessName: details.businessName,
+    legalName: details.legalName ?? null,
+  });
   // The studio address is deliberately excluded from this page. It is a home
   // studio, this page is public and indexable, and the address only belongs
   // in front of someone who has already booked and paid a deposit — the
@@ -109,7 +119,7 @@ export function buildPrivacyPolicy(details: {
     .join("\n");
 
   return `PRIVACY POLICY
-
+${entity ? `\nWHO WE ARE\n${entity}\n` : ""}
 WHAT WE COLLECT
 When you book an appointment we collect your name, email address, phone number, the appointment details you choose, and the health information you provide on the intake form. If you pay a deposit online, your card is handled entirely by Square — we never see or store your card number.
 
@@ -181,9 +191,14 @@ export const CONSENT_DISCLOSURE =
 
 export function buildMessagingPolicy(details: {
   businessName: string;
+  legalName?: string | null;
   email: string | null;
   phone: string | null;
 }) {
+  const entity = legalEntityLine({
+    businessName: details.businessName,
+    legalName: details.legalName ?? null,
+  });
   const contact = [details.businessName, details.email, details.phone]
     .filter(Boolean)
     .join("\n");
@@ -191,7 +206,7 @@ export function buildMessagingPolicy(details: {
   return `TEXT MESSAGE POLICY
 
 WHO WE ARE
-${details.businessName} is a solo eyelash extension studio in Saint Cloud, Florida. We take appointment bookings at vislashes.com.
+${details.businessName} is a solo eyelash extension studio in Saint Cloud, Florida. We take appointment bookings at vislashes.com.${entity ? `\n${entity}` : ""}
 
 WHAT THIS PROGRAMME SENDS
 Appointment messages, and nothing else. If you book an appointment you may receive a booking confirmation, a reminder two days before, a reminder two hours before, and a notice if we have to cancel. That is up to four messages per appointment, and how often you get them depends only on how often you book. We do not send marketing or promotional texts, and there is no way to subscribe to any that we do not send.
@@ -220,4 +235,31 @@ Our Privacy Policy is at vislashes.com/privacy and our Terms & Conditions, inclu
 
 CONTACT
 ${contact}`;
+}
+
+/**
+ * Who the business legally is.
+ *
+ * Twilio rejected the A2P campaign three times for a "non-compliant privacy
+ * policy" before their support team looked and found the policy was fine: the
+ * real problem was that the Twilio business profile is registered to a
+ * person's legal name while the website, the opt-in page and the policy all
+ * say VIS Lashes, and their reviewer could not tell who the end business was
+ * or who was responsible for the data. Nothing on the site connected the two.
+ *
+ * So every page a reviewer can open now states the relationship in one line.
+ * It is built from Settings rather than written here, because it is hers to
+ * change, and it renders nothing at all when the legal name is unset — the
+ * same contract as the address and the artist name. A wrong legal entity on a
+ * public policy is worse than none.
+ */
+export function legalEntityLine(details: {
+  businessName: string;
+  legalName: string | null;
+}): string {
+  if (!details.legalName) return "";
+  if (details.legalName.trim().toLowerCase() === details.businessName.trim().toLowerCase()) {
+    return "";
+  }
+  return `${details.businessName} is the trading name of ${details.legalName}, a sole proprietor. ${details.businessName} and ${details.legalName} are the same business: the same person owns it, operates vislashes.com, sends the appointment text messages described here, and is responsible for the information collected through this site.`;
 }

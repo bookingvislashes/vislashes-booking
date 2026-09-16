@@ -32,6 +32,19 @@ const FIELDS = [
     fallback: "60",
   },
   { key: "business_name", label: "Business Name", type: "text", fallback: "VIS Lashes" },
+  // The name the business is registered under, which for a sole proprietor is
+  // a person's name rather than the trading name. Twilio rejected the A2P
+  // campaign three times because the Twilio business profile said one and the
+  // website said the other, and their reviewer could not tell who the end
+  // business was. Filling this in prints "VIS Lashes is the trading name of
+  // <this>" on the legal pages and in the footer. Left blank it prints
+  // nothing at all, like every other business detail here.
+  {
+    key: "business_legal_name",
+    label: "Registered legal name (for the DBA line on legal pages)",
+    type: "text",
+    fallback: "",
+  },
   { key: "business_email", label: "Business Email", type: "email", fallback: "" },
   { key: "business_phone", label: "Business Phone", type: "tel", fallback: "" },
   // Shown on the client's confirmation page. Both are left blank rather than

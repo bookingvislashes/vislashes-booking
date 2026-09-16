@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.51.0",
+    date: "2026-09-16",
+    changes: [
+      {
+        kind: "note",
+        text: "Go to Settings and fill in \"Registered legal name\" with the name your business is registered under - Vianney Telleria, not VIS Lashes. Nothing changes on the site until you do, and this is what Twilio has been rejecting the campaign over.",
+      },
+      {
+        kind: "added",
+        text: "Once that is filled in, every page footer and all three legal pages say that VIS Lashes is the trading name of that person, and that they are the same business. Twilio support confirmed their reviewer could not tell who the business was, which is what caused all three rejections.",
+      },
+    ],
+  },
+  {
     version: "1.50.0",
     date: "2026-09-13",
     changes: [

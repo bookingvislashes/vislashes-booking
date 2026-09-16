@@ -21,7 +21,12 @@ export default async function SmsPolicyPage() {
     const { data } = await supabase
       .from("settings")
       .select("key, value")
-      .in("key", ["business_name", "business_email", "business_phone"]);
+      .in("key", [
+        "business_name",
+        "business_legal_name",
+        "business_email",
+        "business_phone",
+      ]);
     rows = data ?? [];
   } catch {
     // Left empty: the contact block collapses to just the business name.
@@ -40,10 +45,11 @@ export default async function SmsPolicyPage() {
   return (
     <LegalPage
       title="Text Message Policy"
-      updated="September 13, 2026"
+      updated="September 16, 2026"
       sections={[
         buildMessagingPolicy({
           businessName: get("business_name") ?? "VIS Lashes",
+          legalName: get("business_legal_name"),
           email: get("business_email"),
           phone: formattedPhone,
         }),

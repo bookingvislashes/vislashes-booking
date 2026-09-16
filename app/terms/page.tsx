@@ -36,7 +36,12 @@ export default async function TermsPage() {
     const { data: settings } = await supabase
       .from("settings")
       .select("key, value")
-      .in("key", ["business_name", "business_email", "business_phone"]);
+      .in("key", [
+        "business_name",
+        "business_legal_name",
+        "business_email",
+        "business_phone",
+      ]);
     rows = settings ?? [];
   } catch {
     // Left null/empty: buildTerms writes the clause without an amount, and the
@@ -55,11 +60,12 @@ export default async function TermsPage() {
   return (
     <LegalPage
       title="Terms & Conditions"
-      updated="September 13, 2026"
+      updated="September 16, 2026"
       sections={[
         buildTerms(deposit),
         buildSmsTerms({
           businessName: get("business_name") ?? "VIS Lashes",
+          legalName: get("business_legal_name"),
           email: get("business_email"),
           phone: formattedPhone,
         }),
