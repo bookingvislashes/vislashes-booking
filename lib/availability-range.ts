@@ -68,7 +68,17 @@ function hhmm(value: string | null): string | null {
 export async function loadAvailabilityContext(
   admin: SupabaseClient,
   from: string,
-  to: string
+  to: string,
+  /**
+   * A booking to treat as though it were not there.
+   *
+   * Only ever set when that same booking is the one being moved: a client on
+   * the reschedule page must be able to see the times their own appointment
+   * is currently sitting on, and the slots either side of it that its own
+   * length is blocking. Callers must prove ownership before passing this —
+   * an arbitrary id here would advertise a slot somebody else already holds.
+   */
+  excludeBookingId?: string | null
 ): Promise<AvailabilityContext> {
   const [availabilityRes, overridesRes, blockedRes, bookingsRes, settingsRes] =
     await Promise.all([
@@ -90,14 +100,17 @@ export async function loadAvailabilityContext(
         .gte("date", from)
         .lte("date", to),
       // Only confirmed bookings hold a slot.
-      admin
-        .from("bookings")
-        .select(
-          "booking_date, time_slot, has_removal, services(duration_minutes)"
-        )
-        .gte("booking_date", from)
-        .lte("booking_date", to)
-        .eq("status", "confirmed"),
+      (() => {
+        const q = admin
+          .from("bookings")
+          .select(
+            "id, booking_date, time_slot, has_removal, services(duration_minutes)"
+          )
+          .gte("booking_date", from)
+          .lte("booking_date", to)
+          .eq("status", "confirmed");
+        return excludeBookingId ? q.neq("id", excludeBookingId) : q;
+      })(),
       admin
         .from("settings")
         .select("key, value")

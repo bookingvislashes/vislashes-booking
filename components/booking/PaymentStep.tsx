@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { BookingFormData } from "@/lib/schemas";
 import { SquareCardForm } from "./SquareCardForm";
@@ -17,9 +17,11 @@ interface Service {
 interface PaymentStepProps {
   form: UseFormReturn<BookingFormData>;
   services: Service[];
+  /** True when the page was opened as /book?test=1. See TestBookingButton. */
+  testMode?: boolean;
 }
 
-export function PaymentStep({ form, services }: PaymentStepProps) {
+export function PaymentStep({ form, services, testMode }: PaymentStepProps) {
   const [error, setError] = useState<string | null>(null);
 
   const formValues = form.getValues();
@@ -163,7 +165,96 @@ export function PaymentStep({ form, services }: PaymentStepProps) {
           The remaining ${remainingBalance.toFixed(2)} can be paid by cash or
           card at your appointment.
         </p>
+
+        {testMode && (
+          <TestBookingButton
+            serviceId={selectedService.id}
+            form={form}
+            onError={handlePaymentError}
+          />
+        )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The salon's own dry run: book this appointment for real, minus the card.
+ *
+ * Rendered only when the URL says ?test=1 AND the visitor turns out to be
+ * signed in to the admin — the server checks the session again before writing
+ * anything, so this is a convenience, not the guard. A client who somehow
+ * lands on ?test=1 sees nothing at all.
+ */
+function TestBookingButton({
+  serviceId,
+  form,
+  onError,
+}: {
+  serviceId: string;
+  form: UseFormReturn<BookingFormData>;
+  onError: (message: string) => void;
+}) {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [booking, setBooking] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    fetch("/api/admin/session")
+      .then((res) => (res.ok ? res.json() : { admin: false }))
+      .then((data) => {
+        if (live) setIsAdmin(Boolean(data.admin));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  if (!isAdmin) return null;
+
+  const run = async () => {
+    setBooking(true);
+    try {
+      const res = await fetch("/api/bookings/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serviceId,
+          formData: { ...form.getValues(), paymentMethod: "square" },
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        onError(data.message || data.error || "Test booking failed.");
+        return;
+      }
+      window.location.href = `/confirmation/${data.bookingId}`;
+    } catch {
+      onError("Couldn't reach the server.");
+    } finally {
+      setBooking(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 rounded-surface border border-dashed border-deep-brown/40 bg-white p-4">
+      <p className="font-sans text-[12px] font-semibold uppercase tracking-wider text-deep-brown mb-1">
+        Salon test mode
+      </p>
+      <p className="font-sans text-[13px] text-charcoal mb-3">
+        Books this appointment for real and sends every email, without charging
+        a card. It holds the time slot until you cancel it in the admin.
+      </p>
+      <button
+        type="button"
+        onClick={run}
+        disabled={booking}
+        className="h-control w-full rounded-control bg-deep-brown px-4 font-sans text-[14px] font-semibold text-white disabled:opacity-60"
+      >
+        {booking ? "Creating test booking..." : "Book it without paying"}
+      </button>
     </div>
   );
 }

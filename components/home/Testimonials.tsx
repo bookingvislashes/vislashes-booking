@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Real client messages and feedback (Instagram DMs, texts, Square post-sale
  * feedback) as she received them — light spelling and punctuation cleanup
@@ -51,52 +53,139 @@ const TESTIMONIALS = [
 ] as const;
 
 /**
- * An editorial list rather than a card grid.
+ * A slideshow of real client reviews, falling back to her curated quotes.
  *
- * These quotes are real messages, so they run to whatever length they ran to
- * — the shortest here is nine words and earlier versions of this list held
- * quotes half that. In equal-height cards a line that short leaves most of
- * the box empty and reads like something failed to load. Set large in the
- * display face, on its own row, the same words read as deliberate. Rows also
- * let each quote take the height it needs instead of being padded out to
- * match its neighbours, which is what keeps this safe as she swaps quotes in
- * and out.
+ * WHERE THE QUOTES COME FROM. Reviews left through the link in the follow-up
+ * email, four stars and up, which is the only kind the database will let an
+ * anonymous visitor read at all. Until some have come in — and any time the
+ * read fails — the four messages above stand in, so this section is never
+ * empty and never a hole on the page.
  *
- * No avatars, and none should be added: these came from private DMs and texts,
- * which is also why most carry a first name only.
+ * WHY A SLIDESHOW NOW. The old list printed every quote at once, which works
+ * for four and stops working somewhere around eight: a page of testimonials
+ * reads as a wall and gets skipped. One at a time, each quote gets the room
+ * to be read.
+ *
+ * It advances on its own and stops the moment anyone touches it — an
+ * auto-advancing panel that keeps moving while you are reading it is worse
+ * than one that never moved. It also stops entirely for a visitor who has
+ * asked for reduced motion, who still gets the arrows and the dots.
  */
-export function Testimonials() {
+import { useCallback, useEffect, useRef, useState } from "react";
+
+export interface Quote {
+  quote: string;
+  name: string;
+}
+
+interface TestimonialsProps {
+  /** Published reviews. Empty falls back to the curated quotes above. */
+  quotes?: Quote[];
+}
+
+const ADVANCE_MS = 5000;
+
+export function Testimonials({ quotes }: TestimonialsProps) {
+  const slides: Quote[] = quotes?.length ? quotes : [...TESTIMONIALS];
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const liveRef = useRef<HTMLDivElement>(null);
+
+  const go = useCallback(
+    (next: number) => setIndex((next + slides.length) % slides.length),
+    [slides.length]
+  );
+
+  useEffect(() => {
+    if (paused || slides.length < 2) return;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+    const timer = setTimeout(() => go(index + 1), ADVANCE_MS);
+    return () => clearTimeout(timer);
+  }, [index, paused, slides.length, go]);
+
+  const current = slides[index];
+
   return (
     <section className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] pb-12 sm:pb-16 lg:pb-[100px]">
-      {/* Matches the scale of "Find Your Signature Set" and "How to Book"
-          above it — this heading used to be several steps smaller than both,
-          which made the section read as a footnote to them. */}
       <div className="text-center mb-8 sm:mb-10 lg:mb-[56px]">
         <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[56px] leading-[1.1] text-dark-brown text-balance">
           What Clients Say
         </h2>
       </div>
 
-      {/* Narrower than the page gutter on purpose: a quote set this large runs
-          to an uncomfortable line length across the full 1200px content width. */}
-      <div className="max-w-[1000px] mx-auto">
-        {TESTIMONIALS.map((t) => (
-          <figure
-            key={t.name}
-            className="grid gap-2 sm:grid-cols-[minmax(120px,180px)_1fr] sm:gap-10 lg:gap-[64px] items-baseline border-t border-light-tan py-7 sm:py-9 lg:py-10 last:border-b"
-          >
-            {/* Attribution sits in the left column on a wide screen, but below
-                the quote on a phone, where a name arriving before the words it
-                belongs to reads backwards. */}
-            <figcaption className="order-2 sm:order-none font-sans text-[15px] font-semibold text-dark-brown">
-              {t.name}
-            </figcaption>
-
-            <blockquote className="order-1 sm:order-none font-display text-[22px] sm:text-[26px] lg:text-[30px] leading-[1.4] text-dark-brown text-pretty">
-              &ldquo;{t.quote}&rdquo;
+      <div
+        className="max-w-[1000px] mx-auto"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onFocusCapture={() => setPaused(true)}
+        onBlurCapture={() => setPaused(false)}
+      >
+        {/* A fixed minimum height, so a short quote followed by a long one
+            does not shunt the rest of the page up and down as it advances. */}
+        <div
+          ref={liveRef}
+          aria-live="polite"
+          aria-atomic="true"
+          className="min-h-[220px] sm:min-h-[200px] flex flex-col justify-center border-y border-light-tan py-8 sm:py-10"
+        >
+          {/* Keyed on the index so React replaces this subtree rather than
+              editing the text in place, which is what lets the entrance
+              animation run again on every advance. The fixed minimum height
+              on the parent means the swap never moves the page. */}
+          <div key={index} className="animate-quote-in">
+            <blockquote className="font-display text-[22px] sm:text-[28px] lg:text-[32px] leading-[1.4] text-dark-brown text-pretty text-center">
+              &ldquo;{current.quote}&rdquo;
             </blockquote>
-          </figure>
-        ))}
+            <p className="font-sans text-[15px] font-semibold text-dark-brown text-center mt-5">
+              {current.name}
+            </p>
+          </div>
+        </div>
+
+        {slides.length > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-6">
+            <button
+              type="button"
+              aria-label="Previous review"
+              onClick={() => go(index - 1)}
+              className="w-10 h-10 rounded-full border border-light-tan text-deep-brown hover:bg-light-tan transition-colors flex items-center justify-center"
+            >
+              &larr;
+            </button>
+
+            <div className="flex gap-2" role="tablist" aria-label="Reviews">
+              {slides.map((slide, i) => (
+                <button
+                  key={`${slide.name}-${i}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === index}
+                  aria-label={`Review ${i + 1} of ${slides.length}`}
+                  onClick={() => setIndex(i)}
+                  className={`h-2 rounded-full transition-all ${
+                    i === index
+                      ? "w-6 bg-deep-brown"
+                      : "w-2 bg-light-tan hover:bg-warm-beige"
+                  }`}
+                />
+              ))}
+            </div>
+
+            <button
+              type="button"
+              aria-label="Next review"
+              onClick={() => go(index + 1)}
+              className="w-10 h-10 rounded-full border border-light-tan text-deep-brown hover:bg-light-tan transition-colors flex items-center justify-center"
+            >
+              &rarr;
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

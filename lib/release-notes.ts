@@ -31,7 +31,7 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: "1.51.0",
+    version: "1.60.0",
     date: "2026-09-16",
     changes: [
       {
@@ -41,6 +41,260 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       {
         kind: "added",
         text: "Once that is filled in, every page footer and all three legal pages say that VIS Lashes is the trading name of that person, and that they are the same business. Twilio support confirmed their reviewer could not tell who the business was, which is what caused all three rejections.",
+      },
+    ],
+  },
+  {
+    version: "1.59.1",
+    date: "2026-09-16",
+    changes: [
+      {
+        kind: "changed",
+        text: "Reviews on the home page now move on every 5 seconds instead of 7, so more of them get seen.",
+      },
+    ],
+  },
+  {
+    version: "1.59.0",
+    date: "2026-09-16",
+    changes: [
+      {
+        kind: "changed",
+        text: "Reviews on the home page now fade gently from one to the next instead of snapping over.",
+      },
+      {
+        kind: "changed",
+        text: "The Before You Book questions now slide open and closed instead of jumping, and the answer stays on screen while it closes.",
+      },
+    ],
+  },
+  {
+    version: "1.58.2",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Emails that the email service REFUSED were being treated as sent. Nothing was ever logged and the screen said \u201csent\u201d, which is why confirmations appeared to go out while Resend recorded none. Every email now checks whether it was actually accepted.",
+      },
+      {
+        kind: "note",
+        text: "This means no client confirmation has actually been delivered yet. Sending starts working the moment vislashes.com is verified in Resend \u2014 that's the DNS records step, and it is now the only thing standing in the way.",
+      },
+    ],
+  },
+  {
+    version: "1.58.1",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "fixed",
+        text: "\u201cSend Confirmation Again\u201d now names the address it copied you at, and says so plainly if no copy went because Settings \u2192 Your Inbox is empty. It used to promise a copy either way.",
+      },
+      {
+        kind: "changed",
+        text: "It also now says the email was handed to the email service rather than \u201csent\u201d \u2014 delivery is the inbox provider's call, and Resend \u2192 Emails is where you see whether it landed.",
+      },
+    ],
+  },
+  {
+    version: "1.58.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "Open any confirmed appointment and there's now a \u201cSend Confirmation Again\u201d button. The client gets the full confirmation email and you get your blind copy \u2014 for when someone says it never arrived.",
+      },
+      {
+        kind: "changed",
+        text: "If that send fails, it now tells you why on screen (for example, that your domain isn't verified in Resend yet) instead of quietly doing nothing. Automatic emails still fail silently on purpose, so a booking can never fail because of one.",
+      },
+    ],
+  },
+  {
+    version: "1.57.1",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "fixed",
+        text: "The confirmation email said clients could move their appointment \u201cup to the day before\u201d. Your advance-booking setting is 10 hours, so that was a promise the page would have refused. It now quotes your real setting \u2014 change the number in Settings and the email follows.",
+      },
+    ],
+  },
+  {
+    version: "1.57.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "changed",
+        text: "The birthday email now opens with animated confetti and a 🎉 in the subject line, so it feels like a card rather than a notification.",
+      },
+      {
+        kind: "changed",
+        text: "The \u201c$10 off next time\u201d offer has moved below the reschedule button in the confirmation, behind a divider, so the appointment details aren't crowded.",
+      },
+    ],
+  },
+  {
+    version: "1.56.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "Your own review page. The two-day follow-up email now has a \u201cLeave a review\u201d link \u2014 five stars to tap and a box to type in. Only real clients with an appointment can leave one, and only once each.",
+      },
+      {
+        kind: "added",
+        text: "4 and 5 star reviews go straight onto your home page. Anything lower is kept just for you and can never reach the public site \u2014 you get a phone alert so you can put it right.",
+      },
+      {
+        kind: "added",
+        text: "A Reviews page in the admin, split into \u201cOn your website\u201d and \u201cJust for you\u201d. One tap to take a review down or put it back.",
+      },
+      {
+        kind: "changed",
+        text: "What Clients Say is now a slideshow \u2014 one quote at a time, advancing on its own, with arrows and dots. It fills with real reviews as they come in, and shows your original four until then.",
+      },
+      {
+        kind: "note",
+        text: "Run migration 024 (Migrations page) before reviews can be left or shown. Migrations 022 and 023 are still outstanding too \u2014 run them in order.",
+      },
+    ],
+  },
+  {
+    version: "1.55.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "Give a client credit from their profile \u2014 $10 for tagging you, or $15 for a birthday. It sits on their account and comes off automatically at their next appointment, whether they book online or you enter it. Their confirmation shows it. If they cancel, it goes back.",
+      },
+      {
+        kind: "added",
+        text: "Every confirmation now tells clients about the tag offer: post within 24 hours, tag you, get $10 off next time. It's also answered on your home page under \u201cDo you have any offers for returning clients?\u201d",
+      },
+      {
+        kind: "added",
+        text: "Birthdays. The booking form asks for month and day (optional), and clients get a greeting plus their credit at the start of their birthday month. You can also add a birthday on any client's profile.",
+      },
+      {
+        kind: "added",
+        text: "A \u201cwe miss you\u201d email six weeks after someone's last appointment \u2014 skipped entirely if they've been back or have anything booked.",
+      },
+      {
+        kind: "changed",
+        text: "The contacts line now reads \u201cPlease remove contacts before arrival.\u201d in both the confirmation and the reminder.",
+      },
+      {
+        kind: "note",
+        text: "Run migrations 022 and 023 (Migrations page). Until they do, the new emails and the credits can't work \u2014 everything else keeps running normally.",
+      },
+      {
+        kind: "note",
+        text: "The two amounts live in Settings as referral_credit_amount ($10) and birthday_credit_amount ($15). Change either and the emails, the website and the admin buttons all follow.",
+      },
+    ],
+  },
+  {
+    version: "1.54.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "Clients now get a check-in two days after any appointment: three aftercare tips, a nudge that most people rebook at 2\u20133 weeks, and a friendly ask to tag you or pass your name on. About a hundred words, with a \u201cBook my fill\u201d button.",
+      },
+      {
+        kind: "changed",
+        text: "Your 15-minute grace period is now in the confirmation and the reminder \u2014 \u201cRunning late? No stress \u2014 there's a 15-minute grace period.\u201d The old \u201ccome a few minutes early\u201d line is gone.",
+      },
+      {
+        kind: "changed",
+        text: "Every email is shorter. The confirmation and the reminder now show the same four short lines, so the reminder is a glance rather than a second read.",
+      },
+      {
+        kind: "note",
+        text: "Run migration 022 (Migrations page). Until it does, the two-day follow-up cannot send \u2014 everything else keeps working normally.",
+      },
+    ],
+  },
+  {
+    version: "1.53.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "You can now walk through the whole booking flow without paying. Sign in to the admin, open /book?test=1, and the payment step gains a \u201cBook it without paying\u201d button. Everything else is real \u2014 the confirmation email, your blind copy, the calendar entry, the phone alert.",
+      },
+      {
+        kind: "changed",
+        text: "Client replies now go to your Inbox address directly, rather than through the bookings@ address. One less thing to set up, and a reply can never land somewhere nobody reads.",
+      },
+      {
+        kind: "note",
+        text: "A test booking is a real appointment and holds that time slot. Cancel it in the admin when you're done \u2014 it's labelled TEST BOOKING so you'll spot it.",
+      },
+    ],
+  },
+  {
+    version: "1.52.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "changed",
+        text: "You are now blind-copied on the client's own confirmation instead of getting a separate email — every booking, new or returning, full set or refill, including the ones you add yourself. Bcc means the client never sees you on it.",
+      },
+      {
+        kind: "added",
+        text: "Confirmations have a \u201cChange my date or time\u201d button. Clients pick a new slot from your real openings, their deposit carries over, and the booking, your calendar and their reminders all update on their own.",
+      },
+      {
+        kind: "added",
+        text: "You are blind-copied on cancellations too, so you know when a deposit needs refunding by hand.",
+      },
+      {
+        kind: "changed",
+        text: "Email footers no longer list the cities. They show VIS LASHES with clickable Instagram and TikTok icons.",
+      },
+      {
+        kind: "changed",
+        text: "Friendlier wording throughout: contact lenses and arriving early are now separate lines, there's a gentle note about not bringing extra guests in both the confirmation and the reminder, and the \u201cskip the caffeine\u201d line is gone.",
+      },
+      {
+        kind: "note",
+        text: "Fill in Settings \u2192 Your Inbox with bookvislashes@gmail.com and save. That is where your copy of every booking goes. If it is blank, no copy is sent.",
+      },
+      {
+        kind: "note",
+        text: "Replies show the Reply-To address to the client, so it cannot be hidden. To keep your Gmail private, put bookings@vislashes.com in Business Email and set that mailbox to forward to your Gmail. Leave Business Email blank and replies go straight to your Gmail instead.",
+      },
+    ],
+  },
+  {
+    version: "1.51.0",
+    date: "2026-09-13",
+    changes: [
+      {
+        kind: "added",
+        text: "You now get your own copy of every appointment by email — the client's name, phone, email, service, time, deposit and what's still owed at the chair. It says whether they're new or returning, and hitting reply writes straight back to the client.",
+      },
+      {
+        kind: "changed",
+        text: "The confirmation, reminder and cancellation emails were rebuilt so they look the same in Gmail, Apple Mail and Outlook, on a phone or a laptop.",
+      },
+      {
+        kind: "changed",
+        text: "When a client replies to any email from the site, it now comes to your Business Email instead of going nowhere.",
+      },
+      {
+        kind: "changed",
+        text: "Reminder emails now include the studio address, the same way the confirmation and the 2-hour text already did.",
+      },
+      {
+        kind: "note",
+        text: "Your copy goes to the Business Email in Settings. If that box is blank, no copy is sent — fill it in and save.",
+      },
+      {
+        kind: "note",
+        text: "For emails to land in the inbox rather than spam, vislashes.com has to be verified in Resend (its SPF and DKIM records, plus a DMARC record) and the from-address has to use that domain. Worth checking before the next busy week.",
       },
     ],
   },
