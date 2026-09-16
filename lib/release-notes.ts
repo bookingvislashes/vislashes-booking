@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.59.1",
+    date: "2026-09-16",
+    changes: [
+      {
+        kind: "changed",
+        text: "Reviews on the home page now move on every 5 seconds instead of 7, so more of them get seen.",
+      },
+    ],
+  },
+  {
     version: "1.59.0",
     date: "2026-09-16",
     changes: [
