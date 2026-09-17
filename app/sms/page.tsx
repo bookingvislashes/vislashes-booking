@@ -12,7 +12,13 @@ export const metadata: Metadata = {
 // Same contract as /privacy and /terms: the contact block comes from Settings,
 // missing values render nothing rather than a placeholder, and the page still
 // renders if the database cannot be read.
-export const revalidate = 3600;
+// Five minutes, not an hour. These pages read the business details out of
+// Settings, and an hour meant a correction made in the admin was invisible
+// for an hour afterwards — which bit during the A2P review, when the legal
+// name was saved and the page kept serving the version without it. They are
+// three small documents behind a CDN; regenerating them more often costs
+// almost nothing, and being slow to tell the truth costs a review cycle.
+export const revalidate = 300;
 
 export default async function SmsPolicyPage() {
   let rows: { key: string; value: string }[] = [];

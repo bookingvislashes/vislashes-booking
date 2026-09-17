@@ -9,7 +9,13 @@ export const metadata: Metadata = {
     "Booking, deposit, cancellation and text message terms for VIS Lashes appointments.",
 };
 
-export const revalidate = 3600;
+// Five minutes, not an hour. These pages read the business details out of
+// Settings, and an hour meant a correction made in the admin was invisible
+// for an hour afterwards — which bit during the A2P review, when the legal
+// name was saved and the page kept serving the version without it. They are
+// three small documents behind a CDN; regenerating them more often costs
+// almost nothing, and being slow to tell the truth costs a review cycle.
+export const revalidate = 300;
 
 export default async function TermsPage() {
   // The deposit is read from the services table for the same reason the

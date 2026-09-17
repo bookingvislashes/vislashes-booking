@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.60.2",
+    date: "2026-09-17",
+    changes: [
+      {
+        kind: "fixed",
+        text: "A change you save in Settings now shows on the Terms, Privacy and Text Message pages within about five minutes instead of up to an hour. Saving the registered legal name and seeing nothing change is what this fixes.",
+      },
+    ],
+  },
+  {
     version: "1.60.1",
     date: "2026-09-16",
     changes: [
