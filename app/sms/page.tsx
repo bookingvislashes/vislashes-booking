@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/LegalPage";
+import { SmsConsentBlock } from "@/components/booking/SmsConsentBlock";
 import { buildMessagingPolicy } from "@/lib/legal";
 import { createPublicClient } from "@/lib/supabase/server";
 
@@ -51,7 +52,7 @@ export default async function SmsPolicyPage() {
   return (
     <LegalPage
       title="Text Message Policy"
-      updated="September 16, 2026"
+      updated="September 17, 2026"
       sections={[
         buildMessagingPolicy({
           businessName: get("business_name") ?? "VIS Lashes",
@@ -60,6 +61,28 @@ export default async function SmsPolicyPage() {
           phone: formattedPhone,
         }),
       ]}
-    />
+    >
+      {/* The consent control itself, server-rendered at a URL with nothing in
+          front of it. Twilio's automated opt-in check fetches a page and reads
+          the HTML; the real control is on step 3 of the booking wizard, which
+          from outside is indistinguishable from "a chat widget or pop-up we
+          can't read" — their words. This is the same component the booking
+          form renders, disabled here, so what the checker reads and what a
+          client sees cannot diverge. */}
+      <div className="mt-8 pt-7 border-t border-light-tan">
+        <h2 className="font-display text-[17px] font-bold text-dark-brown mb-2">
+          THE CONSENT STEP, AS IT APPEARS ON THE BOOKING FORM
+        </h2>
+        <p className="font-sans text-[15px] leading-[1.7] text-charcoal mb-4">
+          This is the exact checkbox and wording shown beneath the phone field
+          at vislashes.com/book. It is reproduced here so it can be read
+          without starting a booking. The box below is disabled and ticking it
+          does nothing — the only place to opt in is the booking form itself.
+        </p>
+        <div className="rounded-control bg-cream p-4 border border-light-tan">
+          <SmsConsentBlock id="smsConsentExample" />
+        </div>
+      </div>
+    </LegalPage>
   );
 }

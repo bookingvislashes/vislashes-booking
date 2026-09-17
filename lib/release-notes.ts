@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.61.0",
+    date: "2026-09-17",
+    changes: [
+      {
+        kind: "added",
+        text: "The Text Message Policy page now shows the actual tick box and wording from the booking form, at the bottom. Twilio's automatic check could not find your opt-in because it sits three steps into booking; now there is a page it can read.",
+      },
+      {
+        kind: "note",
+        text: "In the Twilio form, add this line to the end of the consent box: the consent step is also published at https://www.vislashes.com/sms",
+      },
+    ],
+  },
+  {
     version: "1.60.3",
     date: "2026-09-16",
     changes: [
