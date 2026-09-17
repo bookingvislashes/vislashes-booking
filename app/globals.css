@@ -75,7 +75,7 @@
   --animate-fade-out: fade-out 200ms ease-in both;
   /* One quote replacing another in the testimonial carousel. Deliberately
      shorter and smaller than fade-in-up: that is page content arriving once,
-     this fires every four seconds and has to be over before it is noticed. */
+     this fires every five seconds and has to be over before it is noticed. */
   --animate-quote-in: quote-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 

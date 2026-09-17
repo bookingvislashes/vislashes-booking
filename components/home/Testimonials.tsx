@@ -83,7 +83,7 @@ interface TestimonialsProps {
   quotes?: Quote[];
 }
 
-const ADVANCE_MS = 4000;
+const ADVANCE_MS = 5000;
 
 export function Testimonials({ quotes }: TestimonialsProps) {
   const slides: Quote[] = quotes?.length ? quotes : [...TESTIMONIALS];

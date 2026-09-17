@@ -322,17 +322,27 @@ export default async function HomePage() {
           which is an iPad mini held upright. Two columns fit comfortably from
           640px. Below that the stacked unit is centred as one 420px column
           instead, keeping the circle and the text on a shared left edge; a
-          phone is narrower than the column, so phones are unchanged. */}
+          phone is narrower than the column, so phones are unchanged.
+
+          Between 640 and 1023 the text column is capped at 400px and the pair
+          is centred, rather than the text stretching to fill the row: on the
+          alternating rows that stretch pushed the photo to the far edge, and
+          at 940px the words ended 295px short of their own picture. From lg
+          the pair goes back to its fixed 480px column and alternating pin.
+          The gutter is the page's px-6 sm:px-12, with max-w-[1056px] so the
+          content still tops out at 960px on a wide screen — it used to drop
+          to 24px here until lg, and to 32px at exactly 1024, while every
+          other section on the page kept 48. */}
       {featureSections.length > 0 && (
-        <div className="w-full max-w-[960px] mx-auto px-6 lg:px-0 mb-8 sm:mb-10 lg:mb-[90px] flex flex-col gap-14 sm:gap-0">
+        <div className="w-full max-w-[1056px] mx-auto px-6 sm:px-12 mb-8 sm:mb-10 lg:mb-[90px] flex flex-col gap-14 sm:gap-0">
           {featureSections.map((section, index) => (
             <Reveal key={section.name} delay={index * 80}>
               <div
-                className={`group flex flex-col items-start gap-6 w-full max-w-[420px] mx-auto sm:max-w-none sm:items-center sm:gap-8 sm:py-8 md:gap-10 lg:gap-16 lg:py-[48px] ${
+                className={`group flex flex-col items-start gap-6 w-full max-w-[420px] mx-auto sm:max-w-none sm:items-center sm:justify-center sm:gap-8 sm:py-8 md:gap-10 lg:justify-start lg:gap-16 lg:py-[48px] ${
                   section.imagePosition === "right" ? "sm:flex-row-reverse" : "sm:flex-row"
                 }`}
               >
-                <div className="relative shrink-0 rounded-full overflow-hidden bg-portrait-backdrop size-[240px] lg:size-[320px]">
+                <div className="relative shrink-0 rounded-full overflow-hidden bg-portrait-backdrop size-[240px] sm:size-[200px] md:size-[240px] lg:size-[320px]">
                   <Image
                     src={section.imageSrc}
                     /* Decorative: the set name is announced by the <h3> directly
@@ -346,7 +356,7 @@ export default async function HomePage() {
                   />
                 </div>
 
-                <div className="w-full max-w-[420px] sm:max-w-none sm:flex-1 lg:w-[480px] lg:flex-none flex flex-col gap-4 text-left">
+                <div className="w-full max-w-[420px] sm:flex-1 sm:max-w-[400px] lg:w-[480px] lg:max-w-none lg:flex-none flex flex-col gap-4 text-left">
                   {/* Index, name and price are one block, 2px apart, rather
                       than three evenly spaced lines. The Figma frame puts the
                       price at the far end of the column; at 480px wide it read

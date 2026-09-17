@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.60.3",
+    date: "2026-09-16",
+    changes: [
+      {
+        kind: "fixed",
+        text: "On tablets and mid-sized browser windows, each set's photo and text now sit together in the middle of the page with room on both sides, instead of stretching out to the edges of the screen with the words far from their photo.",
+      },
+      {
+        kind: "changed",
+        text: "Reviews on the home page move on every 5 seconds again.",
+      },
+    ],
+  },
+  {
     version: "1.60.2",
     date: "2026-09-17",
     changes: [
