@@ -312,15 +312,24 @@ export default async function HomePage() {
       {/* Row spacing lives on this container, not on the rows. Each row sits
           inside its own <Reveal>, so every row is its parent's only child and
           the `last:mb-0` this used to carry matched all three of them — which
-          left the phone layout with the sets touching. From md up the rows
-          have their own vertical padding, so the gap hands off to that. */}
+          left the phone layout with the sets touching. From sm up the rows
+          have their own vertical padding, so the gap hands off to that.
+
+          The rows go side by side from sm (640px), not md. Stacked, the unit
+          is a 240px circle over a text column capped at 420px, and that cap is
+          reached at about 470px — so from there to 767px the stack hugged the
+          left edge with an empty band growing to 300px on the right at 744px,
+          which is an iPad mini held upright. Two columns fit comfortably from
+          640px. Below that the stacked unit is centred as one 420px column
+          instead, keeping the circle and the text on a shared left edge; a
+          phone is narrower than the column, so phones are unchanged. */}
       {featureSections.length > 0 && (
-        <div className="w-full max-w-[960px] mx-auto px-6 lg:px-0 mb-8 sm:mb-10 lg:mb-[90px] flex flex-col gap-14 md:gap-0">
+        <div className="w-full max-w-[960px] mx-auto px-6 lg:px-0 mb-8 sm:mb-10 lg:mb-[90px] flex flex-col gap-14 sm:gap-0">
           {featureSections.map((section, index) => (
             <Reveal key={section.name} delay={index * 80}>
               <div
-                className={`group flex flex-col items-start gap-6 md:items-center md:gap-10 md:py-8 lg:gap-16 lg:py-[48px] ${
-                  section.imagePosition === "right" ? "md:flex-row-reverse" : "md:flex-row"
+                className={`group flex flex-col items-start gap-6 w-full max-w-[420px] mx-auto sm:max-w-none sm:items-center sm:gap-8 sm:py-8 md:gap-10 lg:gap-16 lg:py-[48px] ${
+                  section.imagePosition === "right" ? "sm:flex-row-reverse" : "sm:flex-row"
                 }`}
               >
                 <div className="relative shrink-0 rounded-full overflow-hidden bg-portrait-backdrop size-[240px] lg:size-[320px]">
@@ -337,7 +346,7 @@ export default async function HomePage() {
                   />
                 </div>
 
-                <div className="w-full max-w-[420px] md:max-w-none md:flex-1 lg:w-[480px] lg:flex-none flex flex-col gap-4 text-left">
+                <div className="w-full max-w-[420px] sm:max-w-none sm:flex-1 lg:w-[480px] lg:flex-none flex flex-col gap-4 text-left">
                   {/* Index, name and price are one block, 2px apart, rather
                       than three evenly spaced lines. The Figma frame puts the
                       price at the far end of the column; at 480px wide it read
