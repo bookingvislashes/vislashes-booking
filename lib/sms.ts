@@ -105,24 +105,21 @@ function firstName(fullName: string): string {
  * "Saturday, September 12". Built in the salon's timezone from a plain
  * YYYY-MM-DD, parsed at local noon so no UTC rollover can move the day.
  */
-/** Which of the two message bodies a client gets. */
-export type SmsLanguage = "en" | "es";
-
-function friendlyDate(value: string, lang: SmsLanguage = "en"): string {
+function friendlyDate(value: string): string {
   const [y, m, d] = value.split("-").map(Number);
-  return new Date(y, m - 1, d, 12, 0, 0).toLocaleDateString(
-    lang === "es" ? "es-US" : "en-US",
-    { weekday: "long", month: "long", day: "numeric" }
-  );
+  return new Date(y, m - 1, d, 12, 0, 0).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 /** Just the weekday — "Saturday" — for the two-day text. */
-function weekday(value: string, lang: SmsLanguage = "en"): string {
+function weekday(value: string): string {
   const [y, m, d] = value.split("-").map(Number);
-  return new Date(y, m - 1, d, 12, 0, 0).toLocaleDateString(
-    lang === "es" ? "es-US" : "en-US",
-    { weekday: "long" }
-  );
+  return new Date(y, m - 1, d, 12, 0, 0).toLocaleDateString("en-US", {
+    weekday: "long",
+  });
 }
 
 export interface AppointmentSms {
@@ -134,26 +131,10 @@ export interface AppointmentSms {
    *  a wrong address sends someone to the wrong house. */
   address?: string | null;
   depositAmount?: number;
-  /** Defaults to English. Set from clients.preferred_language. */
-  language?: SmsLanguage;
 }
 
 /**
  * The three messages, in the salon owner's voice.
- *
- * LANGUAGE: each message has an English body and a Spanish one, chosen by
- * clients.preferred_language. They sit next to each other in the same
- * function rather than in separate files, so a change to what the salon
- * actually does has to be made twice in one place instead of once in two —
- * a half-translated programme is worse than an untranslated one, and the
- * A2P registration describes both.
- *
- * The Spanish bodies are UCS-2, not GSM-7, and cost about twice as many
- * segments: 5 against 3 on the confirmation, 4 against 2 on the two-day and
- * the cancellation. That is not the em dash mistake repeated — á, í, ó and ú
- * are simply not in the GSM-7 alphabet (é, ñ, ü, ¿ and ¡ are), so correct
- * Spanish cannot be GSM-7. Stripping the accents would halve it and is a
- * decision for the salon owner, not a default to take quietly on her behalf.
  *
  * PUNCTUATION: hyphens, not em dashes, and straight quotes throughout. A text
  * is encoded in GSM-7 only while every character is in that alphabet, and an
@@ -169,50 +150,30 @@ export interface AppointmentSms {
  * "reply here" would quietly swallow a client asking to reschedule.
  */
 export function confirmationText(a: AppointmentSms): string {
-  const where = a.address ? `\n${a.address}` : "";
-
-  // This is the opt-in confirmation, and Twilio's campaign guide is specific
-  // about what one has to carry: the brand (at the top), the frequency, the
-  // rates disclosure, how to get help and how to stop. Only on the
-  // confirmation — repeating it on every reminder reads like marketing, which
-  // is the opposite of what this is. Twilio answers both keywords itself once
-  // Advanced Opt-Out is on, in whichever language the keyword was sent in.
-  if (a.language === "es") {
-    const deposit = a.depositAmount
-      ? `\nDepósito recibido: $${a.depositAmount.toFixed(2)}`
-      : "";
-    return (
-      `VIS Lashes - ¡lista, ${firstName(a.clientName)}!\n\n` +
-      `${a.serviceName}\n` +
-      `${friendlyDate(a.bookingDate, "es")} a las ${a.timeSlot}${deposit}${where}\n\n` +
-      `Todo lo demás está en tu correo. ¡Nos vemos!\n\n` +
-      `Hasta 3 mensajes más sobre esta cita. Pueden aplicarse tarifas de mensajes y datos.\n` +
-      `Responde AYUDA para ayuda, PARAR para cancelar.`
-    );
-  }
-
   const deposit = a.depositAmount
     ? `\nDeposit received: $${a.depositAmount.toFixed(2)}`
     : "";
+  // The address is what makes this text actually useful for finding the
+  // studio, not just a receipt — printed here rather than only in the email
+  // so a client who reads texts and skims email still knows where to go.
+  const where = a.address ? `\n${a.address}` : "";
   return (
     `VIS Lashes - you're booked, ${firstName(a.clientName)}!\n\n` +
     `${a.serviceName}\n` +
     `${friendlyDate(a.bookingDate)} at ${a.timeSlot}${deposit}${where}\n\n` +
     `Everything you need is in your email confirmation. See you soon!\n\n` +
+    // This is the opt-in confirmation, and Twilio's campaign guide is specific
+    // about what one has to carry: the brand (at the top), the frequency, the
+    // rates disclosure in those exact words, how to get help and how to stop.
+    // Only on the confirmation — repeating it on every reminder reads like
+    // marketing, which is the opposite of what this is. Twilio answers both
+    // keywords itself once Advanced Opt-Out is on.
     `Up to 3 more texts for this appointment. Msg & data rates may apply.\n` +
     `Reply HELP for help, STOP to opt out.`
   );
 }
 
 export function twoDayText(a: AppointmentSms): string {
-  if (a.language === "es") {
-    return (
-      `¡Hola ${firstName(a.clientName)}! Tu ${a.serviceName} con VIS Lashes ` +
-      `es en 2 días - ${weekday(a.bookingDate, "es")} a las ${a.timeSlot}.\n\n` +
-      `Para prepararte: pestañas limpias, sin rímel, y con calma con la cafeína.\n\n` +
-      `¿Necesitas cambiarla? Avísame hoy y te busco otro espacio.`
-    );
-  }
   return (
     `Hi ${firstName(a.clientName)}! Your ${a.serviceName} with VIS Lashes ` +
     `is in 2 days - ${weekday(a.bookingDate)} at ${a.timeSlot}.\n\n` +
@@ -231,20 +192,7 @@ export function cancellationText(a: {
   bookingDate: string;
   timeSlot: string;
   depositRefunded?: boolean;
-  language?: SmsLanguage;
 }): string {
-  if (a.language === "es") {
-    const deposit = a.depositRefunded
-      ? `\n\nTu depósito será reembolsado.`
-      : "";
-    return (
-      `Hola ${firstName(a.clientName)} - tu cita de VIS Lashes del ` +
-      `${friendlyDate(a.bookingDate, "es")} a las ${a.timeSlot} ha sido cancelada.` +
-      `${deposit}\n\n` +
-      `¡Perdón por el cambio! Puedes reservar otra vez cuando quieras en vislashes.com.`
-    );
-  }
-
   const deposit = a.depositRefunded
     ? `\n\nYour deposit will be refunded.`
     : "";
@@ -258,13 +206,6 @@ export function cancellationText(a: {
 
 export function twoHourText(a: AppointmentSms): string {
   const where = a.address ? `\n${a.address}\n` : "\n";
-  if (a.language === "es") {
-    return (
-      `¡Nos vemos en 2 horas, ${firstName(a.clientName)}!\n\n` +
-      `${a.timeSlot}${where}\n` +
-      `Escríbeme o llámame cuando llegues y te abro.`
-    );
-  }
   return (
     `See you in 2 hours, ${firstName(a.clientName)}!\n\n` +
     `${a.timeSlot}${where}\n` +

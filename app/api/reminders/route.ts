@@ -98,7 +98,6 @@ interface ReminderRow {
     full_name: string;
     email: string | null;
     phone: string | null;
-    preferred_language: string | null;
     sms_consent: boolean | null;
     sms_opt_out: boolean | null;
   } | null;
@@ -160,7 +159,7 @@ export async function GET(req: NextRequest) {
       await getEmailSettings(supabase);
 
     const select =
-      "id, booking_date, time_slot, deposit_amount, clients(id, full_name, email, phone, preferred_language, sms_consent, sms_opt_out), services(name, price, duration_minutes)";
+      "id, booking_date, time_slot, deposit_amount, clients(id, full_name, email, phone, sms_consent, sms_opt_out), services(name, price, duration_minutes)";
 
     const normalise = (rows: unknown[]): ReminderRow[] =>
       (rows || []).map((row) => {
@@ -236,11 +235,6 @@ export async function GET(req: NextRequest) {
           bookingDate: booking.booking_date,
           timeSlot: booking.time_slot,
           address: salonAddress,
-          // Anything other than "es" is English, including null on a row
-          // written before migration 025. Falling back rather than trusting
-          // the column means an unexpected value reads in the language she
-          // has always received, not a blank message.
-          language: client.preferred_language === "es" ? ("es" as const) : ("en" as const),
         };
         try {
           await sendSms(
