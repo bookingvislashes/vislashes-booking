@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.65.1",
+    date: "2026-09-18",
+    changes: [
+      {
+        kind: "note",
+        text: "Your confirmation emails have not been reaching clients at all. The site was still sending from Resend's test address, which Resend only allows to reach your own inbox — so every client's confirmation was refused, and your blind copy with it. The bookings and deposits were never affected.",
+      },
+      {
+        kind: "fixed",
+        text: "When an email fails, the reason shown on screen is now the real one. It used to blame your domain for not being verified and then tell you to switch to the very address that was causing the failure.",
+      },
+    ],
+  },
+  {
     version: "1.65.0",
     date: "2026-09-18",
     changes: [
