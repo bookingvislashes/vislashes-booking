@@ -739,9 +739,10 @@ export async function sendConfirmationEmail(
 /**
  * Turn whatever Resend threw into something she can act on.
  *
- * The two failures that actually happen here are an unverified domain and a
- * missing API key, and both are fixable in about a minute once named. Anything
- * else is passed through rather than flattened into "something went wrong".
+ * The failures that actually happen here are the test sender, an unverified
+ * domain and a missing API key, and each is fixable in about a minute once
+ * named. Anything else is passed through rather than flattened into
+ * "something went wrong".
  */
 function describeSendError(error: unknown): string {
   const raw =
@@ -749,8 +750,26 @@ function describeSendError(error: unknown): string {
       ? String((error as { message?: unknown }).message)
       : String(error);
 
+  // Checked before the domain case below, and on the sending address rather
+  // than on Resend's wording, because this one is not an unverified domain at
+  // all and used to be reported as one.
+  //
+  // onboarding@resend.dev is Resend's shared test sender. It is allowed to
+  // reach exactly one address — the Resend account's own — so it works
+  // perfectly while she is testing on herself and then refuses every real
+  // client the day the site goes live. `emailFrom` falls back to it when
+  // EMAIL_FROM is unset, so this is also what a missing variable looks like,
+  // which is how it went unnoticed: every confirmation and every blind copy
+  // was refused, and the old message here sent her to verify a domain that
+  // was not the problem and then told her to set EMAIL_FROM to the very
+  // address that was failing.
+  if (/resend\.dev/i.test(emailFrom)) {
+    return "Emails are still going out from Resend's test address, which is only allowed to reach your own inbox — so every client's confirmation is being refused, and your blind copy with it. In Vercel, set EMAIL_FROM to an address on your own verified domain, then redeploy.";
+  }
+
   if (/not verified|domain is not|validation_error/i.test(raw)) {
-    return `${emailFrom} can't send yet — that domain isn't verified in Resend. Verify it, or set EMAIL_FROM to onboarding@resend.dev for now.`;
+    const domain = emailFrom.split("@").pop()?.replace(/>$/, "") || emailFrom;
+    return `${emailFrom} can't send yet — ${domain} isn't verified in Resend. Open Resend, go to Domains, add ${domain}, and add the DNS records it gives you. Sending starts working once it shows Verified.`;
   }
   if (/api[_ ]?key|unauthor|401|403/i.test(raw)) {
     return "Resend refused the API key. Check RESEND_API_KEY in Vercel.";
