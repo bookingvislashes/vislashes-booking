@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { PushNotifications } from "@/components/admin/PushNotifications";
 import { GoogleCalendarConnection } from "@/components/admin/GoogleCalendarConnection";
 import { SquareCustomerLink } from "@/components/admin/SquareCustomerLink";
+import { TextMessaging } from "@/components/admin/TextMessaging";
 import { HowToBookPhotos } from "@/components/admin/HowToBookPhotos";
 
 // Keys as they exist in the settings table. buffer_minutes and
@@ -441,6 +442,8 @@ export default function SettingsPage() {
         <GoogleCalendarConnection />
 
         <SquareCustomerLink />
+
+        <TextMessaging />
 
         <div className="flex items-center gap-3 flex-wrap">
           <Button type="submit" disabled={saving}>

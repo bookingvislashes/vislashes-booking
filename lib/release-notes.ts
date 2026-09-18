@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.66.0",
+    date: "2026-09-18",
+    changes: [
+      {
+        kind: "added",
+        text: "Settings has a Send a test text button. It texts your own phone once, so you can check appointment texts really work without taking a booking to find out.",
+      },
+      {
+        kind: "added",
+        text: "It waits for the carrier and tells you whether the text was delivered, not just whether Twilio accepted it. Those are different: a text can be accepted and still never arrive, and that is the failure worth catching before a client is relying on it.",
+      },
+    ],
+  },
+  {
     version: "1.65.0",
     date: "2026-09-18",
     changes: [

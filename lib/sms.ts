@@ -212,3 +212,67 @@ export function twoHourText(a: AppointmentSms): string {
     `Text or call when you arrive and I'll let you in.`
   );
 }
+
+/**
+ * What Twilio currently thinks happened to one message.
+ *
+ * sendSms returns as soon as Twilio ACCEPTS a message, which is not the same
+ * as it arriving. A number that is a landline, unreachable, or blocked by the
+ * carrier is accepted at the API and then fails quietly a few seconds later —
+ * which is exactly where "all the texts said undelivered" lives. So anything
+ * that claims to test the setup has to come back and ask again, rather than
+ * calling an accepted message a delivered one.
+ */
+export interface SmsStatus {
+  status: string;
+  errorCode: number | null;
+  errorMessage: string | null;
+}
+
+export async function fetchSmsStatus(messageSid: string): Promise<SmsStatus> {
+  const sid = ACCOUNT_SID();
+  const token = AUTH_TOKEN();
+
+  if (!sid || !token) {
+    throw new Error("Twilio is not configured");
+  }
+
+  const res = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages/${messageSid}.json`,
+    {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`,
+      },
+    }
+  );
+
+  const payload = (await res.json().catch(() => ({}))) as {
+    status?: string;
+    error_code?: number | null;
+    error_message?: string | null;
+    message?: string;
+  };
+
+  if (!res.ok) {
+    throw new Error(
+      `Twilio ${res.status}: ${payload.message ?? "could not read the message status"}`
+    );
+  }
+
+  return {
+    status: payload.status ?? "unknown",
+    errorCode: payload.error_code ?? null,
+    errorMessage: payload.error_message ?? null,
+  };
+}
+
+/**
+ * The body of the test send from Settings. Plain ASCII on purpose: one
+ * segment, and it proves the ordinary path rather than an unusual one.
+ */
+export function testText(businessName: string): string {
+  return (
+    `${businessName} test message. If you can read this, appointment texts are working.\n\n` +
+    `Reply HELP for help, STOP to opt out.`
+  );
+}
