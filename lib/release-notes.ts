@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.62.0",
+    date: "2026-09-18",
+    changes: [
+      {
+        kind: "note",
+        text: "One setup step for the two-hour reminder: in GitHub, Settings then Secrets and variables then Actions, add a secret called CRON_SECRET with the same value you put in Vercel. Until then the two-hour reminder still will not send.",
+      },
+      {
+        kind: "added",
+        text: "The two-hour reminder can now actually go out. It never could before - the reminder job only ran once a day, so by the time it looked, the appointment had already happened. It now runs every hour.",
+      },
+    ],
+  },
+  {
     version: "1.61.0",
     date: "2026-09-17",
     changes: [
