@@ -54,13 +54,27 @@ jobs:
       - name: Call the reminders endpoint
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # Diagnostic only, never used to authenticate. GitHub has four
+          # places a value called CRON_SECRET can sit — repository secret,
+          # repository variable, environment secret, Dependabot secret — and
+          # three of them are invisible to this job. Reading the variable too
+          # turns "it is empty" into "it is in the wrong one of these".
+          CRON_SECRET_AS_VARIABLE: ${{ vars.CRON_SECRET }}
         run: |
           set -euo pipefail
 
           if [ -z "${CRON_SECRET:-}" ]; then
-            echo "::error::CRON_SECRET repository secret is not set. Add it under Settings -> Secrets and variables -> Actions, matching the value in Vercel."
+            if [ -n "${CRON_SECRET_AS_VARIABLE:-}" ]; then
+              echo "::error::CRON_SECRET is set as a repository VARIABLE, not a SECRET. Same page, the tab next to it. Delete it from Variables and add it under Secrets -> New repository secret, then re-run."
+            else
+              echo "::error::No CRON_SECRET reached this job. It is not a repository secret and not a repository variable on bookingvislashes/vislashes-booking. If you added it, check it is a *Repository* secret (not Environment, not Dependabot, not Codespaces) at https://github.com/bookingvislashes/vislashes-booking/settings/secrets/actions"
+            fi
             exit 1
           fi
+
+          # Length only — enough to catch a truncated paste or a stray quote,
+          # without putting any of the value in a log.
+          echo "CRON_SECRET received, ${#CRON_SECRET} characters."
 
           status=$(curl --silent --show-error --fail-with-body \
             --max-time 120 \
