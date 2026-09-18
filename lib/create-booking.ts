@@ -1,5 +1,14 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import { sendConfirmationEmail } from "./email";
+import {
+  getEmailSettings,
+  ownerRecipients,
+  sendConfirmationEmail,
+} from "./email";
+import {
+  consumeCreditForBooking,
+  loadCreditAmounts,
+  saveBirthday,
+} from "./credits";
 import { confirmationText, isSmsConfigured, sendSms, toE164 } from "./sms";
 import { syncBookingEvent } from "./google-calendar";
 
@@ -8,8 +17,13 @@ interface BookingFormData {
   bookingDate: string;
   timeSlot: string;
   fullName: string;
+  /** Month and day off the two optional selects on step 3, as typed. */
+  birthMonth?: string;
+  birthDay?: string;
   phone: string;
   email: string;
+  /** The optional text-message box on step 3. False unless she ticked it. */
+  smsConsent?: boolean;
   hasHadExtensions: boolean;
   isSpecialOccasion: boolean;
   occasionDetails?: string;
@@ -38,6 +52,12 @@ interface CreateBookingOptions {
   /** Resolved server-side from settings — never sent by the browser. */
   removalPrice?: number;
   removalMinutes?: number;
+  /**
+   * Stamped onto the booking so it can be told apart in the admin. "test" is
+   * the admin-only dry run of this whole flow; a real client booking leaves
+   * it unset.
+   */
+  bookingSource?: string;
 }
 
 export async function createBooking({
@@ -48,6 +68,7 @@ export async function createBooking({
   squarePaymentId,
   removalPrice = 0,
   removalMinutes = 0,
+  bookingSource,
 }: CreateBookingOptions) {
   // 1. Upsert client (find by email or create new)
   //
@@ -75,6 +96,14 @@ export async function createBooking({
 
   let clientId: string;
 
+  // Ticking the box is the opt-in, and it is only ever written when true.
+  // An untick on a later booking is not a withdrawal of an earlier consent —
+  // that is what STOP is for — so this spreads into the update rather than
+  // setting the column back to false and silently revoking it.
+  const smsConsentFields = formData.smsConsent
+    ? { sms_consent: true, sms_consent_at: new Date().toISOString() }
+    : {};
+
   if (existingClient) {
     clientId = existingClient.id;
     // This error was discarded while the insert branch below checked properly.
@@ -90,6 +119,7 @@ export async function createBooking({
       .update({
         full_name: fullName,
         phone: formData.phone,
+        ...smsConsentFields,
         updated_at: new Date().toISOString(),
       })
       .eq("id", clientId);
@@ -129,6 +159,7 @@ export async function createBooking({
           full_name: fullName,
           email,
           phone: formData.phone,
+          ...smsConsentFields,
           updated_at: new Date().toISOString(),
         })
         .eq("id", adoptedId);
@@ -144,6 +175,7 @@ export async function createBooking({
           full_name: fullName,
           email,
           phone: formData.phone,
+          ...smsConsentFields,
         })
         .select("id")
         .single();
@@ -180,6 +212,7 @@ export async function createBooking({
       deposit_amount: depositAmount ?? service.deposit_amount,
       square_payment_id: squarePaymentId ?? null,
       has_removal: Boolean(formData.hasRemoval),
+      booking_source: bookingSource ?? null,
     })
     .select("id")
     .single();
@@ -187,6 +220,24 @@ export async function createBooking({
   if (bookingError || !booking) {
     throw new Error(`Failed to create booking: ${bookingError?.message}`);
   }
+
+  // Both of these run AFTER the booking row exists and neither can throw.
+  // On the card path everything from here down happens with the deposit
+  // already captured, and migration 023 is run by hand — so a column that
+  // does not exist yet has to cost a birthday or a discount, never the
+  // appointment somebody has just paid for.
+  await saveBirthday(
+    supabase,
+    clientId,
+    Number(formData.birthMonth) || null,
+    Number(formData.birthDay) || null
+  );
+
+  // Any credit she has put on this client — the $10 for tagging her, or a
+  // birthday treat — moves onto this booking and is cleared, so it is spent
+  // exactly once. It comes off the balance settled at the appointment; the
+  // deposit Square just charged is untouched.
+  const discount = await consumeCreditForBooking(supabase, clientId, booking.id);
 
   // 4. Create intake form
   await supabase.from("intake_forms").insert({
@@ -236,17 +287,13 @@ export async function createBooking({
   // are that moment: both go out once, to the person who just paid, and never
   // anywhere public. Read fresh per booking rather than baked into a template,
   // so a studio move only ever requires an edit in Settings.
-  let studioAddress: string | null = null;
-  try {
-    const { data: addressRow } = await supabase
-      .from("settings")
-      .select("value")
-      .eq("key", "business_address")
-      .maybeSingle();
-    studioAddress = addressRow?.value ?? null;
-  } catch {
-    // Left null: both messages simply omit the address rather than guessing.
-  }
+  // Read once for both messages below. Anything missing comes back null and
+  // is simply omitted rather than guessed at.
+  const [{ studioAddress, ownerInbox, replyTo, noticeHours }, creditAmounts] =
+    await Promise.all([
+    getEmailSettings(supabase),
+    loadCreditAmounts(supabase),
+  ]);
 
   try {
     await sendConfirmationEmail({
@@ -262,6 +309,17 @@ export async function createBooking({
       totalPrice: appointmentTotal,
       paymentMethod: formData.paymentMethod,
       studioAddress,
+      discountAmount: discount?.amount,
+      discountReason: discount?.reason,
+      tagCreditAmount: creditAmounts.referral,
+      replyTo,
+      rescheduleNoticeHours: noticeHours,
+      // Her copy, on the client's own confirmation rather than as a separate
+      // message: she sees exactly what they saw, and Bcc means nothing in
+      // their copy reveals she is on it. Every appointment, new client or
+      // regular, full set or refill.
+      bcc: ownerRecipients(ownerInbox),
+      bookingId: booking.id,
     });
   } catch (emailErr) {
     // Log but don't fail the booking if email fails
@@ -271,8 +329,10 @@ export async function createBooking({
   // The same confirmation as a text. Best-effort on exactly the same terms as
   // the email above: the card is already charged and the booking already
   // written, so nothing here is allowed to fail the booking. Skipped silently
-  // when Twilio is not configured, or when the number cannot be parsed.
-  if (isSmsConfigured()) {
+  // when she did not tick the box, when Twilio is not configured, or when the
+  // number cannot be parsed. The consent check comes first deliberately: no
+  // text is sent to anyone who did not ask for one, whatever else is true.
+  if (formData.smsConsent && isSmsConfigured()) {
     const phone = toE164(formData.phone);
     if (phone) {
       try {

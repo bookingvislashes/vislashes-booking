@@ -31,6 +31,14 @@ export interface ServiceTiming {
 }
 
 export interface FaqFacts {
+  /**
+   * What tagging her within 24 hours is worth, as "$10", from Settings.
+   * Null when it could not be read or is zero — the whole question is then
+   * dropped rather than advertising an offer with a guessed figure in it.
+   */
+  tagCredit: string | null;
+  /** The birthday-month credit, as "$15". Same rule. */
+  birthdayCredit: string | null;
   /** "$25". Null when the services table couldn't be read, or deposits differ. */
   deposit: string | null;
   /** "70 to 90 minutes", or null when no service of that kind is active. */
@@ -40,6 +48,8 @@ export interface FaqFacts {
 }
 
 export const EMPTY_FACTS: FaqFacts = {
+  tagCredit: null,
+  birthdayCredit: null,
   deposit: null,
   fullSet: null,
   refill: null,
@@ -79,7 +89,10 @@ function money(amount: number): string {
  * shows the real amount before anyone is charged — so the answer says that
  * instead, rather than quoting a figure that is wrong for some sets.
  */
-export function summariseTimings(rows: ServiceTiming[]): FaqFacts {
+/** What the services table alone can answer; the credits come from Settings. */
+export type TimingFacts = Omit<FaqFacts, "tagCredit" | "birthdayCredit">;
+
+export function summariseTimings(rows: ServiceTiming[]): TimingFacts {
   if (rows.length === 0) return EMPTY_FACTS;
 
   const deposits = Array.from(
@@ -132,6 +145,24 @@ export function buildFaq(facts: FaqFacts): FaqItem[] {
   });
 
   // Terms clause 7.
+  // Her loyalty offers, stated on the page rather than only in an email —
+  // somebody deciding whether to book should be able to find them, and this
+  // is the one place on the site that answers "what do I get". Each line is
+  // dropped when Settings has no figure for it, so nothing here is invented.
+  if (facts.tagCredit || facts.birthdayCredit) {
+    const lines = [
+      facts.tagCredit &&
+        `Post a selfie within 24 hours of your appointment and tag @vislashesbooking, and I will put ${facts.tagCredit} toward your next visit.`,
+      facts.birthdayCredit &&
+        `There is also ${facts.birthdayCredit} off any service during your birthday month — leave your birthday when you book and it lands on your account automatically.`,
+    ].filter(Boolean);
+
+    items.push({
+      question: "Do you have any offers for returning clients?",
+      answer: lines.join(" "),
+    });
+  }
+
   items.push({
     question: "How often do I need a refill?",
     answer:

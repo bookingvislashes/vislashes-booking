@@ -15,6 +15,8 @@ import { createPublicClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getContactDetails } from "@/lib/contact";
 import { buildFaq, summariseTimings, EMPTY_FACTS, type ServiceTiming } from "@/lib/faq";
+import { loadCreditAmounts } from "@/lib/credits";
+import { firstName, loadPublishedReviews } from "@/lib/reviews";
 
 // Re-read the menu at most once a minute, same as /book — so a price change
 // made in Services shows up here without waiting on a redeploy.
@@ -175,17 +177,75 @@ function leadSentence(description: string) {
   return match ? match[0] : description;
 }
 
+/**
+ * The two loyalty figures, for the FAQ. Read from Settings so she changes
+ * what a tag or a birthday is worth in the admin; a zero or an unreadable
+ * value comes back null and the question is dropped rather than printed with
+ * a number nobody promised.
+ */
+async function getCreditOffers(): Promise<{
+  tagCredit: string | null;
+  birthdayCredit: string | null;
+}> {
+  if (!isSupabaseConfigured()) {
+    return { tagCredit: null, birthdayCredit: null };
+  }
+  try {
+    const supabase = await createPublicClient();
+    const amounts = await loadCreditAmounts(supabase);
+    const money = (value: number) => (value > 0 ? `$${value.toFixed(0)}` : null);
+    return {
+      tagCredit: money(amounts.referral),
+      birthdayCredit: money(amounts.birthday),
+    };
+  } catch {
+    return { tagCredit: null, birthdayCredit: null };
+  }
+}
+
+/**
+ * Published client reviews for the What Clients Say slideshow.
+ *
+ * Read with the anon client on purpose: the RLS policy added in migration 024
+ * is what restricts this to published reviews, so the filtering is enforced by
+ * the database rather than by remembering to write `.eq("status", ...)` here.
+ * Empty on any failure, including before the migration has been run — the
+ * section then shows her original four quotes.
+ */
+async function getReviewQuotes(): Promise<{ quote: string; name: string }[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const supabase = await createPublicClient();
+    const reviews = await loadPublishedReviews(supabase);
+    return reviews.map((review) => ({
+      quote: (review.comment || "").trim(),
+      name: firstName(review.client_name),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export default async function HomePage() {
-  const [featuredServices, howToBookPhotos, serviceTimings, contact] =
-    await Promise.all([
-      getFeaturedServices(),
-      getHowToBookPhotos(),
-      getServiceTimings(),
-      getContactDetails(),
-    ]);
-  const faqItems = buildFaq(
-    serviceTimings.length > 0 ? summariseTimings(serviceTimings) : EMPTY_FACTS
-  );
+  const [
+    featuredServices,
+    howToBookPhotos,
+    serviceTimings,
+    contact,
+    credits,
+    reviewQuotes,
+  ] = await Promise.all([
+    getFeaturedServices(),
+    getHowToBookPhotos(),
+    getServiceTimings(),
+    getContactDetails(),
+    getCreditOffers(),
+    getReviewQuotes(),
+  ]);
+  const faqItems = buildFaq({
+    ...(serviceTimings.length > 0 ? summariseTimings(serviceTimings) : EMPTY_FACTS),
+    ...credits,
+  });
   const featureSections = featuredServices.map((service, i) => ({
     ...sectionVisuals[i],
     id: service.id,
@@ -252,18 +312,37 @@ export default async function HomePage() {
       {/* Row spacing lives on this container, not on the rows. Each row sits
           inside its own <Reveal>, so every row is its parent's only child and
           the `last:mb-0` this used to carry matched all three of them — which
-          left the phone layout with the sets touching. From md up the rows
-          have their own vertical padding, so the gap hands off to that. */}
+          left the phone layout with the sets touching. From sm up the rows
+          have their own vertical padding, so the gap hands off to that.
+
+          The rows go side by side from sm (640px), not md. Stacked, the unit
+          is a 240px circle over a text column capped at 420px, and that cap is
+          reached at about 470px — so from there to 767px the stack hugged the
+          left edge with an empty band growing to 300px on the right at 744px,
+          which is an iPad mini held upright. Two columns fit comfortably from
+          640px. Below that the stacked unit is centred as one 420px column
+          instead, keeping the circle and the text on a shared left edge; a
+          phone is narrower than the column, so phones are unchanged.
+
+          Between 640 and 1023 the text column is capped at 400px and the pair
+          is centred, rather than the text stretching to fill the row: on the
+          alternating rows that stretch pushed the photo to the far edge, and
+          at 940px the words ended 295px short of their own picture. From lg
+          the pair goes back to its fixed 480px column and alternating pin.
+          The gutter is the page's px-6 sm:px-12, with max-w-[1056px] so the
+          content still tops out at 960px on a wide screen — it used to drop
+          to 24px here until lg, and to 32px at exactly 1024, while every
+          other section on the page kept 48. */}
       {featureSections.length > 0 && (
-        <div className="w-full max-w-[960px] mx-auto px-6 lg:px-0 mb-8 sm:mb-10 lg:mb-[90px] flex flex-col gap-14 md:gap-0">
+        <div className="w-full max-w-[1056px] mx-auto px-6 sm:px-12 mb-8 sm:mb-10 lg:mb-[90px] flex flex-col gap-14 sm:gap-0">
           {featureSections.map((section, index) => (
             <Reveal key={section.name} delay={index * 80}>
               <div
-                className={`group flex flex-col items-start gap-6 md:items-center md:gap-10 md:py-8 lg:gap-16 lg:py-[48px] ${
-                  section.imagePosition === "right" ? "md:flex-row-reverse" : "md:flex-row"
+                className={`group flex flex-col items-start gap-6 w-full max-w-[420px] mx-auto sm:max-w-none sm:items-center sm:justify-center sm:gap-8 sm:py-8 md:gap-10 lg:justify-start lg:gap-16 lg:py-[48px] ${
+                  section.imagePosition === "right" ? "sm:flex-row-reverse" : "sm:flex-row"
                 }`}
               >
-                <div className="relative shrink-0 rounded-full overflow-hidden bg-portrait-backdrop size-[240px] lg:size-[320px]">
+                <div className="relative shrink-0 rounded-full overflow-hidden bg-portrait-backdrop size-[240px] sm:size-[200px] md:size-[240px] lg:size-[320px]">
                   <Image
                     src={section.imageSrc}
                     /* Decorative: the set name is announced by the <h3> directly
@@ -277,7 +356,7 @@ export default async function HomePage() {
                   />
                 </div>
 
-                <div className="w-full max-w-[420px] md:max-w-none md:flex-1 lg:w-[480px] lg:flex-none flex flex-col gap-4 text-left">
+                <div className="w-full max-w-[420px] sm:flex-1 sm:max-w-[400px] lg:w-[480px] lg:max-w-none lg:flex-none flex flex-col gap-4 text-left">
                   {/* Index, name and price are one block, 2px apart, rather
                       than three evenly spaced lines. The Figma frame puts the
                       price at the far end of the column; at 480px wide it read
@@ -315,7 +394,7 @@ export default async function HomePage() {
       )}
 
       <Reveal>
-        <Testimonials />
+        <Testimonials quotes={reviewQuotes} />
       </Reveal>
 
       {/* Answers the questions that otherwise arrive as a DM and hold up a

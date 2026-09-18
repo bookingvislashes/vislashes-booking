@@ -14,6 +14,12 @@ export const bookingSchema = z.object({
 
   // Step 3
   fullName: z.string().min(2, "Name is required"),
+  // Month and day only, and optional — a birthday treat is a nice thing to
+  // offer, not a condition of booking, and a required field here would cost
+  // real appointments to gain a mailing detail. Strings because they come off
+  // two <select>s; the server coerces and range-checks them.
+  birthMonth: z.string().optional(),
+  birthDay: z.string().optional(),
   phone: z
     .string()
     .regex(
@@ -21,6 +27,11 @@ export const bookingSchema = z.object({
       "Enter a valid phone number"
     ),
   email: z.string().email("Enter a valid email"),
+  // Optional, and deliberately not validated into being true. Twilio's A2P
+  // guide rejects a campaign whose consent is a condition of the purchase, so
+  // this must be possible to leave unticked and still book. It is absent from
+  // stepFields below for the same reason — nothing about it can block step 3.
+  smsConsent: z.boolean().default(false),
 
   // Step 4
   hasHadExtensions: z.boolean({ message: "Please answer this question" }),

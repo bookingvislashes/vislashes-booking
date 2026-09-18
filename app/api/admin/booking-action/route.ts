@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { syncBookingEvent, deleteBookingEvent } from "@/lib/google-calendar";
-import { sendCancellationEmail } from "@/lib/email";
+import {
+  getEmailSettings,
+  ownerRecipients,
+  sendCancellationEmail,
+  sendConfirmationEmail,
+} from "@/lib/email";
+import { loadCreditAmounts } from "@/lib/credits";
+import { returnCreditFromBooking } from "@/lib/credits";
 import { cancellationText, isSmsConfigured, sendSms, toE164 } from "@/lib/sms";
 
 /**
@@ -26,6 +33,10 @@ const schema = z.discriminatedUnion("action", [
     bookingId: z.string().uuid(),
     bookingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     timeSlot: z.string().min(1),
+  }),
+  z.object({
+    action: z.literal("resend-confirmation"),
+    bookingId: z.string().uuid(),
   }),
 ]);
 
@@ -51,7 +62,7 @@ export async function POST(req: NextRequest) {
   const { data: booking, error: loadError } = await admin
     .from("bookings")
     .select(
-      "id, booking_date, time_slot, status, deposit_paid, client:clients(full_name, email, phone, sms_opt_out)"
+      "id, booking_date, time_slot, status, deposit_paid, deposit_amount, payment_method, has_removal, client:clients(full_name, email, phone, sms_consent, sms_opt_out), service:services(name, price, duration_minutes)"
     )
     .eq("id", input.bookingId)
     .maybeSingle();
@@ -61,6 +72,89 @@ export async function POST(req: NextRequest) {
   }
 
   const client = Array.isArray(booking.client) ? booking.client[0] : booking.client;
+  const service = Array.isArray(booking.service)
+    ? booking.service[0]
+    : booking.service;
+
+  // ---- send the confirmation again ----
+  //
+  // For a client who says it never arrived, and for her to prove to herself
+  // that email is working at all. Unlike every automatic send, this one
+  // reports what went wrong: pressing a button and getting silence is worse
+  // than pressing it and being told the domain is not verified yet.
+  if (input.action === "resend-confirmation") {
+    if (!client?.email) {
+      return NextResponse.json(
+        { error: "That client has no email address on file." },
+        { status: 400 }
+      );
+    }
+    if (!service) {
+      return NextResponse.json(
+        { error: "That booking's service no longer exists." },
+        { status: 400 }
+      );
+    }
+
+    const { studioAddress, ownerInbox, replyTo, noticeHours } =
+      await getEmailSettings(admin);
+    const ownerCopy = ownerRecipients(ownerInbox);
+    const [removalRes, creditAmounts] = await Promise.all([
+      admin.from("settings").select("value").eq("key", "removal_price").maybeSingle(),
+      loadCreditAmounts(admin),
+    ]);
+
+    const removalPrice = booking.has_removal
+      ? Number(removalRes.data?.value ?? 0) || 0
+      : 0;
+
+    const minutes = (mins: number) => {
+      const hrs = Math.floor(mins / 60);
+      const m = mins % 60;
+      if (hrs && m) return `${hrs} hr ${m} min`;
+      if (hrs) return `${hrs} hr`;
+      return `${m} min`;
+    };
+
+    const result = await sendConfirmationEmail({
+      clientName: client.full_name,
+      clientEmail: client.email,
+      serviceName: booking.has_removal
+        ? `${service.name} + lash removal`
+        : service.name,
+      bookingDate: booking.booking_date,
+      timeSlot: booking.time_slot,
+      duration: minutes(service.duration_minutes),
+      depositAmount: Number(booking.deposit_amount ?? 0),
+      depositPaid: Boolean(booking.deposit_paid),
+      totalPrice: Number(service.price) + removalPrice,
+      paymentMethod: booking.payment_method || "square",
+      studioAddress,
+      replyTo,
+      rescheduleNoticeHours: noticeHours,
+      tagCreditAmount: creditAmounts.referral,
+      // Her blind copy, exactly as on the original.
+      bcc: ownerCopy,
+      bookingId: booking.id,
+    });
+
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: "EMAIL_FAILED", message: result.error },
+        { status: 502 }
+      );
+    }
+
+    // The addresses are returned rather than assumed, so the screen can say
+    // who was actually copied. "Your copy is on its way" printed whether or
+    // not anyone was on Bcc, which is exactly the sentence you cannot trust
+    // when a copy does not turn up.
+    return NextResponse.json({
+      ok: true,
+      sentTo: client.email,
+      copiedTo: ownerCopy,
+    });
+  }
 
   if (input.action === "cancel") {
     const { error } = await admin
@@ -81,14 +175,29 @@ export async function POST(req: NextRequest) {
     // failed and having her try again.
     await deleteBookingEvent(admin, input.bookingId);
 
-    if (client?.email) {
+    // A credit spent on this appointment goes back on the client's account.
+    // Earning $10 and then having to cancel should not cost them the $10.
+    await returnCreditFromBooking(admin, input.bookingId);
+
+    // She is blind-copied on this one whether or not the client can be
+    // emailed: a cancelled appointment with a deposit against it is the one
+    // thing in the app that needs her to go and refund it by hand, and
+    // nothing else tells her that. When there is no client address the same
+    // notice is addressed to her alone rather than dropped.
+    const { ownerInbox, replyTo } = await getEmailSettings(admin);
+    const ownerCopy = ownerRecipients(ownerInbox);
+    const cancelRecipient = client?.email || ownerCopy[0];
+
+    if (cancelRecipient) {
       try {
         await sendCancellationEmail({
-          clientName: client.full_name,
-          clientEmail: client.email,
+          clientName: client?.full_name || "there",
+          clientEmail: cancelRecipient,
           bookingDate: booking.booking_date,
           timeSlot: booking.time_slot,
           depositPaid: Boolean(booking.deposit_paid),
+          replyTo,
+          bcc: client?.email ? ownerCopy : [],
         });
       } catch (err) {
         console.error("Cancellation email failed:", err);
@@ -98,8 +207,10 @@ export async function POST(req: NextRequest) {
     // Also by text. Of all the messages this site sends, this is the one a
     // client most needs to see today rather than whenever she next opens her
     // email — otherwise she drives to an appointment that is not happening.
-    // Best-effort, like the email: the cancellation is already saved.
-    if (isSmsConfigured() && !client?.sms_opt_out) {
+    // Best-effort, like the email: the cancellation is already saved. Still
+    // gated on consent — a cancellation being urgent is not a reason to text
+    // someone who never agreed to be texted; her email still goes out.
+    if (client?.sms_consent && !client?.sms_opt_out && isSmsConfigured()) {
       const phone = toE164(client?.phone);
       if (phone) {
         try {

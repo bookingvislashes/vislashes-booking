@@ -15,9 +15,13 @@ interface LegalPageProps {
    *  paragraph. **Double asterisks** render bold — the carriers require the
    *  STOP and HELP instructions in the messaging terms to be shown in bold. */
   sections: string[];
+  /** Rendered inside the document card, after the text. Used by /sms to show
+   *  the actual consent control, which a carrier's automated check has to be
+   *  able to fetch and read. */
+  children?: React.ReactNode;
 }
 
-export function LegalPage({ title, updated, sections }: LegalPageProps) {
+export function LegalPage({ title, updated, sections, children }: LegalPageProps) {
   return (
     <div className="min-h-[100dvh] bg-cream px-6 py-12 sm:py-16">
       <div className="max-w-[680px] mx-auto">
@@ -74,6 +78,7 @@ export function LegalPage({ title, updated, sections }: LegalPageProps) {
               );
             })
           )}
+          {children}
         </div>
 
         <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2">

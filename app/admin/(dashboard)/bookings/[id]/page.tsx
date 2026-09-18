@@ -175,9 +175,14 @@ export default function BookingDetailPage() {
     fetchBooking();
   };
 
+  // Confirmation of a send, shown until the next action. Separate from
+  // actionError so a success doesn't have to borrow the error slot.
+  const [sentNote, setSentNote] = useState<string | null>(null);
+
   const runAction = async (body: Record<string, unknown>) => {
     setBusy(true);
     setActionError(null);
+    setSentNote(null);
     try {
       const res = await fetch("/api/admin/booking-action", {
         method: "POST",
@@ -189,7 +194,7 @@ export default function BookingDetailPage() {
         setActionError(data.message || data.error || "Something went wrong.");
         return false;
       }
-      return true;
+      return data as Record<string, unknown>;
     } catch {
       setActionError("Something went wrong.");
       return false;
@@ -280,6 +285,15 @@ export default function BookingDetailPage() {
           className="font-sans text-[16px] text-danger font-semibold mb-4"
         >
           {actionError}
+        </p>
+      )}
+
+      {sentNote && (
+        <p
+          role="status"
+          className="font-sans text-[15px] text-success font-semibold mb-4"
+        >
+          {sentNote}
         </p>
       )}
 
@@ -439,6 +453,30 @@ export default function BookingDetailPage() {
                 }}
               >
                 Reschedule
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={busy || !booking.client?.email}
+                onClick={async () => {
+                  setSentNote(null);
+                  const result = await runAction({
+                    action: "resend-confirmation",
+                    bookingId: booking.id,
+                  });
+                  if (!result) return;
+                  const copied = Array.isArray(result.copiedTo)
+                    ? (result.copiedTo as string[])
+                    : [];
+                  setSentNote(
+                    copied.length
+                      ? `Handed to the email service for ${result.sentTo}, copied to ${copied.join(", ")}. If it doesn't arrive, check Resend → Emails for the delivery status.`
+                      : `Handed to the email service for ${result.sentTo}. No copy was sent — Settings → Your Inbox is empty.`
+                  );
+                }}
+              >
+                {booking.client?.email
+                  ? "Send Confirmation Again"
+                  : "No Email On File"}
               </Button>
               <Button
                 variant="secondary"

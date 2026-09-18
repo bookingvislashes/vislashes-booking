@@ -1,0 +1,83 @@
+# Hourly tick for /api/reminders.
+#
+# WHY THIS EXISTS. The two-hour reminder can only go out if the reminders
+# route runs more often than once a day, and vercel.json's cron is daily
+# because that is the Hobby plan's limit. The route already looks for
+# appointments 60 to 180 minutes away; nothing was ever wrong with it except
+# that by the time the daily job ran, the appointment had happened.
+#
+# The window is two hours wide, so a scheduler that drifts by ten or twenty
+# minutes still catches every appointment. That matters: GitHub's scheduled
+# workflows are queued at busy times and are routinely late. Ten past the
+# hour rather than on the hour, for the same reason — the top of the hour is
+# the most contended slot on the whole platform.
+#
+# Running hourly is safe for the other passes in that route. Every one of
+# them is stamped and re-checks before sending: two-day and two-hour on
+# reminder_2day_sent_at / reminder_2hour_sent_at, the check-in on
+# followup_sent_at, the birthday on birthday_email_year, the win-back on
+# winback_sent_at. A pass that already ran today finds nothing and costs a
+# query. Nobody is messaged twice.
+#
+# The Vercel cron stays as it is. It is a second daily tick on the same
+# idempotent route — harmless, and a safety net for the days GitHub is
+# having a bad time.
+#
+# SETUP (once): add CRON_SECRET as a repository Actions secret, under
+# Settings -> Secrets and variables -> Actions -> New repository secret,
+# with the same value as the CRON_SECRET in Vercel. Without it the request
+# is rejected with a 401 and this workflow fails loudly, which is the
+# correct behaviour — a silent skip would look identical to "no reminders
+# were due".
+
+name: Hourly appointment reminders
+
+on:
+  schedule:
+    # Ten past every hour, UTC.
+    - cron: "10 * * * *"
+  # So it can be run by hand from the Actions tab, which is how to test it.
+  workflow_dispatch:
+
+# Two runs at once would both find the same unsent reminders. They are
+# stamped, so the worst case is a wasted query rather than a double text,
+# but there is no reason to allow it.
+concurrency:
+  group: hourly-reminders
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the reminders endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::CRON_SECRET repository secret is not set. Add it under Settings -> Secrets and variables -> Actions, matching the value in Vercel."
+            exit 1
+          fi
+
+          status=$(curl --silent --show-error --fail-with-body \
+            --max-time 120 \
+            --retry 2 --retry-delay 10 --retry-connrefused \
+            --output response.json \
+            --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            "https://www.vislashes.com/api/reminders") || true
+
+          echo "HTTP $status"
+          # The route answers with a per-pass summary. Printing it means the
+          # Actions log says what actually went out, which is the only record
+          # of a reminder run anyone can read after the fact.
+          cat response.json || true
+          echo
+
+          if [ "$status" != "200" ]; then
+            echo "::error::Reminders endpoint returned HTTP $status"
+            exit 1
+          fi

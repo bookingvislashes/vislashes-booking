@@ -50,6 +50,8 @@ export function BookingFlow({
       bookingDate: "",
       timeSlot: "",
       fullName: "",
+      birthMonth: "",
+      birthDay: "",
       phone: "",
       email: "",
       hasHadExtensions: undefined as unknown as boolean,
@@ -115,9 +117,24 @@ export function BookingFlow({
       case 2:
         return (
           <CalendarPicker
-            form={form}
             serviceId={form.watch("serviceId")}
             hasRemoval={form.watch("hasRemoval")}
+            selectedDate={form.watch("bookingDate")}
+            selectedTime={form.watch("timeSlot")}
+            onSelect={(date, timeSlot) => {
+              form.setValue("bookingDate", date, { shouldValidate: true });
+              // Validated only once a time is actually chosen, so clearing it
+              // after a date change doesn't flash "required" at someone who is
+              // mid-selection.
+              form.setValue("timeSlot", timeSlot, {
+                shouldValidate: Boolean(timeSlot),
+              });
+            }}
+            error={
+              form.formState.errors.bookingDate?.message ||
+              form.formState.errors.timeSlot?.message ||
+              null
+            }
           />
         );
       case 3:
@@ -137,7 +154,16 @@ export function BookingFlow({
           />
         );
       case 7:
-        return <PaymentStep form={form} services={services} />;
+        return (
+          <PaymentStep
+            form={form}
+            services={services}
+            // /book?test=1 — her own dry run of the flow. The button it shows
+            // still only appears for a signed-in admin, and the server checks
+            // the session again before it writes anything.
+            testMode={searchParams.get("test") === "1"}
+          />
+        );
       default:
         return null;
     }
