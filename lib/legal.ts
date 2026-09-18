@@ -263,3 +263,8 @@ export function legalEntityLine(details: {
   }
   return `${details.businessName} is the trading name of ${details.legalName}, a sole proprietor. ${details.businessName} and ${details.legalName} are the same business: the same person owns it, operates vislashes.com, sends the appointment text messages described here, and is responsible for the information collected through this site.`;
 }
+
+/** The optional Spanish box on the booking form, beneath the text consent. */
+export const LANGUAGE_LABEL = "Prefiero recibir los mensajes en español";
+export const LANGUAGE_HINT =
+  "Marca esta casilla y los mensajes de texto sobre tu cita llegarán en español. La página web y los correos siguen en inglés por ahora.";

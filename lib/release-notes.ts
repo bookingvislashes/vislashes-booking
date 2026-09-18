@@ -31,6 +31,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.64.0",
+    date: "2026-09-18",
+    changes: [
+      {
+        kind: "note",
+        text: "Run migration 025 (Migrations page, or supabase/migrations/025_preferred_language.sql in Supabase). Until it runs, the Spanish box cannot save and everyone keeps getting English.",
+      },
+      {
+        kind: "added",
+        text: "A second optional box on the booking form, under the text message one: clients who prefer Spanish can tick it and all four appointment texts arrive in Spanish.",
+      },
+      {
+        kind: "note",
+        text: "Spanish texts cost about twice as many message segments as English ones, because accented letters do not fit the cheaper format phones use. Only for clients who choose Spanish. Tell me if you would rather drop the accents and halve it.",
+      },
+      {
+        kind: "changed",
+        text: "The website, your emails and the admin are all still in English. Only the appointment texts change language.",
+      },
+    ],
+  },
+  {
     version: "1.63.0",
     date: "2026-09-18",
     changes: [

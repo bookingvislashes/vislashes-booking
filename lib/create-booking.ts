@@ -24,6 +24,8 @@ interface BookingFormData {
   email: string;
   /** The optional text-message box on step 3. False unless she ticked it. */
   smsConsent?: boolean;
+  /** The optional Spanish box beneath it. False unless she ticked it. */
+  prefersSpanish?: boolean;
   hasHadExtensions: boolean;
   isSpecialOccasion: boolean;
   occasionDetails?: string;
@@ -104,6 +106,14 @@ export async function createBooking({
     ? { sms_consent: true, sms_consent_at: new Date().toISOString() }
     : {};
 
+  // Written on every booking, unlike consent — this is a preference she can
+  // change her mind about, and the latest booking is the best evidence of
+  // what she wants now. Consent is different: a later untick is not a
+  // withdrawal, which is what STOP is for.
+  const languageFields = {
+    preferred_language: formData.prefersSpanish ? "es" : "en",
+  };
+
   if (existingClient) {
     clientId = existingClient.id;
     // This error was discarded while the insert branch below checked properly.
@@ -120,6 +130,7 @@ export async function createBooking({
         full_name: fullName,
         phone: formData.phone,
         ...smsConsentFields,
+        ...languageFields,
         updated_at: new Date().toISOString(),
       })
       .eq("id", clientId);
@@ -160,6 +171,7 @@ export async function createBooking({
           email,
           phone: formData.phone,
           ...smsConsentFields,
+          ...languageFields,
           updated_at: new Date().toISOString(),
         })
         .eq("id", adoptedId);
@@ -176,6 +188,7 @@ export async function createBooking({
           email,
           phone: formData.phone,
           ...smsConsentFields,
+          ...languageFields,
         })
         .select("id")
         .single();
@@ -347,6 +360,7 @@ export async function createBooking({
             timeSlot: formData.timeSlot,
             depositAmount: Number(service.deposit_amount),
             address: studioAddress,
+            language: formData.prefersSpanish ? "es" : "en",
           })
         );
       } catch (smsErr) {

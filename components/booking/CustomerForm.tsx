@@ -111,7 +111,10 @@ export function CustomerForm({ form }: CustomerFormProps) {
           one three steps into the wizard. One component, so the public copy
           cannot drift from what a client actually sees here. */}
       <div className="mt-4">
-        <SmsConsentBlock register={register("smsConsent")} />
+        <SmsConsentBlock
+          register={register("smsConsent")}
+          languageRegister={register("prefersSpanish")}
+        />
       </div>
     </div>
   );

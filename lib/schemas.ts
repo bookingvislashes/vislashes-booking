@@ -32,6 +32,10 @@ export const bookingSchema = z.object({
   // this must be possible to leave unticked and still book. It is absent from
   // stepFields below for the same reason — nothing about it can block step 3.
   smsConsent: z.boolean().default(false),
+  // Which language her appointment texts are written in. Optional, off by
+  // default, and absent from stepFields like smsConsent — a preference must
+  // never be able to block a booking.
+  prefersSpanish: z.boolean().default(false),
 
   // Step 4
   hasHadExtensions: z.boolean({ message: "Please answer this question" }),

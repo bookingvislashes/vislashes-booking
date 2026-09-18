@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   const { data: booking, error: loadError } = await admin
     .from("bookings")
     .select(
-      "id, booking_date, time_slot, status, deposit_paid, deposit_amount, payment_method, has_removal, client:clients(full_name, email, phone, sms_consent, sms_opt_out), service:services(name, price, duration_minutes)"
+      "id, booking_date, time_slot, status, deposit_paid, deposit_amount, payment_method, has_removal, client:clients(full_name, email, phone, preferred_language, sms_consent, sms_opt_out), service:services(name, price, duration_minutes)"
     )
     .eq("id", input.bookingId)
     .maybeSingle();
@@ -220,6 +220,7 @@ export async function POST(req: NextRequest) {
               clientName: client.full_name,
               bookingDate: booking.booking_date,
               timeSlot: booking.time_slot,
+              language: client.preferred_language === "es" ? "es" : "en",
             })
           );
         } catch (err) {
