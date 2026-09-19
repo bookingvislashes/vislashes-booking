@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.67.0",
+    date: "2026-09-19",
+    changes: [
+      {
+        kind: "added",
+        text: "An appointment you enter yourself now sends the client the same confirmation text a website booking does — but only if that client has agreed to texts, and only if you left the send-confirmation box ticked. Before, it sent nothing.",
+      },
+      {
+        kind: "note",
+        text: "Almost none of your clients can be texted yet. Only one person has ticked the box on the booking form; the other 159 were never asked, so they still get email only. They sign themselves up the next time they book through the site.",
+      },
+    ],
+  },
+  {
     version: "1.66.0",
     date: "2026-09-18",
     changes: [

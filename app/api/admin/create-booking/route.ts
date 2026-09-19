@@ -9,6 +9,7 @@ import {
 } from "@/lib/email";
 import { consumeCreditForBooking, loadCreditAmounts } from "@/lib/credits";
 import { notifyAdmins } from "@/lib/push";
+import { confirmationText, isSmsConfigured, sendSms, toE164 } from "@/lib/sms";
 
 /**
  * Appointments the salon books herself.
@@ -309,7 +310,7 @@ export async function POST(req: NextRequest) {
   // is worth telling her the booking failed and having her enter it twice.
   const { data: client } = await admin
     .from("clients")
-    .select("full_name, email")
+    .select("full_name, email, phone, sms_consent, sms_opt_out")
     .eq("id", clientId)
     .maybeSingle();
 
@@ -374,6 +375,45 @@ export async function POST(req: NextRequest) {
       emailed = sendToClient;
     } catch (err) {
       console.error("Admin booking: confirmation email failed:", err);
+    }
+  }
+
+  // The same confirmation as a text, on the same terms as the checkout's.
+  //
+  // Three gates, and all of them have to pass. Consent and opt-out are the
+  // client's answer and are never overridden from here — she can book an
+  // appointment for someone, she cannot agree to be texted on their behalf.
+  // `sendConfirmation` is hers: unticking it means "do not tell the client
+  // about this one", which a text would contradict as loudly as an email.
+  //
+  // Best-effort, after the appointment is already saved. The deposit is
+  // passed only when one was actually taken, because the text prints it as
+  // "Deposit received" and these bookings often have none.
+  if (
+    sendToClient &&
+    client?.sms_consent &&
+    !client?.sms_opt_out &&
+    isSmsConfigured()
+  ) {
+    const phone = toE164(client.phone);
+    if (phone) {
+      try {
+        await sendSms(
+          phone,
+          confirmationText({
+            clientName: client.full_name || input.fullName || "there",
+            serviceName: input.hasRemoval
+              ? `${service.name} + lash removal`
+              : service.name,
+            bookingDate: input.bookingDate,
+            timeSlot: normalisedSlot,
+            depositAmount: input.depositPaid ? depositAmount : undefined,
+            address: studioAddress,
+          })
+        );
+      } catch (err) {
+        console.error("Admin booking: confirmation text failed:", err);
+      }
     }
   }
 
