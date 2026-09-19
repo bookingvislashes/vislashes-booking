@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.69.0",
+    date: "2026-09-19",
+    changes: [
+      {
+        kind: "changed",
+        text: "The \"Stay Lashed in\" section at the bottom of the home page is tidier: the text button, the email button and Book Your Appointment are now the same size and line up in one column, the spacing between each part is even, and the booking button sits under a thin line instead of floating on its own below everything.",
+      },
+    ],
+  },
+  {
     version: "1.68.0",
     date: "2026-09-19",
     changes: [
