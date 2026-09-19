@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.68.0",
+    date: "2026-09-19",
+    changes: [
+      {
+        kind: "note",
+        text: "Your emails are set to come from bookings@vislashes.com, but they will keep failing until vislashes.com is verified in Resend. Add the domain at resend.com/domains, put the three DNS records it gives you into Squarespace, and everything starts working on its own the moment it says Verified.",
+      },
+      {
+        kind: "changed",
+        text: "Emails can now show your salon name in the inbox rather than a bare address, without breaking the check that stops your own address being saved as a client.",
+      },
+    ],
+  },
+  {
     version: "1.67.0",
     date: "2026-09-19",
     changes: [

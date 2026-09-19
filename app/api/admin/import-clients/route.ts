@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { emailFromAddress } from "@/lib/email";
 
 /**
  * Imports an Acuity client export.
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
     .eq("key", "business_email")
     .maybeSingle();
   const businessEmail = (businessRow?.value || "").trim().toLowerCase();
-  const fromEmail = (process.env.EMAIL_FROM || "").trim().toLowerCase();
+  const fromEmail = emailFromAddress;
 
   const today = new Date();
   let created = 0;

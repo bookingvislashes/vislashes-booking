@@ -13,6 +13,24 @@ function getResend(): Resend {
 const emailFrom = process.env.EMAIL_FROM || "onboarding@resend.dev";
 
 /**
+ * Just the address out of `emailFrom`, without a display name.
+ *
+ * EMAIL_FROM is allowed to carry one — "VIS Lashes <bookings@vislashes.com>"
+ * is what puts the salon's name in a client's inbox instead of a bare
+ * address, and Resend takes either form. But two places compare it to
+ * something a visitor typed, to keep the salon's own address from being
+ * treated as a client: the import, and the "do we know you?" lookup on the
+ * booking form. Those compare whole strings, so the display-name form would
+ * never match and the guard would stop working without failing — which is
+ * the kind of break nobody finds. They use this instead.
+ */
+export const emailFromAddress = (
+  emailFrom.match(/<([^>]+)>/)?.[1] ?? emailFrom
+)
+  .trim()
+  .toLowerCase();
+
+/**
  * Hand a message to Resend, and fail loudly if Resend refuses it.
  *
  * THIS IS THE WHOLE POINT OF THIS FUNCTION. Resend's SDK does NOT throw when

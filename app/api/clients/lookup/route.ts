@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/server";
+import { emailFromAddress } from "@/lib/email";
 
 /**
  * "Have I been here before?" — the check that unlocks refills.
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       const businessEmail = (business?.value || "").trim().toLowerCase();
-      const fromEmail = (process.env.EMAIL_FROM || "").trim().toLowerCase();
+      const fromEmail = emailFromAddress;
       const given = contact.toLowerCase();
       if (given && (given === businessEmail || given === fromEmail)) {
         return NextResponse.json({ known: false });
