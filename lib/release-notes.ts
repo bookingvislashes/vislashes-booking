@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.72.1",
+    date: "2026-09-20",
+    changes: [
+      {
+        kind: "fixed",
+        text: "Editing a date on the Calendar page — opening a day you're normally off, closing a day, blocking time, or clearing a change back to your usual hours — no longer fails with \"Invalid request.\" A validation bug was rejecting every one of those saves; it just showed up most on the case you'd hit least often, opening up a day off.",
+      },
+    ],
+  },
+  {
     version: "1.72.0",
     date: "2026-09-20",
     changes: [

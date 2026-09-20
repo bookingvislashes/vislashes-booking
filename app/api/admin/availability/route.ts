@@ -20,7 +20,15 @@ import { resolveWindow, to24Hour } from "@/lib/availability";
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-const schema = z.discriminatedUnion("action", [
+// Not z.discriminatedUnion: "set-hours" covers both opening and closing a
+// date, so two branches share that discriminant value. Zod requires a
+// union's discriminant to be unique per branch and throws "Duplicate
+// discriminator value" the moment anything is parsed — which rejected every
+// write through this route, not only the isOpen:true one, since the schema
+// object is shared across all of them. A plain union tries each branch in
+// turn instead of dispatching by discriminant, so duplicate literals are
+// fine.
+const schema = z.union([
   // Replace this date's hours, or close it outright.
   z.object({
     action: z.literal("set-hours"),
