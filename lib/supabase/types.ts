@@ -12,6 +12,10 @@ export interface Service {
   image_url: string | null;
   /** Vertical crop centre as a percentage, so the card lands on the eyes. */
   image_focus_y: number;
+  /** Horizontal crop centre as a percentage — the twin of image_focus_y. */
+  image_focus_x: number;
+  /** Scale applied around (image_focus_x, image_focus_y). 100 = no zoom. */
+  image_zoom: number;
   is_active: boolean;
   sort_order: number;
   created_at: string;
