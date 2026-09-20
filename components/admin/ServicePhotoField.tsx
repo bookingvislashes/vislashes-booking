@@ -147,7 +147,7 @@ export function ServicePhotoField({
             <input
               type="range"
               min={100}
-              max={250}
+              max={300}
               value={zoom}
               onChange={(e) =>
                 onChange({ imageUrl, focusX, focusY, zoom: Number(e.target.value) })
