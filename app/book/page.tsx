@@ -31,7 +31,9 @@ const fallbackServices = [
     deposit_amount: 25.0,
     duration_minutes: 70,
     image_url: null,
+    image_focus_x: 50,
     image_focus_y: 50,
+    image_zoom: 100,
   },
   {
     id: "svc-wispy",
@@ -43,7 +45,9 @@ const fallbackServices = [
     deposit_amount: 25.0,
     duration_minutes: 80,
     image_url: null,
+    image_focus_x: 50,
     image_focus_y: 50,
+    image_zoom: 100,
   },
   {
     id: "svc-hybrid",
@@ -55,7 +59,9 @@ const fallbackServices = [
     deposit_amount: 25.0,
     duration_minutes: 90,
     image_url: null,
+    image_focus_x: 50,
     image_focus_y: 50,
+    image_zoom: 100,
   },
   {
     id: "svc-lash-lift",
@@ -67,7 +73,9 @@ const fallbackServices = [
     deposit_amount: 25.0,
     duration_minutes: 60,
     image_url: null,
+    image_focus_x: 50,
     image_focus_y: 50,
+    image_zoom: 100,
   },
 ];
 
@@ -79,7 +87,7 @@ async function getServices() {
     const { data, error } = await supabase
       .from("services")
       .select(
-        "id, name, description, category, price, deposit_amount, duration_minutes, image_url, image_focus_y"
+        "id, name, description, category, price, deposit_amount, duration_minutes, image_url, image_focus_x, image_focus_y, image_zoom"
       )
       .eq("is_active", true)
       .order("sort_order", { ascending: true });
@@ -107,7 +115,9 @@ async function getServices() {
       // image_url used to be hardcoded null here, which is why every card
       // rendered a flat tan block no matter what was stored.
       image_url: s.image_url ?? null,
+      image_focus_x: s.image_focus_x ?? 50,
       image_focus_y: s.image_focus_y ?? 50,
+      image_zoom: s.image_zoom ?? 100,
     }));
   } catch (err) {
     console.error("getServices: threw, serving fallback menu:", err);

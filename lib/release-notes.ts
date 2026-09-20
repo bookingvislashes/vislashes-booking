@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.72.0",
+    date: "2026-09-20",
+    changes: [
+      {
+        kind: "changed",
+        text: "Classic, Wispy and Hybrid Set photos on the booking page now crop in tighter so the eyes run from one edge of the picture box to the other on all three, instead of each sitting at its own zoom level.",
+      },
+      {
+        kind: "changed",
+        text: "The Lash Lift photo is reframed onto the eye that was actually in view — the old crop was mostly the side of the face with an eye barely in the corner.",
+      },
+      {
+        kind: "added",
+        text: "Editing a service's photo in Admin → Services now has a Zoom slider and a left/right position slider next to the up/down one that was already there, so you can line up a future photo yourself without asking for a code change.",
+      },
+    ],
+  },
+  {
     version: "1.71.0",
     date: "2026-09-20",
     changes: [

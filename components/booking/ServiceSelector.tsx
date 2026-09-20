@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { UseFormReturn } from "react-hook-form";
 import { BookingFormData } from "@/lib/schemas";
+import { getServicePhotoStyle } from "@/lib/servicePhotoStyle";
 
 /**
  * A service photo, from either a path inside the site or somewhere else.
@@ -14,11 +15,23 @@ import { BookingFormData } from "@/lib/schemas";
  * host is a realistic thing to paste — so those fall back to a plain img,
  * which shows the picture instead of breaking the booking page.
  */
-function ServicePhoto({ src, focusY }: { src: string; focusY: number }) {
+function ServicePhoto({
+  src,
+  focusX,
+  focusY,
+  zoom,
+}: {
+  src: string;
+  focusX: number;
+  focusY: number;
+  zoom: number;
+}) {
   // The card is a short letterbox and the photos are full portraits, so a
   // centre crop lands on a nose. Each service is nudged onto the lashes in
-  // the admin, which is the only part a customer is judging.
-  const objectPosition = `50% ${focusY}%`;
+  // the admin, which is the only part a customer is judging. Zoom then
+  // tightens the crop in around that same point, past what object-cover's
+  // plain fit can reach on its own.
+  const style = getServicePhotoStyle(focusX, focusY, zoom);
   const isLocal = src.startsWith("/");
   // Photos uploaded through the admin live on Supabase Storage, which is
   // allow-listed in next.config.ts — so they can be optimised rather than
@@ -42,7 +55,7 @@ function ServicePhoto({ src, focusY }: { src: string; focusY: number }) {
         alt=""
         loading="eager"
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ objectPosition }}
+        style={style}
       />
     );
   }
@@ -53,7 +66,7 @@ function ServicePhoto({ src, focusY }: { src: string; focusY: number }) {
       alt=""
       fill
       className="object-cover"
-      style={{ objectPosition }}
+      style={style}
       // The card is at most ~340px wide, and three sit side by side on desktop.
       sizes="(max-width: 640px) 100vw, 340px"
       quality={85}
@@ -70,7 +83,9 @@ interface Service {
   price: number;
   duration_minutes: number;
   image_url: string | null;
+  image_focus_x?: number;
   image_focus_y?: number;
+  image_zoom?: number;
 }
 
 interface ServiceSelectorProps {
@@ -180,7 +195,9 @@ export function ServiceSelector({
           {service.image_url && (
             <ServicePhoto
               src={service.image_url}
+              focusX={service.image_focus_x ?? 50}
               focusY={service.image_focus_y ?? 50}
+              zoom={service.image_zoom ?? 100}
             />
           )}
         </div>

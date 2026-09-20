@@ -17,7 +17,9 @@ type Draft = {
   duration_minutes: string;
   description: string;
   image_url: string | null;
+  image_focus_x: number;
   image_focus_y: number;
+  image_zoom: number;
 };
 
 const CATEGORY_LABELS: Record<Draft["category"], string> = {
@@ -34,7 +36,9 @@ const emptyDraft: Draft = {
   duration_minutes: "",
   description: "",
   image_url: null,
+  image_focus_x: 50,
   image_focus_y: 50,
+  image_zoom: 100,
 };
 
 function toDraft(service: Service): Draft {
@@ -47,7 +51,9 @@ function toDraft(service: Service): Draft {
     duration_minutes: String(service.duration_minutes),
     description: service.description ?? "",
     image_url: service.image_url ?? null,
+    image_focus_x: service.image_focus_x ?? 50,
     image_focus_y: service.image_focus_y ?? 50,
+    image_zoom: service.image_zoom ?? 100,
   };
 }
 
@@ -244,7 +250,9 @@ export default function ServicesPage() {
       duration_minutes: duration,
       description: draft.description.trim() || null,
       image_url: draft.image_url,
+      image_focus_x: draft.image_focus_x,
       image_focus_y: draft.image_focus_y,
+      image_zoom: draft.image_zoom,
     };
 
     const { error: writeError } = draft.id
@@ -525,9 +533,17 @@ export default function ServicesPage() {
           <div className="flex flex-col gap-4">
             <ServicePhotoField
               imageUrl={draft.image_url}
+              focusX={draft.image_focus_x}
               focusY={draft.image_focus_y}
-              onChange={({ imageUrl, focusY }) =>
-                setDraft({ ...draft, image_url: imageUrl, image_focus_y: focusY })
+              zoom={draft.image_zoom}
+              onChange={({ imageUrl, focusX, focusY, zoom }) =>
+                setDraft({
+                  ...draft,
+                  image_url: imageUrl,
+                  image_focus_x: focusX,
+                  image_focus_y: focusY,
+                  image_zoom: zoom,
+                })
               }
             />
 
