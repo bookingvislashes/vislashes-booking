@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.70.0",
+    date: "2026-09-19",
+    changes: [
+      {
+        kind: "changed",
+        text: "Links to the site now show the VIS Lashes preview card when you text or message them, instead of a blank box or a tiny icon.",
+      },
+      {
+        kind: "note",
+        text: "Messaging apps remember the old preview for a while. If a link you already sent still looks plain, send it again from a fresh message — new links will show the card straight away.",
+      },
+    ],
+  },
+  {
     version: "1.69.0",
     date: "2026-09-19",
     changes: [

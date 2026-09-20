@@ -28,6 +28,15 @@ const squareSdkUrl =
     : "https://sandbox.web.squarecdn.com/v1/square.js";
 
 export const metadata: Metadata = {
+  // Required for the link-preview image to be emitted as an absolute URL.
+  // Every scraper — iMessage, Instagram, Facebook, WhatsApp — rejects a
+  // relative og:image, and without this Next has no origin to build one from.
+  // Falls back to the live domain so a preview build still produces a valid
+  // tag rather than none; NEXT_PUBLIC_* is baked at build time, so an unset
+  // variable would otherwise leave this undefined.
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_BASE_URL || "https://www.vislashes.com"
+  ),
   title: "VIS Lashes — Premium Lash Extensions in Orlando",
   description:
     "Book your lash extension appointment with VIS Lashes. Classic, Wispy, and Hybrid sets, plus lash lifts, in Orlando, Saint Cloud, and Kissimmee, FL.",
@@ -36,6 +45,23 @@ export const metadata: Metadata = {
     description:
       "Book your lash extension appointment online. Serving Orlando, Saint Cloud, and Kissimmee.",
     type: "website",
+    siteName: "VIS Lashes",
+    locale: "en_US",
+    url: "/",
+    // The image itself is app/opengraph-image.jpg, picked up by file
+    // convention: Next fingerprints the URL and fills in width, height and
+    // type, so the tag cannot drift from the file the way a hand-written
+    // path can.
+  },
+  twitter: {
+    // Was defaulting to "summary", the small square card. The large card is
+    // what makes the preview read as a photograph rather than a favicon.
+    // No twitter:image is set on purpose — X falls back to og:image, and one
+    // copy of the asset cannot fall out of sync with itself.
+    card: "summary_large_image",
+    title: "VIS Lashes — Premium Lash Extensions",
+    description:
+      "Book your lash extension appointment online. Serving Orlando, Saint Cloud, and Kissimmee.",
   },
 };
 
