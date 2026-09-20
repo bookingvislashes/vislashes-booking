@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.71.0",
+    date: "2026-09-20",
+    changes: [
+      {
+        kind: "changed",
+        text: "The \"Stay Lashed in\" section at the bottom of the home page is now just the heading, the line \"Question before you book?\", and your text and email buttons. The reply-time note, the \"Or send a DM\" line with the three social icons, and the second Book Your Appointment button are gone — booking is still in the menu at the top of every page, and your Instagram is still in the black footer right below.",
+      },
+    ],
+  },
+  {
     version: "1.70.1",
     date: "2026-09-20",
     changes: [
