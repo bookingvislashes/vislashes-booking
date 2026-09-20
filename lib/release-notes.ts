@@ -36,7 +36,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     changes: [
       {
         kind: "changed",
-        text: "The \"Stay Lashed in\" section at the bottom of the home page is now just the heading, the line \"Question before you book?\", and your text and email buttons. The reply-time note, the \"Or send a DM\" line with the three social icons, and the second Book Your Appointment button are gone — booking is still in the menu at the top of every page, and your Instagram is still in the black footer right below.",
+        text: "The \"Stay Lashed in\" section at the bottom of the home page is cleaner: the heading, the line \"Question before you book?\", your text and email buttons, and your Instagram, Facebook and TikTok icons. The reply-time note, the \"Or send a DM\" line and the second Book Your Appointment button are gone — booking is still in the menu at the top of every page.",
       },
     ],
   },

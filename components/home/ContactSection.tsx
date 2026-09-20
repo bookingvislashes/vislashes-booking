@@ -3,18 +3,22 @@ import type { ContactDetails } from "@/lib/contact";
 /**
  * "Stay Lashed in" — the section the header's Contact link scrolls to.
  *
- * It is four things: the heading, one question, and the two ways to ask it.
- * Everything else that used to live here is gone at the owner's direction —
- * the "quickest way to reach me" line, the reply-time note under the buttons,
- * the "Or send a DM" caption with its three social icons, and the Book Your
- * Appointment button. Each was defensible on its own and the pile of them was
- * not: by the last screen of the page there were seven things to read and four
- * things to press, and it read as clutter rather than as an invitation. Please
- * do not add a fifth element back without her asking for it.
+ * It is the heading, one question, the two ways to ask it, and the studio's
+ * three social links. Everything else that used to live here is gone at the
+ * owner's direction — the "quickest way to reach me" line, the reply-time note
+ * under the buttons, the "Or send a DM" caption, and the Book Your Appointment
+ * button. Each was defensible on its own and the pile of them was not: by the
+ * last screen of the page there were seven things to read and four things to
+ * press, and it read as clutter rather than as an invitation. Please do not
+ * add to it without her asking.
+ *
+ * The icons kept their links and lost their caption — she asked for them back
+ * by name after the first pass took the whole block. They are the studio's
+ * accounts, which is reason enough; each carries its own aria-label, so
+ * nothing about dropping the caption costs a screen reader the names.
  *
  * Nothing is lost by the removals. The booking CTA is in the header on every
- * screen and at the top of the page; the Instagram handle is in the footer
- * directly below this section.
+ * screen and at the top of the page.
  *
  * TEXT IS THE PRIMARY ACTION, deliberately. Vianney is a solo artist with both
  * hands on a client for most of the working day; anything that implies an
@@ -106,6 +110,34 @@ export function ContactSection({ contact }: { contact: ContactDetails }) {
               )}
             </div>
           )}
+
+          {/* Her Instagram, Facebook and TikTok. The "Or send a DM" caption
+              above these is gone; the icons are not, and they read fine
+              unlabelled — three marks everyone recognises, in the same
+              charcoal as the copy, on the column's left edge at the same 24px
+              rhythm as everything else in the stack. */}
+          <div className="flex items-center gap-6">
+            {/* Instagram */}
+            <a href="https://www.instagram.com/vislashesbooking" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-charcoal hover:text-brand-brown transition-colors">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" />
+                <circle cx="12" cy="12" r="5" />
+                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+              </svg>
+            </a>
+            {/* Facebook */}
+            <a href="https://www.facebook.com/profile.php?id=100090403301732" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-charcoal hover:text-brand-brown transition-colors">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+              </svg>
+            </a>
+            {/* TikTok */}
+            <a href="https://www.tiktok.com/@vislashes" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-charcoal hover:text-brand-brown transition-colors">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16.5 2h-3.2v13.6c0 1.5-1.2 2.75-2.75 2.75a2.75 2.75 0 01-2.75-2.75 2.75 2.75 0 012.75-2.75c.3 0 .6.05.87.14V9.7a6 6 0 00-.87-.06 5.95 5.95 0 00-5.95 5.95A5.95 5.95 0 0010.55 21.5a5.95 5.95 0 005.95-5.95V8.6a8.2 8.2 0 004.6 1.4V6.75c-1.9 0-3.55-1.15-4.25-2.8A5.3 5.3 0 0116.5 2z" />
+              </svg>
+            </a>
+          </div>
         </div>
 
         {/* Right: Photo */}
