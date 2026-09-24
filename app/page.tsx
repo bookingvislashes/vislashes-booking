@@ -10,6 +10,7 @@ import { Testimonials } from "@/components/home/Testimonials";
 import { Faq } from "@/components/home/Faq";
 import { ContactSection } from "@/components/home/ContactSection";
 import { Reveal } from "@/components/home/Reveal";
+import { SignatureSetTabs } from "@/components/home/SignatureSetTabs";
 import { PRODUCTS_ENABLED } from "@/lib/features";
 import { createPublicClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -309,6 +310,25 @@ export default async function HomePage() {
           </div>
         </Reveal>
       )}
+      {/* On a phone the sets are tabs and one large portrait — see
+          SignatureSetTabs for why the rows do not survive at 390px. Rendered
+          alongside the rows rather than instead of them, and hidden by CSS at
+          the other end: the rows below are `hidden` under sm. */}
+      {featureSections.length > 0 && (
+        <div className="sm:hidden px-6 mb-20">
+          <Reveal>
+            <SignatureSetTabs
+              sets={featureSections.map((section) => ({
+                id: section.id,
+                name: section.name,
+                label: section.label,
+                description: section.description,
+                imageSrc: section.imageSrc,
+              }))}
+            />
+          </Reveal>
+        </div>
+      )}
       {/* Row spacing lives on this container, not on the rows. Each row sits
           inside its own <Reveal>, so every row is its parent's only child and
           the `last:mb-0` this used to carry matched all three of them — which
@@ -334,7 +354,7 @@ export default async function HomePage() {
           to 24px here until lg, and to 32px at exactly 1024, while every
           other section on the page kept 48. */}
       {featureSections.length > 0 && (
-        <div className="w-full max-w-[1056px] mx-auto px-6 sm:px-12 mb-8 sm:mb-10 lg:mb-[90px] flex flex-col gap-14 sm:gap-0">
+        <div className="w-full max-w-[1056px] mx-auto px-6 sm:px-12 sm:mb-10 lg:mb-[90px] hidden sm:flex sm:flex-col">
           {featureSections.map((section, index) => (
             <Reveal key={section.name} delay={index * 80}>
               <div

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { getImageProps } from "next/image";
 import { CtaLink } from "@/components/ui/CtaLink";
 import { PRODUCTS_ENABLED } from "@/lib/features";
 
@@ -52,72 +52,127 @@ import { PRODUCTS_ENABLED } from "@/lib/features";
  * back here has to beat leaving the headline alone.
  */
 export function ParallaxHero() {
+  // Two crops of one photograph, chosen by the browser before it downloads
+  // either. The wide frame is the desktop hero; the tall one is that same
+  // frame with the flat studio wall cut away (everything left of 42%), so on a
+  // phone the eye, brow and cheek fill the picture instead of the wall doing
+  // it. Serving only the crop each size needs is also the reason this is a
+  // <picture> and not two <Image>s — with priority set, both would download.
+  //
+  // fetchPriority and loading are set by hand because getImageProps does not
+  // act on `priority` — <Image> is what turns that into a high-priority fetch,
+  // and this is not <Image>. Left to `priority: true` the <img> came out with
+  // neither attribute, for the one element on the page that is the LCP. Caught
+  // by reading the rendered attributes, not by anything failing.
+  //
+  // There is deliberately no <link rel="preload"> as well. One was tried, with
+  // media queries mirroring the <source>, and measured against none on a
+  // throttled connection (1.6Mbps, 150ms, median of 9): the request started 5ms
+  // earlier and LCP was 8ms later, which is noise. The <img> is server-rendered
+  // at the top of the body, so the browser's own preload scanner finds it as
+  // soon as the link would have; what the link added was a second copy of
+  // itself in <head>.
+  const common = {
+    alt: "Close-up of a client's finished wispy lash set",
+    fill: true,
+    unoptimized: true,
+    sizes: "100vw",
+    loading: "eager",
+    fetchPriority: "high",
+  } as const;
+  const { props: wide } = getImageProps({ ...common, src: "/images/hero-portrait.webp" });
+  const { props: tall } = getImageProps({ ...common, src: "/images/hero-portrait-mobile.webp" });
+
   return (
     // The subtracted values are the measured header height at each breakpoint
     // (88px below lg, 94px at lg). They are duplicated from the header rather
     // than shared, so a change to its padding silently leaves a strip of the
     // next section showing below the fold. A height token would fix that.
-    <section className="relative w-full overflow-hidden bg-white h-[clamp(560px,calc(100svh_-_88px),760px)] lg:h-[clamp(720px,calc(100svh_-_94px),1024px)]">
-      {/* The photograph. It settles out of a 6% scale over 14s — slow enough
-          to read as presence rather than motion, and it runs once so the page
-          is still afterwards. Disabled outright under reduced motion. */}
-      {/* The photograph. `object-position` keeps the face right of centre with
-          the eye in the upper middle, clear of the text column at both ends of
-          the range. priority + unoptimized because this is the LCP element and
-          a cold /_next/image transform is the last thing it should wait on. */}
-      <Image
-        src="/images/hero-portrait.webp"
-        alt="Close-up of a client's finished wispy lash set"
-        fill
-        priority
-        unoptimized
-        sizes="100vw"
-        className="object-cover object-[62%_top] lg:object-[center_top] animate-hero-drift motion-reduce:animate-none"
-      />
+    <section className="relative flex flex-col w-full overflow-hidden bg-dark-brown sm:bg-white h-[clamp(560px,calc(100svh_-_88px),760px)] lg:h-[clamp(720px,calc(100svh_-_94px),1024px)]">
+      {/* Below sm (a phone) the hero is two zones, not one photograph with
+          text laid on it: the picture above, the copy below, and a long fade
+          so the join does not read as a seam. Laid over the picture, the
+          headline sat on the eye on a short phone — measured at 375x667, its
+          first line began about 70px above the bottom of the eye — and no
+          scrim fixes that, because the problem is where the words are, not how
+          dark they are. Here the photograph gets whatever height the copy
+          leaves it, and the crop keeps the eye in the upper half of that
+          whatever it turns out to be.
 
+          From sm it is the original layout, byte for byte — checked by diffing
+          screenshots against the previous build at 640, 700, 768, 940, 1024,
+          1100 and 1440: the zone is absolutely positioned across the section
+          again and the scrims are the ones already here. The two-zone layout
+          was tried on tablets and dropped: a short, wide zone (940x480) forces
+          the portrait crop into an extreme macro that softens on a retina
+          screen, which is the wrong trade for a range nobody asked to change. */}
+      <div className="relative min-h-0 flex-1 overflow-hidden sm:absolute sm:inset-0 sm:flex-none">
+        {/* The photograph. It settles out of a 6% scale over 14s — slow enough
+            to read as presence rather than motion, and it runs once so the
+            page is still afterwards. Disabled outright under reduced motion.
 
-      {/* Scrim, phone and tablet: bottom-up, because the text is anchored to
-          the bottom edge there. Held stronger than the desktop ramp because at
-          375 the headline sits over skin rather than the pale backdrop.
+            object-position: on a phone the crop is pinned 20% down, which
+            keeps the eye in the upper half of a zone that can be anywhere from
+            about 250px tall (a short phone) to 460px; from sm it is what it
+            always was — 62% across on a tablet, top-centre from lg. priority + unoptimized because this is the LCP element
+            and a cold /_next/image transform is the last thing it should wait
+            on — getImageProps carries both through to the <img>. */}
+        <picture>
+          <source media="(min-width: 640px)" srcSet={wide.src} />
+          <img
+            {...tall}
+            alt={tall.alt}
+            className="object-cover object-[60%_20%] sm:object-[62%_top] lg:object-[center_top] animate-hero-drift motion-reduce:animate-none"
+          />
+        </picture>
 
-          Held a little longer than the original 0.82/0.60@52%/0@85%, because
-          the second CTA stacks below the first on a phone and puts the top of
-          the headline about 55% of the way up rather than 46%. It is pulled
-          back in again now the kicker and the proof list are gone: fading out
-          by 88% rather than 96% leaves the brow and the eye untinted, which is
-          the part of the photograph doing the selling. */}
-      <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none lg:hidden bg-[linear-gradient(0deg,rgba(45,32,21,0.86)_0%,rgba(63,45,31,0.66)_58%,rgba(63,45,31,0)_88%)]"
-      />
+        {/* Fade into the copy panel, phone and tablet. It ends on exactly the
+            panel's colour so there is no edge, and it starts high enough that
+            the fade is a gradient rather than a band: the lower half of the
+            picture is lips and cheek, which is the part the copy is meant to
+            take over from. */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 h-[58%] pointer-events-none sm:hidden bg-[linear-gradient(180deg,rgba(61,43,31,0)_0%,rgba(61,43,31,0.55)_45%,rgba(61,43,31,0.94)_82%,rgb(61,43,31)_100%)]"
+        />
 
-      {/* Scrim, lg and up.
-          Shaped from the photograph rather than copied from the design. A
-          horizontal luminance profile of the hero image shows a flat studio
-          backdrop (luminance 199) from 0% to 42%, and the face beginning at
-          43%. The text column ends at 39%. So the whole scrim can live over
-          the backdrop and be gone before it reaches her.
+        {/* Scrim, tablet: the original bottom-up one, restored for sm–lg.
+            Bottom-up because the copy is anchored to the bottom edge there,
+            and held stronger than the desktop ramp because at that size the
+            headline sits over skin rather than the pale backdrop. */}
+        <div
+          aria-hidden
+          className="hidden absolute inset-0 pointer-events-none sm:block lg:hidden bg-[linear-gradient(0deg,rgba(45,32,21,0.86)_0%,rgba(63,45,31,0.66)_58%,rgba(63,45,31,0)_88%)]"
+        />
 
-          Figma's own stops (0.79 / 0.59 at 24.5% / 0 at 80%) were tried and
-          measured 3.03:1 on the headline and 2.73:1 on the subtext — the
-          design does not clear AA on its own. Holding ~0.70 across the text
-          column instead brings the backdrop to roughly rgb(107,91,78), which
-          measures past 4.5:1 on the subtext, while the fade completes by 60% so the eye
-          and cheek are untouched.
+        {/* Scrim, lg and up.
+            Shaped from the photograph rather than copied from the design. A
+            horizontal luminance profile of the hero image shows a flat studio
+            backdrop (luminance 199) from 0% to 42%, and the face beginning at
+            43%. The text column ends at 39%. So the whole scrim can live over
+            the backdrop and be gone before it reaches her.
 
-          An earlier version instead laid a 36% brown wash over the entire
-          photograph. That came from misreading node 739:299, whose brown fill
-          sits *behind* the image and is invisible in the design. It is gone. */}
-      <div
-        aria-hidden
-        className="hidden absolute inset-0 pointer-events-none lg:block bg-[linear-gradient(90deg,rgba(45,32,21,0.84)_0%,rgba(63,45,31,0.76)_26%,rgba(63,45,31,0.70)_40%,rgba(63,45,31,0)_60%)]"
-      />
+            Figma's own stops (0.79 / 0.59 at 24.5% / 0 at 80%) were tried and
+            measured 3.03:1 on the headline and 2.73:1 on the subtext — the
+            design does not clear AA on its own. Holding ~0.70 across the text
+            column instead brings the backdrop to roughly rgb(107,91,78), which
+            measures past 4.5:1 on the subtext, while the fade completes by 60%
+            so the eye and cheek are untouched.
 
-      <div className="relative z-10 h-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] flex flex-col justify-end pb-12 lg:justify-center lg:pb-0">
+            An earlier version instead laid a 36% brown wash over the entire
+            photograph. That came from misreading node 739:299, whose brown fill
+            sits *behind* the image and is invisible in the design. It is gone. */}
+        <div
+          aria-hidden
+          className="hidden absolute inset-0 pointer-events-none lg:block bg-[linear-gradient(90deg,rgba(45,32,21,0.84)_0%,rgba(63,45,31,0.76)_26%,rgba(63,45,31,0.70)_40%,rgba(63,45,31,0)_60%)]"
+        />
+      </div>
+
+      <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-[120px] flex flex-col -mt-14 pb-9 sm:mt-0 sm:h-full sm:justify-end sm:pb-12 lg:justify-center lg:pb-0">
         {/* Where and how, in one line above the headline, so the headline
             itself never has to spend words on logistics. "By appointment
             only" is the same fact the old subtext spent "no walk-ins" on. */}
-        <h1 className="font-display font-bold text-cream text-[40px] sm:text-[52px] lg:text-[64px] leading-[1.04] max-w-[500px] animate-fade-in-up">
+        <h1 className="font-display font-bold text-cream text-[40px] sm:text-[52px] lg:text-[64px] leading-[1.04] max-w-[500px] max-sm:text-balance animate-fade-in-up">
           Wake up with your lashes already done.
         </h1>
 

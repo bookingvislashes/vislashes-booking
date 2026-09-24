@@ -31,6 +31,24 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.73.0",
+    date: "2026-09-24",
+    changes: [
+      {
+        kind: "changed",
+        text: "On a phone, the three lash sets are now a row of tabs — Classic, Wispy, Hybrid, each showing its price — above one large photo, so you can compare prices at a glance and tap a set to see it. Before, they were three long stacked sections with the photos pushed to one side.",
+      },
+      {
+        kind: "changed",
+        text: "The top of the home page on a phone is rebuilt: the photo now fills the top with her whole eye showing, and the headline and both buttons sit below it instead of on top of the photo. On a small phone the headline used to cover the eye.",
+      },
+      {
+        kind: "note",
+        text: "Nothing changes on tablets, laptops or desktops — this is phones only. The sets, prices and descriptions still come from Services, so editing them there updates the tabs too.",
+      },
+    ],
+  },
+  {
     version: "1.72.1",
     date: "2026-09-20",
     changes: [
