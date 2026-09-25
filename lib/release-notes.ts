@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.73.1",
+    date: "2026-09-24",
+    changes: [
+      {
+        kind: "fixed",
+        text: "On an iPhone, a thin light line could show across the face in the photo at the top of the home page, right where the photo fades into the brown. It is gone.",
+      },
+    ],
+  },
+  {
     version: "1.73.0",
     date: "2026-09-24",
     changes: [

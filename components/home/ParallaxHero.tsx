@@ -106,65 +106,81 @@ export function ParallaxHero() {
           was tried on tablets and dropped: a short, wide zone (940x480) forces
           the portrait crop into an extreme macro that softens on a retina
           screen, which is the wrong trade for a range nobody asked to change. */}
-      <div className="relative min-h-0 flex-1 overflow-hidden sm:absolute sm:inset-0 sm:flex-none">
-        {/* The photograph. It settles out of a 6% scale over 14s — slow enough
-            to read as presence rather than motion, and it runs once so the
-            page is still afterwards. Disabled outright under reduced motion.
+      <div className="relative min-h-0 flex-1 sm:absolute sm:inset-0 sm:flex-none">
+        {/* The clip lives on this inner box, not on the zone, so the phone fade
+            below can sit outside it (see there). From sm it is the same
+            rectangle as the zone. */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* The photograph. It settles out of a 6% scale over 14s — slow enough
+              to read as presence rather than motion, and it runs once so the
+              page is still afterwards. Disabled outright under reduced motion.
 
-            object-position: on a phone the crop is pinned 20% down, which
-            keeps the eye in the upper half of a zone that can be anywhere from
-            about 250px tall (a short phone) to 460px; from sm it is what it
-            always was — 62% across on a tablet, top-centre from lg. priority + unoptimized because this is the LCP element
-            and a cold /_next/image transform is the last thing it should wait
-            on — getImageProps carries both through to the <img>. */}
-        <picture>
-          <source media="(min-width: 640px)" srcSet={wide.src} />
-          <img
-            {...tall}
-            alt={tall.alt}
-            className="object-cover object-[60%_20%] sm:object-[62%_top] lg:object-[center_top] animate-hero-drift motion-reduce:animate-none"
+              object-position: on a phone the crop is pinned 20% down, which
+              keeps the eye in the upper half of a zone that can be anywhere from
+              about 250px tall (a short phone) to 460px; from sm it is what it
+              always was — 62% across on a tablet, top-centre from lg. priority + unoptimized because this is the LCP element
+              and a cold /_next/image transform is the last thing it should wait
+              on — getImageProps carries both through to the <img>. */}
+          <picture>
+            <source media="(min-width: 640px)" srcSet={wide.src} />
+            <img
+              {...tall}
+              alt={tall.alt}
+              className="object-cover object-[60%_20%] sm:object-[62%_top] lg:object-[center_top] animate-hero-drift motion-reduce:animate-none"
+            />
+          </picture>
+
+          {/* Scrim, tablet: the original bottom-up one, restored for sm–lg.
+              Bottom-up because the copy is anchored to the bottom edge there,
+              and held stronger than the desktop ramp because at that size the
+              headline sits over skin rather than the pale backdrop. */}
+          <div
+            aria-hidden
+            className="hidden absolute inset-0 pointer-events-none sm:block lg:hidden bg-[linear-gradient(0deg,rgba(45,32,21,0.86)_0%,rgba(63,45,31,0.66)_58%,rgba(63,45,31,0)_88%)]"
           />
-        </picture>
 
-        {/* Fade into the copy panel, phone and tablet. It ends on exactly the
-            panel's colour so there is no edge, and it starts high enough that
-            the fade is a gradient rather than a band: the lower half of the
-            picture is lips and cheek, which is the part the copy is meant to
-            take over from. */}
+          {/* Scrim, lg and up.
+              Shaped from the photograph rather than copied from the design. A
+              horizontal luminance profile of the hero image shows a flat studio
+              backdrop (luminance 199) from 0% to 42%, and the face beginning at
+              43%. The text column ends at 39%. So the whole scrim can live over
+              the backdrop and be gone before it reaches her.
+
+              Figma's own stops (0.79 / 0.59 at 24.5% / 0 at 80%) were tried and
+              measured 3.03:1 on the headline and 2.73:1 on the subtext — the
+              design does not clear AA on its own. Holding ~0.70 across the text
+              column instead brings the backdrop to roughly rgb(107,91,78), which
+              measures past 4.5:1 on the subtext, while the fade completes by 60%
+              so the eye and cheek are untouched.
+
+              An earlier version instead laid a 36% brown wash over the entire
+              photograph. That came from misreading node 739:299, whose brown fill
+              sits *behind* the image and is invisible in the design. It is gone. */}
+          <div
+            aria-hidden
+            className="hidden absolute inset-0 pointer-events-none lg:block bg-[linear-gradient(90deg,rgba(45,32,21,0.84)_0%,rgba(63,45,31,0.76)_26%,rgba(63,45,31,0.70)_40%,rgba(63,45,31,0)_60%)]"
+          />
+        </div>
+
+        {/* Fade into the copy panel, phone only. It ends on exactly the panel's
+            colour so there is no edge, and it starts high enough that the fade
+            is a gradient rather than a band: the lower half of the picture is
+            lips and cheek, which is the part the copy is meant to take over from.
+
+            It is outside the clip, and runs 3px past the bottom of the zone, on
+            purpose. The zone's height is whatever the copy leaves it, which is
+            rarely a whole number of pixels, and the photograph's clip edge and a
+            fade that stopped at that same edge each round to a device pixel on
+            their own. WebKit rounded them differently, so one row of the
+            photograph showed through at the join: a hairline across the face,
+            found on an iPhone and reproduced in WebKit at 30 of 60 phone sizes
+            (Chromium never draws it). Overshooting puts the fade's own edge over
+            the section's brown, where an off-by-one row is invisible, and the
+            last 3% of the ramp is solid so the photograph's clip edge sits under
+            full-strength brown rather than under a still-fading gradient. */}
         <div
           aria-hidden
-          className="absolute inset-x-0 bottom-0 h-[58%] pointer-events-none sm:hidden bg-[linear-gradient(180deg,rgba(61,43,31,0)_0%,rgba(61,43,31,0.55)_45%,rgba(61,43,31,0.94)_82%,rgb(61,43,31)_100%)]"
-        />
-
-        {/* Scrim, tablet: the original bottom-up one, restored for sm–lg.
-            Bottom-up because the copy is anchored to the bottom edge there,
-            and held stronger than the desktop ramp because at that size the
-            headline sits over skin rather than the pale backdrop. */}
-        <div
-          aria-hidden
-          className="hidden absolute inset-0 pointer-events-none sm:block lg:hidden bg-[linear-gradient(0deg,rgba(45,32,21,0.86)_0%,rgba(63,45,31,0.66)_58%,rgba(63,45,31,0)_88%)]"
-        />
-
-        {/* Scrim, lg and up.
-            Shaped from the photograph rather than copied from the design. A
-            horizontal luminance profile of the hero image shows a flat studio
-            backdrop (luminance 199) from 0% to 42%, and the face beginning at
-            43%. The text column ends at 39%. So the whole scrim can live over
-            the backdrop and be gone before it reaches her.
-
-            Figma's own stops (0.79 / 0.59 at 24.5% / 0 at 80%) were tried and
-            measured 3.03:1 on the headline and 2.73:1 on the subtext — the
-            design does not clear AA on its own. Holding ~0.70 across the text
-            column instead brings the backdrop to roughly rgb(107,91,78), which
-            measures past 4.5:1 on the subtext, while the fade completes by 60%
-            so the eye and cheek are untouched.
-
-            An earlier version instead laid a 36% brown wash over the entire
-            photograph. That came from misreading node 739:299, whose brown fill
-            sits *behind* the image and is invisible in the design. It is gone. */}
-        <div
-          aria-hidden
-          className="hidden absolute inset-0 pointer-events-none lg:block bg-[linear-gradient(90deg,rgba(45,32,21,0.84)_0%,rgba(63,45,31,0.76)_26%,rgba(63,45,31,0.70)_40%,rgba(63,45,31,0)_60%)]"
+          className="absolute inset-x-0 -bottom-[3px] h-[calc(58%+3px)] pointer-events-none sm:hidden bg-[linear-gradient(180deg,rgba(61,43,31,0)_0%,rgba(61,43,31,0.55)_45%,rgba(61,43,31,0.94)_82%,rgb(61,43,31)_97%)]"
         />
       </div>
 
