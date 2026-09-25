@@ -31,6 +31,16 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.74.0",
+    date: "2026-09-25",
+    changes: [
+      {
+        kind: "changed",
+        text: "On a computer or tablet, the brown shade over the photo at the top of the home page is now a deeper dark brown and stronger on the left, so the headline and buttons are easier to read. Her eye and face are not covered. Phones look the same as before.",
+      },
+    ],
+  },
+  {
     version: "1.73.1",
     date: "2026-09-24",
     changes: [

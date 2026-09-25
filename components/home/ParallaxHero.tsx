@@ -136,7 +136,7 @@ export function ParallaxHero() {
               headline sits over skin rather than the pale backdrop. */}
           <div
             aria-hidden
-            className="hidden absolute inset-0 pointer-events-none sm:block lg:hidden bg-[linear-gradient(0deg,rgba(45,32,21,0.86)_0%,rgba(63,45,31,0.66)_58%,rgba(63,45,31,0)_88%)]"
+            className="hidden absolute inset-0 pointer-events-none sm:block lg:hidden bg-[linear-gradient(0deg,rgba(38,27,18,0.90)_0%,rgba(38,27,18,0.66)_58%,rgba(38,27,18,0)_88%)]"
           />
 
           {/* Scrim, lg and up.
@@ -148,17 +148,19 @@ export function ParallaxHero() {
 
               Figma's own stops (0.79 / 0.59 at 24.5% / 0 at 80%) were tried and
               measured 3.03:1 on the headline and 2.73:1 on the subtext — the
-              design does not clear AA on its own. Holding ~0.70 across the text
-              column instead brings the backdrop to roughly rgb(107,91,78), which
-              measures past 4.5:1 on the subtext, while the fade completes by 60%
-              so the eye and cheek are untouched.
+              design does not clear AA on its own. So the scrim is a deep brown,
+              rgb(38,27,18), at 90% at the left edge and 76% at the end of the
+              text column. That brings the lightest part of the backdrop under
+              the copy to roughly rgb(66,46,33): 9.5:1 on the subtext and 11.6:1
+              on the headline, measured from a 1440 screenshot. The fade still
+              completes by 60% so the eye and cheek are untouched.
 
               An earlier version instead laid a 36% brown wash over the entire
               photograph. That came from misreading node 739:299, whose brown fill
               sits *behind* the image and is invisible in the design. It is gone. */}
           <div
             aria-hidden
-            className="hidden absolute inset-0 pointer-events-none lg:block bg-[linear-gradient(90deg,rgba(45,32,21,0.84)_0%,rgba(63,45,31,0.76)_26%,rgba(63,45,31,0.70)_40%,rgba(63,45,31,0)_60%)]"
+            className="hidden absolute inset-0 pointer-events-none lg:block bg-[linear-gradient(90deg,rgba(38,27,18,0.90)_0%,rgba(38,27,18,0.82)_26%,rgba(38,27,18,0.76)_40%,rgba(38,27,18,0)_60%)]"
           />
         </div>
 
