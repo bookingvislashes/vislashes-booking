@@ -31,6 +31,20 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "1.75.0",
+    date: "2026-10-11",
+    changes: [
+      {
+        kind: "added",
+        text: "Invoices you send can now be paid with Apple Pay or Google Pay. The two buttons sit side by side above the card form, and each shows only on phones and browsers that support it.",
+      },
+      {
+        kind: "changed",
+        text: "Once a client pays an invoice, the page turns into a clean receipt: a confirmation, the amount paid, what it was for, the date and a receipt number. Their card details are cleared from the screen right away.",
+      },
+    ],
+  },
+  {
     version: "1.74.0",
     date: "2026-09-25",
     changes: [
